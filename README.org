@@ -1,0 +1,3 @@
+* FraudProof
+
+Here we aim to implement and formalize FraudProof ideas placed in L2 Setchain.
