@@ -11,7 +11,7 @@ def comb_MTree ( tL tR : MTree ) : MTree :=
 match tL , tR with
 | MTree.node hL , MTree.node hR => MTree.node (hL ⊕ hR)
 
-def hash_BTree (t : BTree ) : MTree :=
+def hash_BTree (t : BTree Value) : MTree :=
 match t with
 | BTree.leaf v => MTree.node (H v)
 | BTree.node hL hR => comb_MTree ( hash_BTree hL ) ( hash_BTree hR )
@@ -49,7 +49,7 @@ def containCompute (v : Value) (path : Path) (t : MTree) : Bool
 
 ----------------------------------------
 -- * Element contantion
-theorem leftChildContaintionN (v : Value) (btR broot : BTree ) :
+theorem leftChildContaintionN (v : Value) (btR broot : BTree Value) :
     -- Node (Leaf v) tree
     broot = BTree.node (BTree.leaf v) btR ->
     -- tree has a hash (not empty)
@@ -65,7 +65,7 @@ theorem leftChildContaintionN (v : Value) (btR broot : BTree ) :
         -- repeat { rw [ litPathHashes ] }
         rw [ listPathHashes , listPathHashes , opHash]
         }
-theorem rightChildContaintionN (v : Value) (btL broot : BTree ) :
+theorem rightChildContaintionN (v : Value) (btL broot : BTree Value) :
     -- Node (Leaf v) tree
     broot = BTree.node btL (BTree.leaf v) ->
     -- tree has a hash (not empty)
@@ -81,7 +81,7 @@ theorem rightChildContaintionN (v : Value) (btL broot : BTree ) :
         rw [ listPathHashes , listPathHashes , opHash]
     }
 
-theorem leafChildContaintionN (v : Value) (broot : BTree ) :
+theorem leafChildContaintionN (v : Value) (broot : BTree Value) :
     -- Node (Leaf v) tree
     broot = BTree.leaf v ->
     containCompute v [] (hash_BTree broot)
