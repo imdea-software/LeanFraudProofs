@@ -1,3 +1,8 @@
 * FraudProof
 
 Here we aim to implement and formalize FraudProof ideas placed in L2 Setchain.
+
+* To run
+#+begin_src sh :noeval
+lake build
+#+end_src
