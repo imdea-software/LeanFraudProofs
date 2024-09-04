@@ -7,8 +7,9 @@ import FraudProof.Value
 inductive BTree (α : Type ): Type
 | leaf (v : α)
 | node ( bL bR : BTree α )
-
 deriving instance BEq for BTree
+
+abbrev TreePathElem ( α : Type ):=  Sum (BTree α) (BTree α)
 abbrev TreePath (α : Type ):= List (Sum (BTree α) (BTree α))
 
 section BTree
@@ -41,7 +42,8 @@ section BTree
                         | none => none
 
     -- If value is not in tree, there is no proof.
-    theorem notValue [BEq α](v : α) (bt : BTree α) : valueIn v bt = false -> valueInProof v bt = none
+    theorem notValue [BEq α](v : α) (bt : BTree α) :
+            valueIn v bt = false -> valueInProof v bt = none
             := by {
             induction bt with
             | leaf vb => {
