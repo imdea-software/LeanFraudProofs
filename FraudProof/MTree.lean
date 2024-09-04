@@ -4,12 +4,14 @@ import FraudProof.Hash
 
 -- Pure definition of Merkle Tree
 inductive MTree : Type
--- | leaf (h : Hash)
-| node (h : Hash)
+  | node (h : Hash)
+
+def MTree.hash : MTree → Hash
+  | node h => h
 
 def comb_MTree ( tL tR : MTree ) : MTree :=
-match tL , tR with
-| MTree.node hL , MTree.node hR => MTree.node (hL ⊕ hR)
+    match tL , tR with
+    | MTree.node hL , MTree.node hR => MTree.node (hL ⊕ hR)
 
 def hash_BTree (t : BTree Value) : MTree :=
 match t with
@@ -56,15 +58,16 @@ theorem leftChildContaintionN (v : Value) (btR broot : BTree Value) :
     MTree.node h = hash_BTree btR ->
     -- then we can prove the element is in the merkle tree.
     containCompute v ([ Sum.inr h  ]) (hash_BTree broot)
-:= by {
-        intros HRoot BtHash
-        rw [containCompute , nodeIn, HRoot]
-        rw [ hash_BTree , hash_BTree, comb_MTree]
-        rw [ <- BtHash ]
-        simp
-        -- repeat { rw [ litPathHashes ] }
-        rw [ listPathHashes , listPathHashes , opHash]
-        }
+:= by
+   intros HRoot BtHash
+   rw [containCompute]
+   rw [nodeIn, HRoot]
+   rw [ hash_BTree , hash_BTree, comb_MTree]
+   rw [ <- BtHash ]
+   simp
+   -- repeat { rw [ litPathHashes ] }
+   rw [ listPathHashes , listPathHashes , opHash]
+
 theorem rightChildContaintionN (v : Value) (btL broot : BTree Value) :
     -- Node (Leaf v) tree
     broot = BTree.node btL (BTree.leaf v) ->
