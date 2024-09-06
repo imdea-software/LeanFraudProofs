@@ -79,8 +79,8 @@ def finLenEq { α β : Type }
   := { val := n.val, isLt := by rw [ <- eqLen ]; simp }
 
 
-lemma LtToRev : n < m -> m - n  < m + 1 := sorry
-lemma LtToRevSucc : n < m -> m - ( n + 1 ) < m + 1 := sorry
+lemma LtToRev {n m : Nat} : m - n  < m + 1 := by apply Nat.lt_add_one_of_le; simp
+lemma LtToRevSucc {n m : Nat}: m - ( n + 1 ) < m + 1 := by apply Nat.lt_add_one_of_le; simp
 
 lemma mathE' : forall {a : Nat}, a - 0 < a + 1 := by simp
 
@@ -98,17 +98,17 @@ lemma Comp {n a : Nat} { hLt : n < a } : a - n < a + 1 := by
   | succ pn =>
     exact @mathE (pn.succ) (by simp) a hLt
 
-lemma ScanL {α β : Type} :
-      forall
-      {l l': List β} { op :  α -> β -> α }
-      { v : α } { v' : β }
-      { eqLen : l.length = l'.length }
-      { n : Nat } {nLt : n < l'.length} ,
-      have lt : l'.length - n < l'.length + 1 := @Comp n l'.length nLt
-      (List.scanl op (op v v') l)[l'.length - n]'lt
-      =
-      op (( List.scanl op ( op v v' ) l)[l'.length - (n + 1)]'( by rw [ List.length_scanl ]; rw [ eqLen ] ; exact @Comp (n + 1) l'.length (by _ ) ))
-         (( v' :: l )[l'.length - n]'(by simp; rw [ eqLen ]; assumption ))
+-- lemma ScanL {α β : Type} :
+--       forall
+--       {l l': List β} { op :  α -> β -> α }
+--       { v : α } { v' : β }
+--       { eqLen : l.length = l'.length }
+--       { n : Nat } {nLt : n < l'.length} ,
+--       have lt : l'.length - n < l'.length + 1 := @Comp n l'.length nLt
+--       (List.scanl op (op v v') l)[l'.length - n]'lt
+--       =
+--       op (( List.scanl op ( op v v' ) l)[l'.length - (n + 1)]'( by rw [ List.length_scanl ]; rw [ eqLen ] ; exact @Comp (n + 1) l'.length (by _ ) ))
+--          (( v' :: l )[l'.length - n]'(by simp; rw [ eqLen ]; assumption ))
 
 
 
@@ -209,7 +209,7 @@ lemma TakeEq { α : Type }{ l : List α } { n m : Nat }( eq : n = m ) :
   List.take n l = List.take m l := by rw [ eq ]
 
 lemma SameGet { α : Type } { l : List α } :
-  forall { n m : Nat }{eqNM : n = m} { nLt : n < l.length } { mLt : m < l.length} ,
+  forall { n m : Nat } {eqNM : n = m} { nLt : n < l.length } { mLt : m < l.length} ,
   l.get ⟨ n , nLt ⟩ = l.get ⟨m , mLt ⟩  := by
   induction l with
   | nil =>
@@ -331,7 +331,7 @@ lemma hashChainF ps ( n : Fin ps.length ) :
   | nil => {simp at n; cases n with | mk _ isLt => simp at isLt}
   | cons pe pes HInd =>
     simp
-    unfold SibsF'
+    -- unfold SibsF'
     cases NDef : n with
     | mk nVal nLt =>
     --
@@ -388,28 +388,28 @@ def RevStr {α : Type} { n : Nat  }( f : Fin n → α ) : Fin n → α :=
   fun a => match a with
   | Fin.mk val aLt => f ⟨ n - 1 - val , by exact Nat.sub_one_sub_lt aLt ⟩
 
-def RevIff { α : Type} { n : Nat }( f g : Fin n → α ):
-  f = g ↔ RevStr f = RevStr g :=
-  Iff.intro
-  -- => )
-  (by intro fgEq; rw [ fgEq ])
-  ( by
-    intro revEq
-    funext x
-    match x with
-    | ⟨ xVal , xLt ⟩ =>
-    let rx := n - xVal - 1
-    have rxLt : rx < n := by { admit }
-    have rxLt' : n - 1 - rx < n := by { admit }
-    rw [ funext_iff ] at revEq
-    have fgrx := revEq ⟨ rx , rxLt ⟩
-    unfold RevStr at fgrx
-    simp at *
-    have eqX : n - 1 - rx = xVal := by {  admit }
-    have eqVals :⟨ n - 1 - rx , rxLt' ⟩ = Fin.mk xVal xLt  := by rw [Fin.ext_iff]; simp; assumption
-    rw [ <- eqVals ]
-    assumption
-  )
+-- def RevIff { α : Type} { n : Nat }( f g : Fin n → α ):
+--   f = g ↔ RevStr f = RevStr g :=
+--   Iff.intro
+--   -- => )
+--   (by intro fgEq; rw [ fgEq ])
+--   ( by
+--     intro revEq
+--     funext x
+--     match x with
+--     | ⟨ xVal , xLt ⟩ =>
+--     let rx := n - xVal - 1
+--     have rxLt : rx < n := by { admit }
+--     have rxLt' : n - 1 - rx < n := by { admit }
+--     rw [ funext_iff ] at revEq
+--     have fgrx := revEq ⟨ rx , rxLt ⟩
+--     unfold RevStr at fgrx
+--     simp at *
+--     have eqX : n - 1 - rx = xVal := by {  admit }
+--     have eqVals :⟨ n - 1 - rx , rxLt' ⟩ = Fin.mk xVal xLt  := by rw [Fin.ext_iff]; simp; assumption
+--     rw [ <- eqVals ]
+--     assumption
+--   )
 
 @[simp]
 def Drop0 { α : Type } {n : Nat} ( f : Fin (n + 1) → α ) : Fin n → α :=
@@ -479,13 +479,10 @@ section GoodPlayerProp
     = opHash ( GP.hashStr.node ⟨ n + 1 , by rw [ List.length ] at *; simp at *; assumption ⟩ )
             (GP.hashStr.sibling ⟨ n , by trans path.length - 1; assumption; rw [ List.length ]; simp⟩ )
     := by {
-      have eqLen : path'.length = List.length ( List.map hashElem path' ) := by rw [List.length_map]
       simp
       intros n nLt
       rw [ ScanlGetN ]
       rw [ ScanlGetN ]
-      -- have lenN : path'.length - n = List.length (List.map hashElem path') - n := by admit
-      -- have eqLen : path'.length =  := sorry
       rw [ <- List.foldl  ]
       rw [ <- List.foldl  ]
       rw [ <- List.map_take ]
@@ -495,9 +492,6 @@ section GoodPlayerProp
       clear foldC
       rw [ List.map_take ]
       rw [ List.map_take ]
-      -- have eqM : List.length path' - (n + 1) = (List.length path' - n) - 1 := by
-      --      { rw [ Nat.add_one , Nat.sub_sub] }
-      -- have ltakeL : forall {α : Type} (ls : List α) m mLt, (List.take m  ls) ++ [ ls[m]'mLt ] = List.take m.succ ls := by admit
       rw [ <- List.take_cons]
       rw [ <- List.take_cons]
       have eqMS : (List.length path' - (n + 1)).succ = List.length path' - n := by
@@ -505,7 +499,7 @@ section GoodPlayerProp
       rw [ eqMS ]
       rw [ lemmaTakeAppend ]
 
-      { simp ; exact LtToRevSucc nLt }
-      { simp ; exact LtToRev nLt }
+      { simp ; exact LtToRevSucc }
+      { simp ; exact LtToRev }
      }
 end GoodPlayerProp
