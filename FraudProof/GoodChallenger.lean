@@ -1,36 +1,60 @@
+-- Definitions
 import FraudProof.Value
 import FraudProof.MTree
 import FraudProof.Hash
-import FraudProof.Challenger
 
+import FraudProof.Players
+
+-- Extra Props
 import FraudProof.BToMTree -- ( hashElem, treeTohashPath, sumP, ScanPath )
-
 import FraudProof.List -- Extra List lemmas showing properties between ScanL -- Get -- Foldl
-
 import FraudProof.Nat -- ( Extra lemmas )
 
--- import Init.Ext
--- import Init.Data.List.Basic
--- import Init.Data.Fin.Lemmas
-
+-- Math Lib
+-- import Mathlib.Data.List.Basic
+-- import Batteries.Data.List.Basic -- foldl
+-- import Mathlib.Tactic.Ring -- (ring, ring-rf) tactics
+-- import Mathlib.Data.Fin.Basic
 import Mathlib.Data.List.Basic
--- import Mathlib.Data.List.Lemmas
--- import Mathlib.Data.Sum.Basic
-import Batteries.Data.List.Basic -- foldl
-
--- import Mathlib.Algebra.Order.Ring.Nat
--- import Mathlib.Tactic.Ring.Basic
-import Mathlib.Tactic.Ring -- (ring, ring-rf)
-
-import Mathlib.Data.Fin.Basic
--- import Mathlib.Order.Fin.Basic
--- import Mathlib.Order.Basic
--- import Mathlib.Order.SuccPred.Basic
--- * A GoodChallenger
---
 
 ----------------------------------------------------------------------
 -- Good Prop
+open Challenger
+
+namespace GoodChallenger
+section GoodProp
+  variable (n : Nat)
+  variable (Player : HC n)
+
+  def GoodValue (v : Value) := Player.pathNode 0 = ( H v )
+
+  def GoodRoot ( mt : MTree ) := Player.pathNode (n - 1) = mt.hash
+
+  def GoodMid  :=
+    forall (m : Nat) (nLt : m < n - 1 ),
+    have mLtn : m < n := by
+      trans n - 1 ; assumption
+      simp
+      cases n with
+      | zero => simp at nLt
+      | succ _ => simp
+    Player.pathNode ⟨ (m + 1) , by apply Nat.succ_lt_succ;assumption⟩ =
+    opHash ( Player.pathNode ⟨ m , by apply Nat.lt_add_one_of_lt; assumption ⟩) ( Player.pathSib ⟨ m , mLtn ⟩ )
+end GoodProp
+
+-- Definition of a Good Challenger, i.e. a challenger that always wins.
+-- GoodChallenger of value |v| in tree |mt|
+structure GoodChal (v : Value) (mt : MTree) where
+  pathLen : Nat
+  pathLenNZ : 0 < pathLen
+  strategies : HC pathLen
+  nodeZero : GoodValue pathLen strategies v
+  nodeRoot : GoodRoot pathLen strategies mt
+  allGames : GoodMid pathLen strategies
+
+end GoodChallenger
+
+
 -- def getLasts {α : Type} {n : Nat} (m : Fin n) ( mp : Fin n → α ) : List α :=
 --   match m with
 --   | ⟨ m' , lmn ⟩ => match m' with
@@ -54,7 +78,7 @@ import Mathlib.Data.Fin.Basic
 ----------------------------------------
 -- Definition of an array of hashes based on a path.
 -- It defines hashes in a path.
-@[simp]
+-- @[simp]
 def NodeHashPathF ( hv : Hash ) ( path : Path ) (n : Fin (path.length + 1)) : Hash
 := match n with
   | Fin.mk nval nproof =>
@@ -182,7 +206,7 @@ def Drop0 { α : Type } {n : Nat} ( f : Fin (n + 1) → α ) : Fin n → α :=
 -- provide an strategy on such range.
 -- This is equivalent to play finite games. Very finite, as soon as we start
 -- the game, we have a cap to the number of moves.
-@[simp]
+-- @[simp]
 def CGoodPlayer (v : Value) (path : TreePath Value)
   : Challenger path.length
   :=
@@ -215,6 +239,57 @@ lemma GPlEmpty : (CGoodPlayer v []).hashStr.sibling n = nE
 
 
 ----------------------------------------------------------------------
+namespace CorrectHashPlayer
+section VarE
+-- Only Hash Player
+--
+-- given a Hash and a Path
+variable (h : Hash)
+variable (path : TreePath Value)
+
+def HCPlayerBotUp : HC path.length
+  :=
+  let pathElem : Path := treeTohashPath path
+  have eqLen : pathElem.length = path.length := by exact List.length_map _ _
+  { pathNode := fun p =>
+    match p with
+    | Fin.mk pVal pLt =>
+      (List.scanl opHash h pathElem)[pVal]'( by rw [List.length_scanl, eqLen] ; assumption )
+  , pathSib := fun s => match s with
+                        | Fin.mk sVal sLt => List.get pathElem ⟨ sVal  ,  by rw [ eqLen]; assumption⟩
+  }
+
+-- pathNode[n+1] = pathNode[n] ⊕ pathSib[n]
+lemma midGameCorrect {lenGt : 0 < path.length}:
+  forall (n : Nat) (nLt : n < path.length - 1),
+    let HP := HCPlayerBotUp h path
+    HP.pathNode ⟨ n+ 1 , by simp; exact Nat.lt_of_lt_pred nLt ⟩ = opHash (HP.pathNode n) (HP.pathSib ⟨ n , by trans path.length-1; assumption;simp; assumption⟩) := by
+    intros n nLt
+    unfold HCPlayerBotUp
+    simp
+    rw [ ScanlGetN ]
+    rw [ ScanlGetN ]
+    rw [ <- List.foldl_concat opHash ]
+    have nEq : n % (List.length path + 1) = n := by { exact Nat.mod_eq_of_lt (by trans path.length - 1; assumption;trans path.length;simp; assumption; simp)}
+    rw [ nEq ]
+    rw [ <- List.map_take ]
+    rw [ <- List.map_take ]
+    rw [ <- List.concat_nil ]
+    rw [ List.append_concat]
+    rw [ List.append_nil ]
+    rw [<- List.map_concat]
+    rw [ List.take_concat_get ]
+    -- Obligations
+    { rw [ List.length_map ]
+      apply Nat.mod_lt
+      simp
+    }
+    { simp; exact Nat.lt_of_lt_pred nLt}
+end VarE
+end CorrectHashPlayer
+----------------------------------------------------------------------
+
+----------------------------------------------------------------------
 section GoodPlayerProp
   variable (v : Value )
   variable (p : TreePathElem Value)
@@ -230,6 +305,7 @@ section GoodPlayerProp
     unfold CGoodPlayer
     unfold RevStr
     unfold Drop0
+    unfold NodeHashPathF
     simp
 
   -- Mid-games are interesting.
@@ -244,8 +320,13 @@ section GoodPlayerProp
     := by
       simp
       intros n nLt
+      unfold CGoodPlayer
+      unfold NodeHashPathF
+      simp
       rw [ ScanlGetN ]
       rw [ ScanlGetN ]
+      -- rw [ <- opHash ]
+      -- rw [ <- opHash ]
       rw [ <- List.foldl  ]
       rw [ <- List.foldl  ]
       rw [ <- List.map_take ]

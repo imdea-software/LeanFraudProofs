@@ -3,8 +3,8 @@ import FraudProof.Value
 import FraudProof.MTree
 
 
-import Batteries.Data.List.Basic
-
+section Challenger
+----------------------------------------------------------------------
 -- ** Challengers play two roles.
 -- They initialize the game and also play it.
 -- structure Challenger where
@@ -17,10 +17,16 @@ import Batteries.Data.List.Basic
 --     -- the missing hash.
 --     final : Hash → Hash → Hash
 
+structure HC (n : Nat) where
+  -- Hashes along the way
+  pathNode : Fin ( n + 1 ) -> Hash
+  -- Path elem knows how to hash.
+  pathSib : Fin n -> PathElem
+
 -- Hash Structure describing |n| moves.
 structure HashChallenger ( n : Nat) where
   -- Nodes
-  node : Fin n -> Hash
+  node : Fin n  -> Hash
   -- Siblings
   sibling : Fin n -> PathElem
 
@@ -30,4 +36,22 @@ structure  Challenger ( gameLength : Nat) where
     value : Value
     -- Hash Strategies
     hashStr : HashChallenger gameLength
+----------------------------------------------------------------------
+end Challenger
 
+section Challenged
+----------------------------------------------------------------------
+-- Challenged
+-- ** Defender can choose between two different ranges.
+-- So we define the two possible moves as
+inductive Side : Type :=
+    | Left
+    | Right
+
+-- Challenged players chose between hashes at each moment.
+structure Challenged where
+    -- Strategy, given two ranges of hashes chosses one.
+    -- [Hbot, Hmid] , [Hmid, Htop] -> Left/Right
+    strategy : Hash → Hash → Hash → Side
+
+end Challenged
