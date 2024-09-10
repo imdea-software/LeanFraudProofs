@@ -32,10 +32,12 @@ match e with
 
 -- Get the result of applying a path to a hash
 -- Notice that the length of the path is very important
+@[simp]
 def listPathHashes (h : Hash) (path : Path) : Hash :=
-match path with
-    | [] => h
-    | (p :: ps) => listPathHashes (opHash h p) ps
+ List.foldl opHash h path
+-- match path wit
+--     | [] => h
+--     | (p :: ps) => listPathHashes (opHash h p) ps
 ----------------------------------------
 -- Merkle Tree operations
 
@@ -65,8 +67,8 @@ theorem leftChildContaintionN (v : Value) (btR broot : BTree Value) :
    rw [ hash_BTree , hash_BTree, comb_MTree]
    rw [ <- BtHash ]
    simp
-   -- repeat { rw [ litPathHashes ] }
-   rw [ listPathHashes , listPathHashes , opHash]
+   unfold opHash
+   simp
 
 theorem rightChildContaintionN (v : Value) (btL broot : BTree Value) :
     -- Node (Leaf v) tree
@@ -81,7 +83,8 @@ theorem rightChildContaintionN (v : Value) (btL broot : BTree Value) :
         rw [ hash_BTree , hash_BTree, comb_MTree]
         rw [ <- BtHash ]
         simp
-        rw [ listPathHashes , listPathHashes , opHash]
+        unfold opHash
+        simp
     }
 
 theorem leafChildContaintionN (v : Value) (broot : BTree Value) :
@@ -92,5 +95,4 @@ theorem leafChildContaintionN (v : Value) (broot : BTree Value) :
     intros HRoot
     rw [ containCompute, nodeIn, HRoot, hash_BTree ]
     simp
-    rw [ listPathHashes ]
 }
