@@ -2,6 +2,8 @@ import FraudProof.Hash
 import FraudProof.Value
 import FraudProof.MTree
 
+import Init.Data.Nat.Basic
+import Mathlib.Tactic.Ring
 
 section Challenger
 ----------------------------------------------------------------------
@@ -23,12 +25,46 @@ structure HC (n : Nat) where
   -- Path elem knows how to hash.
   pathSib : Fin n -> PathElem
 
+def DropHeadHC {n : Nat}(hc : HC (n+1)) : HC n :=
+  { pathNode := fun fn => match fn with
+                | Fin.mk nV nLt => hc.pathNode ⟨ nV + 1, by simp; assumption ⟩
+  , pathSib := fun fn => match fn with
+                | Fin.mk nV nLt => hc.pathSib ⟨ nV + 1, by simp; assumption ⟩
+  }
+
+def DropLastHC {n : Nat} ( hc : HC (n+1) ) : HC n :=
+ { pathNode := fun fn => match fn with
+                         | Fin.mk nV nLt => hc.pathNode ⟨ nV , by exact Nat.lt_succ_of_lt nLt⟩
+ , pathSib := fun fn => match fn with
+                         | Fin.mk nV nLt => hc.pathSib ⟨ nV , by exact Nat.lt_succ_of_lt nLt ⟩
+ }
+
+lemma DropLastNodeEq { n : Nat }( hc : HC (n+1))
+      : forall (m : Nat) ( mLt : m < n+1 ), hc.pathNode ⟨ m , by apply Nat.lt_succ_of_lt; assumption⟩
+      = (DropLastHC hc).pathNode ⟨ m , mLt ⟩
+      := by
+      intros m mLt
+      unfold DropLastHC
+      simp
+
+lemma DropLastSibEq { n : Nat }( hc : HC (n+1))
+      : forall (m : Nat) ( mLt : m < n), hc.pathSib ⟨ m , by trans n ; assumption; simp⟩
+      = (DropLastHC hc).pathSib ⟨ m , mLt ⟩
+      := by
+      unfold DropLastHC
+      intros m mLt
+      simp
+
 -- Hash Structure describing |n| moves.
 structure HashChallenger ( n : Nat) where
   -- Nodes
   node : Fin n  -> Hash
   -- Siblings
   sibling : Fin n -> PathElem
+
+-- theorem NodeExtStr {n m : Nat} ( nLtm : n < m ) ( f : Fin n -> Hash ) (g : Fin m -> Hash)
+--   ( eqRange : forall (x : Fin n), f x = g ⟨ x.val , by trans n; exact x.isLt; assumption⟩)
+--   :
 
 -- Simpler definition.
 structure  Challenger ( gameLength : Nat) where

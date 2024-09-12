@@ -27,7 +27,6 @@ namespace BotUpLin
   def HashPathCheck
     -- Length
     (len : Nat)
-    (hashLast : Hash )
     -- Players
     (A : HC len) ( D : Challenged )
     -- two hashes
@@ -37,27 +36,107 @@ namespace BotUpLin
     : Winner
   :=
     if posCheck : pos < len - 1
-    then
+    then -- Game [h_head, ... , h_last] = D_chose( Game(nHash, ... , h_last), One(h_head,nHash) )
         let nHash := A.pathNode ⟨ pos + 1 , by apply Nat.succ_lt_succ; assumption ⟩ -- trans len-1;assumption; exact Nat.sub_lt_succ _ _⟩
         match D.strategy h_head nHash h_last with
         | .Left => -- OneStep Game
             if opHash h_head (A.pathSib ⟨ pos , posLt ⟩) = nHash
             then Winner.Challenger
             else Winner.Challenged
-        | .Right => HashPathCheck _  hashLast A D nHash h_last (pos + 1) (by exact Nat.succ_lt_of_lt_pred posCheck)
-    else
-        if h_last = hashLast
+        | .Right => HashPathCheck _  A D nHash h_last (pos + 1) (by exact Nat.succ_lt_of_lt_pred posCheck)
+    else -- pos = len - 1, Game([h_head, h_last])
+        if opHash h_head (A.pathSib ⟨ len - 1 , by simp; exact Nat.zero_lt_of_lt posLt ⟩ ) = h_last
         then Winner.Challenger
         else Winner.Challenged
 
-  def InitHashPathGame
+  def HashPathCheckBack
+    -- Length
+    {len : Nat}
+    -- Players
+    (A : HC len) ( D : Challenged )
+    -- two hashes
+    (h_head h_last : Hash)
+    --
+    (pos : Nat) (posNZ: 0 < pos) ( posLt : pos < len + 1)
+    : Winner
+    := match pos with
+    | .zero => -- Impossible
+        by simp at posNZ
+    | .succ .zero => -- Game [h_head, h_last]
+        if opHash h_head (A.pathSib ⟨ 0 , by simp at posLt; assumption ⟩) = h_last
+        then Winner.Challenger
+        else Winner.Challenged
+    | .succ (.succ pn) => -- Game  [h_head, ... , h_last] = D_chose( Game(h_head, ... , nHash), One(nHash,h_last) )
+        let nHash := A.pathNode ⟨ pn.succ , by trans pn.succ.succ;simp;assumption ⟩
+        match D.strategy h_head nHash h_last with
+        | .Left => -- OneStep Game
+          HashPathCheckBack A D h_head nHash pn.succ (by simp) ( by trans pn.succ.succ; simp; assumption )
+        | .Right =>
+          if opHash nHash (A.pathSib ⟨ pn.succ , ( by simp at posLt; assumption ) ⟩) = h_last
+          then Winner.Challenger
+          else Winner.Challenged
+
+  @[simp]
+  def InjFin { n m : Nat }(nLtm : n < m)( x : Fin n ) : Fin m
+      := match x with
+        | Fin.mk xval xLt => ⟨ xval , by trans n; exact xLt; assumption ⟩
+
+  theorem HashPathFunInj { n m : Nat }
+          ( nLtm : n < m )( k : Nat )(kNZ : 0 < k)(kLtn : k < n + 1)
+          (str1 : HC n)(str2 : HC m)
+          (eqNode : forall (x : Fin (n + 1)), str1.pathNode x = str2.pathNode ( InjFin (by simp; assumption) x))
+          (eqSib : forall (x : Fin n), str1.pathSib x = str2.pathSib ( InjFin nLtm x ))
+          ( D : Challenged ) :
+          forall ( hv hr : Hash ) ,
+           @HashPathCheckBack n str1 D hv hr k kNZ kLtn
+          = @HashPathCheckBack m str2 D hv hr k kNZ ( by trans n + 1; assumption; simp; assumption )
+          := by
+          induction k with
+          | zero =>
+            unfold HashPathCheckBack
+            simp
+          | succ pk HI =>
+            unfold HashPathCheckBack
+            simp
+            cases pk with
+            | zero =>
+              simp
+              have eqSib0 := eqSib ⟨ 0 , by simp at kLtn; assumption ⟩
+              rw [ eqSib0 ]
+              simp
+            | succ ppk =>
+              simp
+              have eqPathK := eqNode ⟨ ppk + 1 , by simp at kLtn; trans n; assumption; simp ⟩
+              rw [ eqPathK ]
+              simp
+              intros hv hr
+              cases D.strategy hv (str2.pathNode ⟨ ppk + 1, _ ⟩) hr with
+              | Left =>
+                simp
+                exact HI _ _ hv (str2.pathNode ⟨ ppk + 1 , _ ⟩)
+              | Right =>
+                simp
+                have eqSibPPK := eqSib ⟨ ppk + 1 , by simp at kLtn; assumption ⟩
+                rw [ eqSibPPK ]
+                simp
+
+  def InitHashPathGameLastToHead
     -- Length
     (len : Nat) (lenNZ : 0 < len)
     (hashInit hashLast : Hash )
     -- Players
     (A : HC len) ( D : Challenged )
     : Winner
-    := HashPathCheck len hashLast A D hashInit hashLast 0 lenNZ
+    := HashPathCheck len A D hashInit hashLast 0 lenNZ
+
+  def InitHashPathGameHeadToLast
+    -- Length
+    (len : Nat) (lenNZ : 0 < len)
+    (hashInit hashLast : Hash )
+    -- Players
+    (A : HC len) ( D : Challenged )
+    : Winner
+    := HashPathCheckBack A D hashInit hashLast len lenNZ ( by simp )
 
 end BotUpLin
 
