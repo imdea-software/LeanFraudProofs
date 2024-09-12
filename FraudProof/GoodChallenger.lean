@@ -26,34 +26,97 @@ section GoodProp
   variable (n : Nat)
   variable (Player : HC n)
 
-  def GoodValue (v : Value) := Player.pathNode 0 = ( H v )
+  @[simp]
+  def GoodInit (h : Hash) := Player.pathNode 0 = h
 
-  def GoodRoot ( mt : MTree ) := Player.pathNode (n - 1) = mt.hash
+  @[simp]
+  def GoodRoot (h : Hash ) := Player.pathNode ⟨ n , by simp ⟩ = h
 
+  @[simp]
   def GoodMid  :=
-    forall (m : Nat) (nLt : m < n - 1 ),
-    have mLtn : m < n := by
-      trans n - 1 ; assumption
-      simp
-      cases n with
-      | zero => simp at nLt
-      | succ _ => simp
+    forall (m : Nat) (mLtn : m < n ),
     Player.pathNode ⟨ (m + 1) , by apply Nat.succ_lt_succ;assumption⟩ =
     opHash ( Player.pathNode ⟨ m , by apply Nat.lt_add_one_of_lt; assumption ⟩) ( Player.pathSib ⟨ m , mLtn ⟩ )
 end GoodProp
 
 -- Definition of a Good Challenger, i.e. a challenger that always wins.
--- GoodChallenger of value |v| in tree |mt|
-structure GoodChal (v : Value) (mt : MTree) where
-  pathLen : Nat
+
+structure ChalHash  (pathLen : Nat) (hv hr : Hash) where
   pathLenNZ : 0 < pathLen
   strategies : HC pathLen
-  nodeZero : GoodValue pathLen strategies v
-  nodeRoot : GoodRoot pathLen strategies mt
+  nodeZero : GoodInit pathLen strategies hv
+  nodeRoot : GoodRoot pathLen strategies hr
   allGames : GoodMid pathLen strategies
+
+-- GoodChallenger of value |v| in tree |mt|
+def GoodChal (pathLen : Nat) (v : Value) (mt : MTree) := ChalHash pathLen (H v) mt.hash
 
 end GoodChallenger
 
+namespace GCShifts
+-- We can shift good challengers by basically shifting their stategies and
+-- structures.
+--
+-- We have two morphisims
+-- Shift left and right
+open GoodChallenger
+
+def DropHead (pLen : Nat) (hv hr : Hash)(A : ChalHash (pLen + 1 + 1) hv hr) :
+  ChalHash (pLen+1) (A.strategies.pathNode ⟨ 1 , by simp ⟩) hr :=
+  { pathLenNZ := by simp
+  , strategies := DropHeadHC A.strategies
+  , nodeZero := by
+             unfold GoodInit
+             unfold DropHeadHC
+             simp
+  , nodeRoot := by
+             unfold GoodRoot
+             unfold DropHeadHC
+             simp
+             exact A.nodeRoot
+  , allGames := by
+             simp
+             unfold DropHeadHC
+             simp
+             intros m mLt
+             exact A.allGames (m+1) (by simp; assumption)
+  }
+
+def DropLast (pLen : Nat) (hv hr : Hash) (A : ChalHash (pLen + 1 + 1) hv hr)
+  : ChalHash (pLen + 1) hv (A.strategies.pathNode ⟨ pLen + 1, by simp ⟩) :=
+  { pathLenNZ := by simp
+  , strategies := DropLastHC A.strategies
+  , nodeZero := by
+             unfold DropLastHC
+             simp
+             exact A.nodeZero
+  , nodeRoot := by
+             unfold DropLastHC
+             simp
+  , allGames := by
+             unfold DropLastHC
+             simp
+             intros m mLt
+             exact A.allGames m (by exact Nat.lt_succ_of_lt mLt)
+  }
+
+
+end GCShifts
+namespace GCLemmas
+  lemma GChalOneH { hv hr : Hash } ( gc : GoodChallenger.ChalHash 1 hv hr):
+    opHash hv (gc.strategies.pathSib 0) = hr
+    := by
+    cases gc with
+    | mk pLen str nZ nR allg =>
+      simp
+      rw [ <- nZ ]
+      rw [ <- nR ]
+      simp
+      have g0 := allg 0 (by simp)
+      simp at g0
+      rw [ g0 ]
+
+end GCLemmas
 
 -- def getLasts {α : Type} {n : Nat} (m : Fin n) ( mp : Fin n → α ) : List α :=
 --   match m with
