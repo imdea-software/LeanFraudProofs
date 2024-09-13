@@ -9,7 +9,7 @@ import FraudProof.MTree
 
 -- Players Def
 import FraudProof.Players
-import FraudProof.GoodChallenger
+import FraudProof.WinningProposer
 
 -- Games Definitions
 import FraudProof.GameDef -- ( Winner )
@@ -23,21 +23,22 @@ import FraudProof.LogGame
 namespace LinearGame
 -- * Linear Game
 
-open Challenged
-open GoodChallenger
+open Proposer
+open WinningProposer
 open BotUpLin
 
+-- ** /Good
 theorem GChalWinsHtoLHashes (gameLength : Nat) :
     forall
     (headH lastH : Hash)
-    (challenger : ChalHash gameLength headH lastH)
-    (challenged : Challenged),
-    InitHashPathGameHeadToLast gameLength challenger.pathLenNZ headH lastH challenger.strategies challenged = Winner.Challenger
+    (proposer : PropHash gameLength headH lastH)
+    (chooser : Chooser.Player),
+    InitHashPathGameHeadToLast gameLength proposer.pathLenNZ headH lastH proposer.strategies chooser = Winner.Challenger
     := by
     induction gameLength with
     | zero => -- Impossible
-      intros _ _ challenger _
-      cases challenger with
+      intros _ _ proposer _
+      cases proposer with
       | mk pathLen _ _ _ _ => simp at pathLen
     | succ pn HN =>
       intros hv hr A D
@@ -71,11 +72,17 @@ theorem GChalWinsHtoLHashes (gameLength : Nat) :
           rw [ aroot ] at lastGame
           rw [ <- lastGame ]
 
--- theorem GChalWins
---     (v : Value)  (mt : MTree)
---     (challenger : GoodChal v mt)
---     (challenged : Challenged) :
---     InitHashPathGameLastToHead challenger.pathLen challenger.pathLenNZ (H v) mt.hash challenger.strategies challenged = Winner.Challenger
---     := sorry
+  theorem GChalWinsHtoL (gameLength : Nat)
+      (v : Value) (mt : MTree)
+      (proposer : WinningProposer.WinningProp gameLength v mt)
+      (chooser : Chooser.Player)
+      : InitHashPathGameHeadToLast gameLength proposer.pathLenNZ (H v) mt.hash proposer.strategies chooser = Winner.Challenger
+      := GChalWinsHtoLHashes gameLength (H v) mt.hash proposer chooser
+
+  -- theorem GChalWins (v : Value) (pathLen : Nat) (mt : MTree)
+  --     (proposer : GoodChal pathLen v mt)
+  --     (chooser : Chooser) :
+  --     InitHashPathGameLastToHead pathLen proposer.pathLenNZ (H v) mt.hash proposer.strategies chooser = Winner.Challenger
+  --     := sorry
 
 end LinearGame

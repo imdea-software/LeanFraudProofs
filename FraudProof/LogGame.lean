@@ -19,7 +19,7 @@ axiom midGt { a b : Nat }
 
 
 -- Game description that works, second stage.
-def MembershipGame_2STG { n : Nat }(A : Challenger n) (D : Challenged)
+def MembershipGame_2STG { n : Nat }(A : Proposer.HC n) (D : Chooser.Player)
     : (p_bot p_top : Nat)
     → ( H_bot : p_bot < n )
     → ( H_top : p_top < p_bot )
@@ -29,16 +29,16 @@ def MembershipGame_2STG { n : Nat }(A : Challenger n) (D : Challenged)
      if (p_bot > (p_top + 1))
      then -- Following the path
            let p_mid := (p_bot + p_top) / 2 -- middle position
-           let h_mid := A.hashStr.node { val := p_mid , isLt := by exact midLess HBot HTop}
+           let h_mid := A.pathNode sorry -- A.hashStr.node { val := p_mid , isLt := by exact midLess HBot HTop}
            match D.strategy h_bot h_mid h_top with
-             | Side.Left => MembershipGame_2STG A D p_bot p_mid  HBot ( midLt HTop ) h_bot h_mid
-             | Side.Right => MembershipGame_2STG A D p_mid p_top ( midLess HBot HTop ) (midGt HTop) h_mid h_top
+             | Chooser.Side.Left => MembershipGame_2STG A D p_bot p_mid  HBot ( midLt HTop ) h_bot h_mid
+             | Chooser.Side.Right => MembershipGame_2STG A D p_mid p_top ( midLess HBot HTop ) (midGt HTop) h_mid h_top
      else -- Final one-step game
-       MembershipGame_OneStep n A.hashStr { val := p_bot, isLt := HBot } h_bot h_top
+       MembershipGame_OneStep n sorry { val := p_bot, isLt := HBot } h_bot h_top
 
 -- Protocol
 -- Note Cesar add value to the interface or change the name?
-def MembershipGame (n : Nat) (A : Challenger n) (D : Challenged) (tHash : Hash) : Winner
+def MembershipGame (n : Nat) (A : Proposer.Player n) (D : Chooser.Player) (tHash : Hash) : Winner
   :=
   -- A inits the game.
   match InitC : n with
