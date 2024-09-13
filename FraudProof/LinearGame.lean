@@ -20,15 +20,15 @@ the stupid versions and then form bridges between games.
 
 namespace BotUpLin
 
-  open Challenger
-  open Challenged
+  open Proposer
+  open Chooser
 
   -- The following game checks that a the Challenger knows a path from |hashInit| to |hashLast|
   def HashPathCheck
     -- Length
     (len : Nat)
     -- Players
-    (A : HC len) ( D : Challenged )
+    (A : HC len) ( D : Chooser.Player )
     -- two hashes
     (h_head h_last : Hash)
     --
@@ -53,7 +53,7 @@ namespace BotUpLin
     -- Length
     {len : Nat}
     -- Players
-    (A : HC len) ( D : Challenged )
+    (A : HC len) ( D : Chooser.Player )
     -- two hashes
     (h_head h_last : Hash)
     --
@@ -86,7 +86,7 @@ namespace BotUpLin
           (str1 : HC n)(str2 : HC m)
           (eqNode : forall (x : Fin (n + 1)), str1.pathNode x = str2.pathNode ( InjFin (by simp; assumption) x))
           (eqSib : forall (x : Fin n), str1.pathSib x = str2.pathSib ( InjFin nLtm x ))
-          ( D : Challenged ) :
+          ( D : Chooser.Player ) :
           forall ( hv hr : Hash ) ,
            @HashPathCheckBack n str1 D hv hr k kNZ kLtn
           = @HashPathCheckBack m str2 D hv hr k kNZ ( by trans n + 1; assumption; simp; assumption )
@@ -125,7 +125,7 @@ namespace BotUpLin
     (len : Nat) (lenNZ : 0 < len)
     (hashInit hashLast : Hash )
     -- Players
-    (A : HC len) ( D : Challenged )
+    (A : HC len) ( D : Chooser.Player )
     : Winner
     := HashPathCheck len A D hashInit hashLast 0 lenNZ
 
@@ -134,7 +134,7 @@ namespace BotUpLin
     (len : Nat) (lenNZ : 0 < len)
     (hashInit hashLast : Hash )
     -- Players
-    (A : HC len) ( D : Challenged )
+    (A : HC len) ( D : Chooser.Player )
     : Winner
     := HashPathCheckBack A D hashInit hashLast len lenNZ ( by simp )
 

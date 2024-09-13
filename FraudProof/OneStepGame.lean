@@ -5,7 +5,7 @@ import FraudProof.List -- ( TakeAppend )
 import FraudProof.BToMTree
 
 import FraudProof.Players
-import FraudProof.GoodChallenger
+import FraudProof.WinningProposer
 
 import FraudProof.GameDef
 
@@ -21,12 +21,12 @@ import Mathlib.Tactic.Ring
 -- One Step Def
 def MembershipGame_OneStep
      ( n : Nat )
-     ( A : HashChallenger n)
+     ( P : Proposer.HC n)
      ( p_bot : Fin n )
      ( h_bot h_top : Hash )
     : Winner
 :=
-  if opHash h_bot (A.sibling p_bot) == h_top
+  if opHash h_bot (P.pathSib p_bot) == h_top
   then Winner.Challenger
   else Winner.Challenged
 
@@ -37,7 +37,7 @@ def MembershipGame_OneStep
 -- This is a chain!
 def AllwaysWinnig (p p' : _ ) ( path' : List Hash ) :=
   let path := p :: p' :: path'
-  forall (A : HashChallenger path.length)
+  forall (A : Proposer.HC path.length)
          ( n : Nat ) ( nLt : n <  path.length - 2),
          MembershipGame_OneStep path.length A ⟨ n , by trans path.length - 2; assumption; simp ; rw [ List.length ]; simp ⟩
                                               path[n] path[n+1] = Winner.Challenger
@@ -59,9 +59,4 @@ theorem irootHash ( v : Value ) ( e : BTree Value ⊕ BTree Value) ( path : Tree
           | List.cons q qs  =>
                 rw [ rootHash ]
                 simp
-                -- repeat ( rw [listPathHashes] )
         }
-
--- @[simp]
--- def intermediateHash (v : Value) ( path : Path ) ( m : Fin (List.length path) ) : Hash :=
---     (RevStr $ Drop0 $ NodeHashPathF (H v) path) m

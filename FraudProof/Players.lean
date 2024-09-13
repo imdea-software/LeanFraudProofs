@@ -5,20 +5,21 @@ import FraudProof.MTree
 import Init.Data.Nat.Basic
 import Mathlib.Tactic.Ring
 
-section Challenger
+namespace Proposer
 ----------------------------------------------------------------------
--- ** Challengers play two roles.
+-- ** Proposers play two roles.
 -- They initialize the game and also play it.
--- structure Challenger where
---     -- To begin the game, challengers propose a position, an element and it's hash.
+-- structure Proposer where
+--     -- To begin the game, proposers propose a position, an element and it's hash.
 --     init : Nat × Value × Hash
---     -- To play the game, at each turn, challengers, given the current hashes,
+--     -- To play the game, at each turn, proposers, given the current hashes,
 --     -- propose a new hash in the middle.
 --     strategy : Hash → Hash → ( Nat × Hash)
 --     -- Final step, given bot and top such that pos(bot) + 1 == pos(top), produces
 --     -- the missing hash.
 --     final : Hash → Hash → Hash
 
+-- *** Hash Strategies structure
 structure HC (n : Nat) where
   -- Hashes along the way
   pathNode : Fin ( n + 1 ) -> Hash
@@ -55,39 +56,27 @@ lemma DropLastSibEq { n : Nat }( hc : HC (n+1))
       intros m mLt
       simp
 
--- Hash Structure describing |n| moves.
-structure HashChallenger ( n : Nat) where
-  -- Nodes
-  node : Fin n  -> Hash
-  -- Siblings
-  sibling : Fin n -> PathElem
-
--- theorem NodeExtStr {n m : Nat} ( nLtm : n < m ) ( f : Fin n -> Hash ) (g : Fin m -> Hash)
---   ( eqRange : forall (x : Fin n), f x = g ⟨ x.val , by trans n; exact x.isLt; assumption⟩)
---   :
-
--- Simpler definition.
-structure  Challenger ( gameLength : Nat) where
+--
+structure  Player ( gameLength : Nat) where
     -- Leaf value
     value : Value
     -- Hash Strategies
-    hashStr : HashChallenger gameLength
+    hashStr : HC gameLength
 ----------------------------------------------------------------------
-end Challenger
+end Proposer
 
-section Challenged
+namespace Chooser
 ----------------------------------------------------------------------
--- Challenged
--- ** Defender can choose between two different ranges.
+-- ** Choosers choose between two different ranges.
 -- So we define the two possible moves as
 inductive Side : Type :=
     | Left
     | Right
 
--- Challenged players chose between hashes at each moment.
-structure Challenged where
+-- Chooser players chose between hashes at each moment.
+structure Player where
     -- Strategy, given two ranges of hashes chosses one.
     -- [Hbot, Hmid] , [Hmid, Htop] -> Left/Right
     strategy : Hash → Hash → Hash → Side
 
-end Challenged
+end Chooser
