@@ -14,6 +14,10 @@ import FraudProof.Nat -- ( Extra lemmas )
 -- Math Lib
 import Mathlib.Data.List.Basic
 
+-- disabling autoimplicit
+set_option autoImplicit false
+
+
 open Proposer
 
 -- * Property Definition
@@ -320,8 +324,39 @@ end HashProposer
                      exact midGameCorrect h path m mLtn
     }
 
-  def WinningProposerTreePath (v : Value) (path : TreePath Value)
-  := WinningProposerPath (H v) (treeTohashPath path)
+  def WinningProposerTreePath (v : Value) (path : TreePath Value) (pathNNil : 0 < path.length)
+  := WinningProposerPath (H v) (treeTohashPath path) (by unfold treeTohashPath; rw [ List.length_map ]; assumption)
+
+  @[simp]
+  def LP_HPlayer {m n : Nat} (eqMN : m = n) (p : HC m) : HC n
+  := { pathNode := fun k => match k with
+                            | ⟨ kV , kLtn ⟩ => p.pathNode ⟨ kV , by rw [ eqMN ]; assumption ⟩
+     , pathSib := fun k => match k with
+                            | ⟨ kV , kLtn ⟩ => p.pathSib ⟨ kV , by rw [ eqMN ]; assumption ⟩
+     }
+
+
+  -- Let |v| be a value, |bt| a binary tree of values, such thah |v| is in |bt|,
+  -- i.e. there is a non-empty path |path| from |v| to the root.
+  -- We can create a winning strategy.
+  def WProposerCreate ( v : Value ) (bt : BTree Value) (path : TreePath Value) (pathNNil : 0 < path.length)
+      ( vInTree : valueInProof v bt = some path )
+      : WinningProposer.WinningProp path.length v (hash_BTree bt)
+      := have eqLen : path.length = List.length (treeTohashPath path) := (by unfold treeTohashPath; rw [ List.length_map ])
+    { pathLenNZ := pathNNil
+    , strategies := LP_HPlayer (by rw [ eqLen ]) (HPlayer (H v) (treeTohashPath path))
+    , nodeZero := by simp [HPlayer]
+    , nodeRoot := by simp [HPlayer]
+                     rw [ ScanlGetN, eqLen]
+                     unfold treeTohashPath
+                     rw [ List.take_length]
+                     exact VinTree v bt path vInTree
+                     -- Proof Obligations
+                     { simp }
+    , allGames := by simp; intros m mLtn
+                     exact midGameCorrect (H v) (List.map hashElem path) m (by rw [ List.length_map ]; assumption)
+    }
+
 
 end Build
 ----------------------------------------------------------------------
