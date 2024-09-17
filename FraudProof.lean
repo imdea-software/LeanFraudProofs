@@ -9,7 +9,7 @@ import FraudProof.MTree
 
 -- Players Def
 import FraudProof.Players
-import FraudProof.WinningProposer
+import FraudProof.WinningProposer -- ( Winning Strategy for the proposer. )
 
 -- Games Definitions
 import FraudProof.GameDef -- ( Winner )
@@ -17,7 +17,7 @@ import FraudProof.GameDef -- ( Winner )
 -- Games
 import FraudProof.OneStepGame
 import FraudProof.LinearGame
-import FraudProof.LogGame
+-- import FraudProof.LogGame
 
 
 namespace LinearGame
@@ -72,17 +72,29 @@ theorem GChalWinsHtoLHashes (gameLength : Nat) :
           rw [ aroot ] at lastGame
           rw [ <- lastGame ]
 
-  theorem GChalWinsHtoL (gameLength : Nat)
+theorem GChalWinsHtoL (gameLength : Nat)
       (v : Value) (mt : MTree)
       (proposer : WinningProposer.WinningProp gameLength v mt)
       (chooser : Chooser.Player)
       : InitHashPathGameHeadToLast gameLength proposer.pathLenNZ (H v) mt.hash proposer.strategies chooser = Winner.Challenger
       := GChalWinsHtoLHashes gameLength (H v) mt.hash proposer chooser
 
-  -- theorem GChalWins (v : Value) (pathLen : Nat) (mt : MTree)
-  --     (proposer : GoodChal pathLen v mt)
-  --     (chooser : Chooser) :
-  --     InitHashPathGameLastToHead pathLen proposer.pathLenNZ (H v) mt.hash proposer.strategies chooser = Winner.Challenger
-  --     := sorry
+  -- We cannot recover witnesses, because Lean has proof irrelevance hardcoded.
+  -- theorem KWinsHtoL ( v : Value ) ( tree : BTree Value ) (vInTree : valueIn v tree)
+  --   : let ⟨ path , pPath ⟩ := valueInToProof v tree vInTree
+  --   exists (proposer : WinningProposer.WinningProp path.length v _),
+  --     _Game = Winner.Challenger
+
+theorem WinningProposer
+    ( v : Value ) ( btree : BTree Value )
+    (path : TreePath Value) (pathNNil : 0 < path.length)
+    ( vInBTree : valueInProof v btree = some path)
+: forall (chooser : Chooser.Player),
+  have winprop := Build.WProposerCreate v btree path pathNNil vInBTree
+  InitHashPathGameHeadToLast path.length pathNNil (H v) (hash_BTree btree).hash winprop.strategies chooser = Winner.Challenger
+:=  by
+  intros ch wp
+  exact GChalWinsHtoL path.length v _ _ _
+
 
 end LinearGame
