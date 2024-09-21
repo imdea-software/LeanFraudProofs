@@ -49,6 +49,7 @@ namespace BotUpLin
         then Winner.Challenger
         else Winner.Challenged
 
+  -- The following game goes from |hashLast| to |hashInit|
   def HashPathCheckBack
     -- Length
     {len : Nat}
@@ -160,3 +161,23 @@ end BotUpLin
 
 -- /- We can focus on proving that a /Good Challenger/, the one we defined, wins
 --   all small games. -/
+
+namespace Lemmas
+
+  open Proposer -- ( HC )
+
+  -- If a player (always) wins a Linear Game, also wins the other.
+  -- Going down and up.
+  lemma UpImplDown (len : Nat) (lenNZ : 0 < len) ( A : HC len ) (h_head h_last : Hash) :
+    (forall (D : Chooser.Player), BotUpLin.InitHashPathGameLastToHead len lenNZ h_head h_last A D  = Winner.Challenger)
+    ->
+    (forall (D : Chooser.Player) , BotUpLin.InitHashPathGameHeadToLast len lenNZ h_head h_last A D = Winner.Challenger)
+    := sorry
+
+  lemma DownImplUp (len : Nat) (lenNZ : 0 < len) ( A : HC len ) (h_head h_last : Hash) :
+    (forall (D : Chooser.Player) , BotUpLin.InitHashPathGameHeadToLast len lenNZ h_head h_last A D = Winner.Challenger)
+    ->
+    (forall (D : Chooser.Player), BotUpLin.InitHashPathGameLastToHead len lenNZ h_head h_last A D  = Winner.Challenger)
+    := sorry
+
+end Lemmas

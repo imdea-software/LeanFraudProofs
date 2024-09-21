@@ -19,6 +19,7 @@ import Mathlib.Tactic.Ring
 
 -- Given two hashes, the player provides the sibling hash.
 -- One Step Def
+@[simp]
 def MembershipGame_OneStep
      ( n : Nat )
      ( P : Proposer.HC n)
@@ -29,6 +30,13 @@ def MembershipGame_OneStep
   if opHash h_bot (P.pathSib p_bot) == h_top
   then Winner.Challenger
   else Winner.Challenged
+
+@[simp]
+def GameOneStep
+  (P : Proposer.HC 1)
+  (hL hT : Hash) : Winner
+  := if opHash hL (P.pathSib ⟨ 0 , by simp ⟩) == hT then Winner.Challenger else Winner.Challenged
+
 
 ----------------------------------------
 

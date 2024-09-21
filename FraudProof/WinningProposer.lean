@@ -48,6 +48,8 @@ end GoodProp
 -- Hash |hv| represents the hash of a value |v : Value| we are showing belongs
 -- to a merklee tree |mt : MTree|.
 -- Hash |hr| is the hash of |mt|.
+-- Another definition is that |PropHash n hv hr| is a path from |hv| to |hr| of
+-- length |n|.
 structure PropHash (pathLen : Nat) (hv hr : Hash) where
   -- The path is grater than 0. Otherwise, we don't have a tree.
   pathLenNZ : 0 < pathLen
@@ -64,6 +66,20 @@ structure PropHash (pathLen : Nat) (hv hr : Hash) where
 def WinningProp (pathLen : Nat) (v : Value) (mt : MTree)
    := PropHash pathLen (H v) mt.hash
 
+lemma WinningOne {hb ht : Hash} (P : PropHash 1 hb ht)
+      : opHash hb (P.strategies.pathSib ⟨ 0 , by omega ⟩) = ht
+      := by
+        match P with
+        | PropHash.mk NZ str nZ nR allGames =>
+        unfold GoodInit at *
+        unfold GoodRoot at *
+        unfold GoodMid at *
+        simp
+        rw [ <- nZ , <- nR]
+        have a := allGames 0 (by simp)
+        rw [a]
+        congr
+
 end WinningProposer
 
 namespace GCShifts
@@ -71,7 +87,7 @@ namespace GCShifts
 -- structures.
 --
 -- We have two morphisims
--- Shift left and right
+-- Drop Head, Drop Last
 open WinningProposer
 
 def DropHead (pLen : Nat) (hv hr : Hash)(A : PropHash (pLen + 1 + 1) hv hr) :
@@ -115,6 +131,71 @@ def DropLast (pLen : Nat) (hv hr : Hash) (A : PropHash (pLen + 1 + 1) hv hr)
 
 
 end GCShifts
+
+namespace GCOps
+-- Here we define operations over 'Good Proposers'
+-- We should merge with the above section, but for now I'll keep it split.
+
+open WinningProposer
+
+def eqLength {hb ht : Hash} (n m : Nat) (eqnm : n = m) (P : PropHash n hb ht)
+  : PropHash m hb ht
+  := { pathLenNZ := by rw [ <- eqnm]; exact P.pathLenNZ
+     , strategies :=
+       { pathNode := fun p => match p with
+                         | ⟨ pVal, pLt ⟩ => P.strategies.pathNode ⟨ pVal , by omega ⟩
+       , pathSib := fun p => match p with
+                         | ⟨ pVal, pLt ⟩ => P.strategies.pathSib ⟨ pVal , by omega ⟩
+       }
+     , nodeZero := by have pNZ := P.nodeZero
+                      simp at *
+                      assumption
+     , nodeRoot := by have pR := P.nodeRoot
+                      simp at *
+                      have eqF : P.strategies.pathNode ⟨ n , by omega ⟩ = P.strategies.pathNode ⟨ m , by omega ⟩ := by congr
+                      rw [ <- eqF ]
+                      assumption
+     , allGames := by have pAG := P.allGames
+                      simp at *
+                      intros w wLtm
+                      exact pAG w (by omega)
+}
+
+def take_proposer {hb ht : Hash} (m n : Nat) (mNZ : 0 < m) (hmn : m < n + 1 )
+  (P : PropHash n hb ht)
+ : PropHash m hb (P.strategies.pathNode ⟨ m , by assumption ⟩)
+ := { pathLenNZ := mNZ
+    , strategies := Proposer.takeHC m (by omega) P.strategies
+    , nodeZero := by have pNodeZ := P.nodeZero
+                     simp [takeHC] at *
+                     assumption
+    , nodeRoot := by simp [takeHC] at *
+    , allGames := by have pAllGames := P.allGames
+                     simp [takeHC] at *
+                     intros w wLtm
+                     exact pAllGames w (by omega)
+}
+
+def drop_proposer {hb ht: Hash} (m n : Nat) (hmn : m < n)
+  (P : PropHash n hb ht)
+  : PropHash (n - m) (P.strategies.pathNode ⟨ m , by omega ⟩) ht
+  := { pathLenNZ := by omega
+     , strategies := dropHC m (by omega) P.strategies
+     , nodeZero := by simp [ dropHC ]
+     , nodeRoot := by have lt := P.nodeRoot
+                      simp [ dropHC] at *
+                      have eqN : m + ( n - m ) = n := by omega
+                      have feq : P.strategies.pathNode ⟨m + (n - m), by omega⟩ = P.strategies.pathNode ⟨n, by omega ⟩ := by congr
+                      rw [ feq ]
+                      assumption
+     , allGames := by have pAllGames := P.allGames
+                      simp [dropHC] at *
+                      intros m1 m1Ltn
+                      exact pAllGames (m + m1) ( by omega )
+}
+
+end GCOps
+
 namespace GCLemmas
   lemma GChalOneH { hv hr : Hash } ( gc : WinningProposer.PropHash 1 hv hr):
     opHash hv (gc.strategies.pathSib 0) = hr
