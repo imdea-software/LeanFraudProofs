@@ -7,57 +7,49 @@ import FraudProof.MTree
 import FraudProof.Hash
 
 -- I am sure there is a Lean way to do this.
-axiom midLt { a b : Nat } ( H : b < a ) : (a + b) / 2 < a
-axiom midLess { a b M : Nat }
-  : a < M → b < a → ( a + b ) / 2 < M
-axiom midLessEqLt { a b M : Nat }
-  : a ≤ M → b < a → ( a + b ) / 2 < M
-axiom midLessEqLeq { a b M : Nat }
-  : a ≤ M → b < a → ( a + b ) / 2 ≤ M
-axiom midGt { a b : Nat }
-  : a < b → a < (  b + a ) / 2
-
+-- Instead of using axioms, I use 'sorry lemmas' so we can prove them later.
+lemma midLtTop { a b : Nat } ( H : a < b ) : (a + b) / 2 < b := by omega
+lemma midLtBot {a b : Nat} : a + 1 < b -> a < (a + b) / 2 := by omega
+lemma eq_of_lt {a b : Nat} : a < b -> ¬ ( a + 1 < b ) -> a + 1 = b := by omega
 
 -- Game description that works, second stage.
-def MembershipGame_2STG { n : Nat }(A : Proposer.HC n) (D : Chooser.Player)
-    : (p_bot p_top : Nat)
-    → ( H_bot : p_bot < n )
-    → ( H_top : p_top < p_bot )
-    → (h_bot h_top : Hash)
-    → Winner
-     := fun p_bot p_top HBot HTop h_bot h_top =>
-     if (p_bot > (p_top + 1))
-     then -- Following the path
-           let p_mid := (p_bot + p_top) / 2 -- middle position
-           let h_mid := A.pathNode sorry -- A.hashStr.node { val := p_mid , isLt := by exact midLess HBot HTop}
-           match D.strategy h_bot h_mid h_top with
-             | Chooser.Side.Left => MembershipGame_2STG A D p_bot p_mid  HBot ( midLt HTop ) h_bot h_mid
-             | Chooser.Side.Right => MembershipGame_2STG A D p_mid p_top ( midLess HBot HTop ) (midGt HTop) h_mid h_top
-     else -- Final one-step game
-       MembershipGame_OneStep n sorry { val := p_bot, isLt := HBot } h_bot h_top
+def MembershipGame_2STG (pathLen : Nat) (A : Proposer.HC pathLen) (D : Chooser.Player)
+    (pNZ : 0 < pathLen)
+    -- → ( H_bot : p_bot < p_top )
+    -- → ( H_top : p_top < n + 1 )
+    -- →
+    (h_bot h_top : Hash) : Winner
+    :=
+    match pathLen with
+    -- Impossible case
+    | Nat.zero => by simp at pNZ
+    | Nat.succ Nat.zero =>
+      GameOneStep A h_bot h_top
+    | Nat.succ (Nat.succ g) =>
+      let mid := (g / 2) + 1
+      have midLtGL : mid < g.succ.succ := by omega
+      let h_mid := A.pathNode ⟨ mid , by apply Nat.lt_succ_of_lt; assumption ⟩
+      let left_Proposer := Proposer.takeHC mid (by omega) A
+      let right_Proposer := Proposer.dropHC mid (by omega) A
+        match D.strategy h_bot h_mid h_top with
+            | Chooser.Side.Left =>
+                MembershipGame_2STG mid left_Proposer D (by simp) h_bot h_mid
+            | Chooser.Side.Right =>
+                MembershipGame_2STG (g.succ.succ - mid) right_Proposer D (by simp; assumption) h_mid h_top
+     -- if hC : (p_bot + 1 < p_top)
+     -- then -- Following the path
+     --    have midLtTopP := by trans p_top; exact midLtTop HBot; assumption
+     --    let p_mid := (p_bot + p_top) / 2 -- middle position
+     --    let h_mid := A.pathNode ⟨ p_mid , midLtTopP ⟩
+     --    match D.strategy h_bot h_mid h_top with
+     --        | Chooser.Side.Left => MembershipGame_2STG A D p_bot p_mid (midLtBot hC)  midLtTopP h_bot h_mid
+     --        | Chooser.Side.Right => MembershipGame_2STG A D p_mid p_top (midLtTop HBot) HTop h_mid h_top
+     -- else -- Final one-step game
+     -- -- From Hyps, p_bot + 1 = p_top
+     --   have BotTopEq : p_bot + 1 = p_top := eq_of_lt HBot hC
+     --   MembershipGame_OneStep n A ⟨ p_bot , by rw [ <- BotTopEq ] at HTop; simp at HTop; assumption ⟩ h_bot h_top
 
 -- Protocol
 -- Note Cesar add value to the interface or change the name?
-def MembershipGame (n : Nat) (A : Proposer.Player n) (D : Chooser.Player) (tHash : Hash) : Winner
-  :=
-  -- A inits the game.
-  match InitC : n with
-  -- Zero means that there is no path, so A is providing the root.
-  | Nat.zero =>
-    if H A.value == tHash
-    then Winner.Challenger
-    else Winner.Challenged
-  -- If we have a longer path, we go to the second stage of the game.
-  | Nat.succ Nat.zero =>
-    sorry
-    -- MembershipGame_OneStep A 0 ( by rw [ InitC ]; simp ) (H A.init.val) tHash
-  | Nat.succ (Nat.succ x) =>
-    sorry
-    -- MembershipGame_2STG A D
-    --   -- Game range [0 ... |path| - 1 ]
-    --   (A.init.pL-1) 0
-    --   -- Range restrictions
-    --   ( by { rw [ InitC ] ; simp } )
-    --   ( by { rw [ InitC ] ; simp } )
-    --   -- Hash ranges
-    --   (A.init.valH) tHash
+def MembershipGame (n : Nat) (nNZ : 0 < n) (A : Proposer.HC n) (D : Chooser.Player) (bHash tHash : Hash) : Winner
+  := MembershipGame_2STG n A D nNZ bHash tHash

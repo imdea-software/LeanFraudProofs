@@ -15,7 +15,7 @@ def treeTohashPath : TreePath Value  → Path :=
   List.map hashElem
 
 @[simp]
-lemma TreeLenEq
+lemma TreeLenEq (path : TreePath Value)
   : (treeTohashPath path).length = path.length
   := by exact List.length_map _ _
 

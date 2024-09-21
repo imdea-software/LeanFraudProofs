@@ -53,7 +53,7 @@ def containCompute (v : Value) (path : Path) (t : MTree) : Bool
 
 ----------------------------------------
 -- * Element contantion
-theorem leftChildContaintionN (v : Value) (btR broot : BTree Value) :
+theorem leftChildContaintionN (v : Value) (h : Hash) (btR broot : BTree Value) :
     -- Node (Leaf v) tree
     broot = BTree.node (BTree.leaf v) btR ->
     -- tree has a hash (not empty)
@@ -70,7 +70,7 @@ theorem leftChildContaintionN (v : Value) (btR broot : BTree Value) :
    unfold opHash
    simp
 
-theorem rightChildContaintionN (v : Value) (btL broot : BTree Value) :
+theorem rightChildContaintionN (v : Value) (h : Hash) (btL broot : BTree Value) :
     -- Node (Leaf v) tree
     broot = BTree.node btL (BTree.leaf v) ->
     -- tree has a hash (not empty)

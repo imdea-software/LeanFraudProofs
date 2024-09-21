@@ -40,8 +40,34 @@ def DropLastHC {n : Nat} ( hc : HC (n+1) ) : HC n :=
                          | Fin.mk nV nLt => hc.pathSib ⟨ nV , by exact Nat.lt_succ_of_lt nLt ⟩
  }
 
+-- Take m out of n from strategies arrays.
+def takeHC {n : Nat}(m : Nat) (mLtn : m < n + 1) (hc : HC n) : HC m :=
+{ pathNode :=
+  fun p => match p with
+           | ⟨ pVal, pLt ⟩ => hc.pathNode ⟨ pVal, by omega⟩
+, pathSib :=
+  fun p => match p with
+           | ⟨ pVal, pLt ⟩ => hc.pathSib ⟨ pVal, by omega ⟩
+}
+
+-- Drop
+def dropHC {n : Nat} (m : Nat) (mLtn : m < n + 1) (hc : HC n) : HC (n - m) :=
+{ pathNode :=
+  fun p => match p with
+           | ⟨ pVal, pLt ⟩ => hc.pathNode ⟨ m + pVal, by omega⟩
+, pathSib :=
+  fun p => match p with
+           | ⟨ pVal, pLt ⟩ => hc.pathSib ⟨ m + pVal, by omega ⟩
+}
+
+-- checking I am doing the right math
+lemma LastFirst (m n : Nat) (mLtn : m < n + 1) (hc : HC n)
+      : (takeHC m mLtn hc).pathNode ⟨ m , by omega ⟩ = (dropHC m mLtn hc).pathNode ⟨ 0 , by omega ⟩
+      := by simp [takeHC , dropHC]
+
 lemma DropLastNodeEq { n : Nat }( hc : HC (n+1))
-      : forall (m : Nat) ( mLt : m < n+1 ), hc.pathNode ⟨ m , by apply Nat.lt_succ_of_lt; assumption⟩
+      : forall (m : Nat) ( mLt : m < n+1 ),
+      hc.pathNode ⟨ m , by apply Nat.lt_succ_of_lt; assumption⟩
       = (DropLastHC hc).pathNode ⟨ m , mLt ⟩
       := by
       intros m mLt
@@ -62,6 +88,7 @@ structure  Player ( gameLength : Nat) where
     value : Value
     -- Hash Strategies
     hashStr : HC gameLength
+
 ----------------------------------------------------------------------
 end Proposer
 

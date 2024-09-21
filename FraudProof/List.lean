@@ -53,29 +53,6 @@ lemma TakeLength { α : Type }{l : List α}:
 lemma TakeEq { α : Type }{ l : List α } { n m : Nat }( eq : n = m ) :
   List.take n l = List.take m l := by rw [ eq ]
 
-lemma SameGet { α : Type } { l : List α } :
-  forall { n m : Nat } {eqNM : n = m} { nLt : n < l.length } { mLt : m < l.length} ,
-  l.get ⟨ n , nLt ⟩ = l.get ⟨m , mLt ⟩  := by
-  induction l with
-  | nil =>
-     intros; rw [ List.length ] at *; simp at *
-  | cons w ws HInd =>
-      intros n m eqNM nLt mLt
-      cases n with
-      | zero =>
-        cases m with
-        | zero => simp
-        | succ _ => simp at eqNM
-      | succ pn =>
-        cases m with
-        | zero => simp at eqNM
-        | succ pm =>
-          simp at nLt
-          simp at mLt
-          simp at eqNM
-          simp
-          apply @HInd pn pm eqNM nLt mLt
-
 lemma FoldRev { α β : Type }{l : List β}{op : α -> β -> α}:
   forall { v : α }( n : Nat) (nLt : n < l.length),
     List.foldl op v ( List.take (l.length - n) l)
