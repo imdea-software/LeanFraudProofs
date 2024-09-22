@@ -1,6 +1,6 @@
-import FraudProof.Value
-import FraudProof.MTree
-import FraudProof.Hash
+import FraudProof.DataStructures.Value
+import FraudProof.DataStructures.MTree
+import FraudProof.DataStructures.Hash
 
 import Mathlib.Data.Sum.Basic
 

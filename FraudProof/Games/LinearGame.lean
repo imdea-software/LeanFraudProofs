@@ -1,10 +1,11 @@
 import FraudProof.Players
 
-import FraudProof.GameDef
-import FraudProof.OneStepGame
+import FraudProof.Games.GameDef
+import FraudProof.Games.OneStepGame
+
 -- Utils and definitions
-import FraudProof.MTree
-import FraudProof.Hash
+import FraudProof.DataStructures.MTree
+import FraudProof.DataStructures.Hash
 
 import Mathlib.Order.Basic
 
@@ -41,13 +42,13 @@ namespace BotUpLin
         match D.strategy h_head nHash h_last with
         | .Left => -- OneStep Game
             if opHash h_head (A.pathSib ⟨ pos , posLt ⟩) = nHash
-            then Winner.Challenger
-            else Winner.Challenged
+            then Winner.Proposer
+            else Winner.Chooser
         | .Right => HashPathCheck _  A D nHash h_last (pos + 1) (by exact Nat.succ_lt_of_lt_pred posCheck)
     else -- pos = len - 1, Game([h_head, h_last])
         if opHash h_head (A.pathSib ⟨ len - 1 , by simp; exact Nat.zero_lt_of_lt posLt ⟩ ) = h_last
-        then Winner.Challenger
-        else Winner.Challenged
+        then Winner.Proposer
+        else Winner.Chooser
 
   -- The following game goes from |hashLast| to |hashInit|
   def HashPathCheckBack
@@ -65,8 +66,8 @@ namespace BotUpLin
         by simp at posNZ
     | .succ .zero => -- Game [h_head, h_last]
         if opHash h_head (A.pathSib ⟨ 0 , by simp at posLt; assumption ⟩) = h_last
-        then Winner.Challenger
-        else Winner.Challenged
+        then Winner.Proposer
+        else Winner.Chooser
     | .succ (.succ pn) => -- Game  [h_head, ... , h_last] = D_chose( Game(h_head, ... , nHash), One(nHash,h_last) )
         let nHash := A.pathNode ⟨ pn.succ , by trans pn.succ.succ;simp;assumption ⟩
         match D.strategy h_head nHash h_last with
@@ -74,8 +75,8 @@ namespace BotUpLin
           HashPathCheckBack A D h_head nHash pn.succ (by simp) ( by trans pn.succ.succ; simp; assumption )
         | .Right =>
           if opHash nHash (A.pathSib ⟨ pn.succ , ( by simp at posLt; assumption ) ⟩) = h_last
-          then Winner.Challenger
-          else Winner.Challenged
+          then Winner.Proposer
+          else Winner.Chooser
 
   @[simp]
   def InjFin { n m : Nat }(nLtm : n < m)( x : Fin n ) : Fin m
@@ -164,20 +165,20 @@ end BotUpLin
 
 namespace Lemmas
 
-  open Proposer -- ( HC )
+  -- open Proposer -- ( HC )
 
-  -- If a player (always) wins a Linear Game, also wins the other.
-  -- Going down and up.
-  lemma UpImplDown (len : Nat) (lenNZ : 0 < len) ( A : HC len ) (h_head h_last : Hash) :
-    (forall (D : Chooser.Player), BotUpLin.InitHashPathGameLastToHead len lenNZ h_head h_last A D  = Winner.Challenger)
-    ->
-    (forall (D : Chooser.Player) , BotUpLin.InitHashPathGameHeadToLast len lenNZ h_head h_last A D = Winner.Challenger)
-    := sorry
+  -- -- If a player (always) wins a Linear Game, also wins the other.
+  -- -- Going down and up.
+  -- lemma UpImplDown (len : Nat) (lenNZ : 0 < len) ( A : HC len ) (h_head h_last : Hash) :
+  --   (forall (D : Chooser.Player), BotUpLin.InitHashPathGameLastToHead len lenNZ h_head h_last A D  = Winner.Proposer)
+  --   ->
+  --   (forall (D : Chooser.Player) , BotUpLin.InitHashPathGameHeadToLast len lenNZ h_head h_last A D = Winner.Proposer)
+  --   := sorry
 
-  lemma DownImplUp (len : Nat) (lenNZ : 0 < len) ( A : HC len ) (h_head h_last : Hash) :
-    (forall (D : Chooser.Player) , BotUpLin.InitHashPathGameHeadToLast len lenNZ h_head h_last A D = Winner.Challenger)
-    ->
-    (forall (D : Chooser.Player), BotUpLin.InitHashPathGameLastToHead len lenNZ h_head h_last A D  = Winner.Challenger)
-    := sorry
+  -- lemma DownImplUp (len : Nat) (lenNZ : 0 < len) ( A : HC len ) (h_head h_last : Hash) :
+  --   (forall (D : Chooser.Player) , BotUpLin.InitHashPathGameHeadToLast len lenNZ h_head h_last A D = Winner.Proposer)
+  --   ->
+  --   (forall (D : Chooser.Player), BotUpLin.InitHashPathGameLastToHead len lenNZ h_head h_last A D  = Winner.Proposer)
+  --   := sorry
 
 end Lemmas

@@ -1,6 +1,6 @@
-import FraudProof.Value
-import FraudProof.BTree
-import FraudProof.Hash
+import FraudProof.DataStructures.Value
+import FraudProof.DataStructures.BTree
+import FraudProof.DataStructures.Hash
 
 -- Pure definition of Merkle Tree
 inductive MTree : Type

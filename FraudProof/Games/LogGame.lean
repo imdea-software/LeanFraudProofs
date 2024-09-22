@@ -1,10 +1,11 @@
 import FraudProof.Players
 
-import FraudProof.GameDef
-import FraudProof.OneStepGame
+import FraudProof.Games.GameDef
+import FraudProof.Games.OneStepGame
+
 -- Utils and definitions
-import FraudProof.MTree
-import FraudProof.Hash
+import FraudProof.DataStructures.MTree
+import FraudProof.DataStructures.Hash
 
 -- I am sure there is a Lean way to do this.
 -- Instead of using axioms, I use 'sorry lemmas' so we can prove them later.

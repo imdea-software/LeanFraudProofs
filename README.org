@@ -2,7 +2,136 @@
 
 Here we aim to implement and formalize FraudProof ideas placed in L2 Setchain.
 
-* To run
+** Implementation List
+*** [X] Basic Data Structures
+**** [X] [[file:FraudProof/DataStructures/BTree.lean][Binary Tree]]
+Small binary tree implementation plus some important definitions:
+
+Sibilings path from an element to /the root/.
+#+begin_src lean :noeval
+abbrev TreePath (α : Type ):= List (Sum (BTree α) (BTree α))
+#+end_src
+
+When an element is in a tree, and moreover, we can compute its proof. In this
+case, a path from the element (value) to the root.
+
+#+begin_src lean :noeval
+def valueIn [BEq α] (v : α) ( bt : BTree α ) : Bool
+def valueInProof [BEq α](v : α) (bt : BTree α) : Option ( TreePath α )
+#+end_src
+
+**** [X] [[file:FraudProof/DataStructures/Value.lean][Value]]
+Opaque type representing values in our data structure.
+
+Requisites: an equilvalence relation.
+**** [X] [[file:FraudProof/DataStructures/Hash.lean][ Hash]]
+Hash are strings (maybe we can change that, there is a hash notion already in Lean)
+
+It defines a hash function ~H : Value -> Hash~ and an operator ~\oplus: Hash -> Hash -> Hash~.
+
+Moreover, we assume perfect hashing (no collisions).
+#+begin_src lean :noeval
+axiom hash_prop (v1 v2 : Value) : v1 ≠ v2 → H v1 ≠ H v2
+#+end_src
+**** [X] Merkle Tree simple data structure [[file:FraudProof/MTree.lean][MTree Implementation]]
+Merkle Trees are nothing but the hash of the root of the markle tree they
+represent.
+
+Here we define important notions as hash paths. For example, a Hash is in a
+Merkle tree, if we provide the /evidence/, a list of hashes and positions,
+leading to the root.
+
+#+begin_src  lean :noeval
+def nodeIn (h : Hash) (path : Path) (t : MTree) : Bool
+:= match t with
+| MTree.node hT => listPathHashes h path == hT
+
+#+end_src
+*** [X] Games data structures
+**** [X] Games
+There is only one game: membership game.
+Given a value (or a hash), it is an element in a given Merkle Tree.
+
+***** [X] General Game Definitions -- [[file:FraudProof/Games/GameDef.lean][GameDefs]]
+Who wins. Maybe as we define more adv games we may have more stuff here?
+***** [X] One Step Game -- [[file:FraudProof/Games/OneStepGame.lean][OneStepGame]]
+One step game are games over a path of length 1. That is we have
+two hashes ~hb ht : Hash~ and proposers win if they can produce a /valid/
+sibling hash ~hb' : Hash~, that is ~opHash hb hb' = ht~.
+
+Other games eventually lead to this game.
+
+***** [X] [[file:FraudProof/Games/LinearGame.lean][Linear Game]] -- [[file:FraudProof/LinearGame.lean][LinearGame]]
+Linear games consist on one player proposing hashes along the one, one at a
+time, and the chooser deciding if a hash is incorrect, challenging that claim.
+
+The chooser either chooses between 'this hash is incorrect' or 'continue with
+the next'. If the chooser challenges a correct hash, the chooser loses.
+
+It can be player from the root to the leaf or the other way around.
+
+***** [X] Log Game -- [[file:FraudProof/Games/LogGame.lean][LogGame]]
+
+Similar to the Linear one but instead of going through the list offering one by
+one, the Proposer produces the hash in the middle of the path between the leaf
+and the root.
+The chooser then chooses on which half the game should continue to.
+
+It is called /Log Game/ since it halves the path at every instance. Leading to a one step game.
+
+**** [X] Players -- [[file:FraudProof/Players.lean][Players]]
+Here we define two players.
+***** [X] Proposer
+Proposers propose hashes along the way.
+Since eventually they need to provide siblings too, proposer strategies are compose of two
+arrays of hashes:
+#+begin_src lean :noeval
+structure HC (n : Nat) where
+  -- Hashes along the way
+  pathNode : Fin ( n + 1 ) -> Hash
+  -- Path elem knows how to hash.
+  pathSib : Fin n -> PathElem
+#+end_src
+Proposers are indexed on the length of the path.
+
+Plus some operations over proposers.
+***** [X] Chooser
+Choosers are somewhat simpler, but I haven't proved anything on them yet.
+They take three hashes and choose which side (Left or Right) they want to
+continue playing in.
+*** [X] Winning Players -- [[file:FraudProof/Winning/Proposer.lean][WinningDefinitions]]
+The goal here was to prove that /good proposers/ always win. That is that a player with some information, in particular, the original binary tree, can compute a winning strategy.
+
+Two main concepts:
++ What's the definition of a winning strategy?
++ How to build a winning strategy from the information /honest/ player have?
+
+**** [X] Winning Proposer
+Winning proposers are path of a given length /connecting/ two hashes.
+By connecting, I mean that the proposer propose hashes (nodes and siblings) that hash correct from one hsah to the other.
+We can see it better in this three props:
+#+begin_src lean :noeval
+@[simp]
+def GoodInit (h : Hash) := Player.pathNode 0 = h
+
+@[simp]
+def GoodRoot (h : Hash ) := Player.pathNode ⟨ n , by simp ⟩ = h
+
+@[simp]
+def GoodMid  :=
+    forall (m : Nat) (mLtn : m < n ),
+    Player.pathNode ⟨ (m + 1) , by apply Nat.succ_lt_succ;assumption⟩ =
+    opHash ( Player.pathNode ⟨ m , by apply Nat.lt_add_one_of_lt; assumption ⟩) ( Player.pathSib ⟨ m , mLtn ⟩ )
+#+end_src
+
+We also lift operations from strategies to /winning proposers/ (we'll need them
+when proving.)
+*** [X] Fraud Proof Games -- [[file:FraudProof.lean][FraudProofs]]
+Main file proving that:
+**** [X] Winning Proposers win Linear Game
+**** [X] Winning Proposers win Log Game
+
+* To build the whole project
 #+begin_src sh :noeval
 lake build
 #+end_src
