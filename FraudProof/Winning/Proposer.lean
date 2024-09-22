@@ -1,21 +1,18 @@
 -- Definitions
-import FraudProof.Value
-import FraudProof.MTree
-import FraudProof.Hash
+import FraudProof.DataStructures.Value
+import FraudProof.DataStructures.MTree
+import FraudProof.DataStructures.Hash
 
 -- Players
 import FraudProof.Players
 
 -- Extra Props
-import FraudProof.BToMTree -- ( hashElem, treeTohashPath, sumP, ScanPath )
-import FraudProof.List -- Extra List lemmas showing properties between ScanL -- Get -- Foldl
-import FraudProof.Nat -- ( Extra lemmas )
+import FraudProof.Extras.BToMTree -- ( hashElem, treeTohashPath, sumP, ScanPath )
+import FraudProof.Extras.List -- Extra List lemmas showing properties between ScanL -- Get -- Foldl
+import FraudProof.Extras.Nat -- ( Extra lemmas )
 
 -- Math Lib
 import Mathlib.Data.List.Basic
-
--- disabling autoimplicit
-set_option autoImplicit false
 
 
 open Proposer

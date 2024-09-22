@@ -1,5 +1,5 @@
 -- Importing Values
-import FraudProof.Value
+import FraudProof.DataStructures.Value
 
 /-! # Binary Tree -/
 

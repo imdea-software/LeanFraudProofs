@@ -1,6 +1,6 @@
-import FraudProof.Hash
-import FraudProof.Value
-import FraudProof.MTree
+import FraudProof.DataStructures.Hash
+import FraudProof.DataStructures.Value
+import FraudProof.DataStructures.MTree
 
 import Init.Data.Nat.Basic
 import Mathlib.Tactic.Ring
