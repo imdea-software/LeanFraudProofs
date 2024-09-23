@@ -95,6 +95,11 @@ structure HC (n : Nat) where
 Proposers are indexed on the length of the path.
 
 Plus some operations over proposers.
+****** IDEA Maybe. Min Proposer
+I guess we can implement a /minimal proposer/ using just an array of hashes as
+long as the path itself.
+It is just taking ~pathSib~ and computing ~pathNode~. But that only works for
+the ~correct player~.
 ***** [X] Chooser
 Choosers are somewhat simpler, but I haven't proved anything on them yet.
 They take three hashes and choose which side (Left or Right) they want to
@@ -130,6 +135,13 @@ when proving.)
 Main file proving that:
 **** [X] Winning Proposers win Linear Game
 **** [X] Winning Proposers win Log Game
+*** [ ] Chooser Guarantees
+If someone wrongly challenges a posted Merkle Tree, we can defend it and win.
+It is a similar theorem to winning strategies when challenged. But on the other side.
+*** [ ] Model Merkle Tree chain?
+Should we model the idea of posting Merkle Trees and the possibility of challenges.
+*** [ ] Validity Proofs
+
 
 * To build the whole project
 #+begin_src sh :noeval

@@ -21,7 +21,7 @@ import FraudProof.Games.LogGame
 
 
 namespace LinearGame
--- * Linear Game
+-- * Good Proposer winss Linear Game
 
 open Proposer
 open WinningProposer
@@ -101,7 +101,7 @@ end LinearGame
 
 
 namespace LogGame
--- * Logarithmic Game
+-- * Good Proposer wins Logarithmic Game
 
 open Proposer
 open WinningProposer
@@ -150,3 +150,51 @@ theorem PropHashWins (gL : Nat) : LogWinningProp' gL
                      exact SInd (pn + 1 + 1 - (pn / 2 + 1)) (by omega) (proposer.strategies.pathNode ⟨pn / 2 + 1, by omega⟩) hashT rightWinning chooser
      )
 end LogGame
+
+namespace LosingProposer
+
+open Proposer
+
+def notZero (gl : Nat) (P : HC gl)(hZ : Hash) : Prop := P.pathNode ⟨ 0 , by simp ⟩ != hZ
+def notRoot (gl : Nat) (P : HC gl)(hR : Hash) : Prop := P.pathNode ⟨ gl , by simp ⟩ != hR
+def notAllGames (gl : Nat)(P : HC gl) : Prop :=
+  exists (p : Nat)(pRange : p < gl),
+    P.pathNode ⟨ p + 1 ,  by simp; assumption ⟩ != opHash (P.pathNode ⟨ p , by omega ⟩ ) (P.pathSib ⟨ p , pRange ⟩)
+
+-- Losing proposer is a /bad/ proposer.
+-- Bad Proposers fails on (at least) one of the following props:
+-- + notZero, initial hash is not correct.
+-- + notRoot, final hash is not correct.
+-- + there is one hash along the way that does not match up: exists p, node[p+1] = node[p] ⊕ sib[p]
+theorem losingLin
+  ( gameLength : Nat) (gNZ : 0 < gameLength)
+  (hinit hroot : Hash)
+  (P : HC gameLength)
+  (C : Chooser.Player)
+  : BotUpLin.InitHashPathGameLastToHead gameLength gNZ hinit hroot P C = Winner.Chooser
+  -> notZero gameLength P hinit
+  ∨ notRoot gameLength P hroot
+  ∨ notAllGames gameLength P
+  := by revert hinit hroot P C
+        induction gameLength with
+        | zero => contradiction
+        | succ pn HInd =>
+               intros hinit hroot P C LH
+               simp [BotUpLin.InitHashPathGameLastToHead] at *
+               cases pn with
+               | zero => simp; clear HInd
+                         unfold BotUpLin.HashPathCheck at LH
+                         simp at LH
+                         by_cases hInit : (P.pathNode ⟨ 0 , by simp ⟩ = hinit)
+                         · right; by_cases hRoot : (P.pathNode ⟨ 1 , by simp ⟩ = hroot)
+                           · right; unfold notAllGames;
+                             exists 0; simp at *
+                             rw [ hInit, hRoot]
+                             intro FP
+                             apply LH
+                             rw [ FP ]
+                           · left; unfold notRoot; simp; assumption
+                         · left; unfold notZero; simp;assumption
+               | succ ppn => sorry
+
+end LosingProposer
