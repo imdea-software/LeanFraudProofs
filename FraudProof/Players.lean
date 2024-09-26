@@ -33,6 +33,13 @@ def DropHeadHC {n : Nat}(hc : HC (n+1)) : HC n :=
                 | Fin.mk nV nLt => hc.pathSib ⟨ nV + 1, by simp; assumption ⟩
   }
 
+lemma DropHeadEq {n : Nat}( hc : HC n.succ )
+     : forall (m : Nat) (mLt : m < n + 1)
+     , hc.pathNode ⟨ m.succ , by simpa ⟩ = (DropHeadHC hc).pathNode ⟨ m , mLt ⟩
+     := by intros m mLt
+           unfold DropHeadHC
+           simp
+
 def DropLastHC {n : Nat} ( hc : HC (n+1) ) : HC n :=
  { pathNode := fun fn => match fn with
                          | Fin.mk nV nLt => hc.pathNode ⟨ nV , by exact Nat.lt_succ_of_lt nLt⟩
@@ -107,3 +114,26 @@ structure Player where
     strategy : Hash → Hash → Hash → Side
 
 end Chooser
+
+--
+
+namespace Knowing
+-- Knowing a path means to provide all required hashes such that we can build a
+-- path in the merkle tree
+structure PathProof (len : Nat) (hhd htl : Hash) where
+  pathWit : Fin len -> PathElem -- array of positioned hashes of length |len|
+  goodPath : Fin.foldl len (fun acc p => opHash acc ( pathWit p )) hhd = htl
+
+-- PathNode
+def inPathProof { len : Nat }  (p : Nat) ( pLt : p < len + 1) { hl ht : Hash } ( pProof : PathProof len hl ht )
+  : Hash
+  := Fin.foldl p ( fun acc i => opHash acc ( pProof.pathWit ⟨ i.val , by omega ⟩)) hl
+
+abbrev PathSch := List (Unit ⊕ Unit)
+
+structure PathSchProof (p : PathSch) (ht : Hash) where
+  pNNil : 0 < p.length
+  pathWit : Fin p.length -> Hash
+  goodP : Fin.foldl p.length _ ( pathWit ⟨ 0 , pNNil ⟩ ) = ht
+
+end Knowing

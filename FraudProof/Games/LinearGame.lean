@@ -24,6 +24,31 @@ namespace BotUpLin
   open Proposer
   open Chooser
 
+  def HashPathDrop
+    (len : Nat) (lNZ : 0 < len)
+    -- Players
+    (A : HC len) ( D : Chooser.Player )
+    -- two hashes
+    (h_head h_last : Hash)
+    : Winner
+    :=
+    match len with
+    -- Len = 0
+    | Nat.zero => by simp at lNZ
+    | Nat.succ pn =>
+      match pn with
+      -- Len = 1
+      | Nat.zero => GameOneStep A h_head h_last
+      -- Len > 1
+      | Nat.succ ppn =>
+        let hnext := A.pathNode ⟨ 1 , by simp ⟩
+        match D.strategy h_head hnext h_last with
+        | .Left =>
+            if opHash h_head (A.pathSib ⟨ 0 , by simp ⟩) = hnext
+            then Winner.Proposer
+            else Winner.Chooser
+        | .Right => HashPathDrop ppn.succ (by simp) (DropHeadHC A) D hnext h_last
+
   -- The following game checks that a the Challenger knows a path from |hashInit| to |hashLast|
   def HashPathCheck
     -- Length
@@ -139,7 +164,6 @@ namespace BotUpLin
     (A : HC len) ( D : Chooser.Player )
     : Winner
     := HashPathCheckBack A D hashInit hashLast len lenNZ ( by simp )
-
 end BotUpLin
 
 -- match len with
