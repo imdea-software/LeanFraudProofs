@@ -9,7 +9,8 @@ import FraudProof.DataStructures.MTree
 
 -- Players Def
 import FraudProof.Players
-import FraudProof.Winning.Proposer -- ( Winning Strategy for the proposer. )
+import FraudProof.Winning.Proposer -- ( Winning Strategy definitions for proposers. )
+import FraudProof.Winning.Chooser -- ( Winning Strategy defs for choosers . )
 
 -- Games Definitions
 import FraudProof.Games.GameDef -- ( Winner )
@@ -19,6 +20,8 @@ import FraudProof.Games.OneStepGame
 import FraudProof.Games.LinearGame
 import FraudProof.Games.LogGame
 
+
+import Batteries.Data.Fin.Lemmas
 
 namespace LinearGame
 -- * Good Proposer winss Linear Game
@@ -166,6 +169,14 @@ def notAllGames (gl : Nat)(P : HC gl) : Prop :=
 -- + notZero, initial hash is not correct.
 -- + notRoot, final hash is not correct.
 -- + there is one hash along the way that does not match up: exists p, node[p+1] = node[p] ⊕ sib[p]
+--
+def BadProposer { gl : Nat } (P : HC gl) ( hb ht : Hash ) : Prop
+    := notZero gl P hb
+    ∨ notRoot gl P ht
+    ∨ notAllGames gl P
+    ∨ gl = 0 -- HC 0 is empty
+
+
 theorem losingLin
   ( gameLength : Nat) (gNZ : 0 < gameLength)
   (hinit hroot : Hash)
@@ -195,6 +206,75 @@ theorem losingLin
                              rw [ FP ]
                            · left; unfold notRoot; simp; assumption
                          · left; unfold notZero; simp;assumption
-               | succ ppn => sorry
+               | succ ppn =>
+                      unfold BotUpLin.HashPathCheck at LH
+                      simp at *
+                      cases chooser : C.strategy hinit (P.pathNode ⟨ 1 , by simp ⟩) hroot with
+                      | Left => -- chosed range (hinit, node 1)
+                        simp at *
+                        rw [ chooser ] at LH
+                        simp at LH
+                        --
+                        by_cases h : P.pathNode 0 = hinit -- Chooser knows P strategies?
+                        · right; right; unfold notAllGames
+                          exists 0; simp; intro PF; apply LH; rw [ PF ]; congr; symm; assumption
+                        · left; simpa [ notZero ]
+                        --
+                      | Right => -- should be symm to the other one, in this case, we should know that hinit is rigth!
+                        simp at *
+                        rw [ chooser ] at LH
+                        simp at LH
+                        --
+                        have lma : BotUpLin.HashPathCheck (ppn + 1 + 1) P C (P.pathNode 1) hroot 1 ( by simp )
+                                 = BotUpLin.HashPathCheck (ppn + 1) (DropHeadHC P) C ((DropHeadHC P).pathNode 0) hroot 0 (by simp)
+                                 := sorry -- To be proved.
+                        --
+                        rw [ lma ] at LH
+                        replace HInd := HInd (P.pathNode 1) hroot (DropHeadHC P) C LH
+                        clear LH gNZ
+                        simp at *
+                        right
+                        cases HInd with
+                        | inl H => simp [notZero, DropHeadHC] at H
+                        | inr HInd => cases HInd with
+                                      | inl Hl => left; simp [notRoot, DropHeadHC] at *; assumption
+                                      | inr Hr => right; simp [notAllGames,DropHeadHC] at *;
+                                                  let ⟨ w , wp ⟩ := Hr
+                                                  let ⟨ wLt , wf ⟩ := wp
+                                                  exists w.succ
+                                                  exists (by omega)
 
 end LosingProposer
+
+namespace WinningChooser
+
+-- If Proposer is /not good/ then, a /knowing chooser/ can wins.
+-- The intuition of what a /not good/ proposer can be is 'developed' in the
+-- previous namespace.
+
+open BotUpLin
+
+-- We need initial conditions!!
+-- Conditions on what pathNode[0] and pathNode[last] are !
+theorem ChooserGL (gameLength : Nat) (glNZ : 0 < gameLength) :
+    forall
+    (headH lastH : Hash)
+    (proposer : Proposer.HC gameLength)
+    -- Game Invariant
+    -- Hashes were proposed by |proposer|
+    (gmInvHead : proposer.pathNode ⟨ 0 , by simp ⟩ = headH)
+    (gmInvLast : proposer.pathNode ⟨ gameLength , by simp ⟩ = lastH)
+    -- proposer is not good
+    (badH : LosingProposer.notAllGames gameLength proposer)
+    -- We need to know pathproof.
+    (know : Knowing.PathProof gameLength headH lastH)
+    ,
+    HashPathDrop gameLength glNZ proposer (KnowingChooser know 1 (by simpa)) headH lastH
+    = Winner.Chooser
+    := by
+    induction gameLength with
+    | zero => simp at glNZ
+    | succ pn HInd =>
+      intros hb ht P invH invL badP k
+      _
+end WinningChooser
