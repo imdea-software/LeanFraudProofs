@@ -30,6 +30,24 @@ match e with
 | Sum.inl hl => hl ⊕ h
 | Sum.inr hr => h ⊕ hr
 
+theorem opHash_neq {hl hr : Hash} {el er : PathElem}
+  : ¬ (hl = hr) -> ¬ opHash hl el = opHash hr er
+  := by
+  intro hneq
+  unfold opHash
+  cases el with
+  | inl el =>
+    simp
+    cases er with
+    | inl er => simp; apply hop_neq_rigth; assumption
+    | inr er => simp;  apply hop_neq_rl ; assumption
+  | inr el =>
+    simp
+    cases er with
+    | inl er => simp; apply hop_neq_lr ; assumption
+    | inr er => simp;  apply hop_neq_left ; assumption
+
+
 -- Get the result of applying a path to a hash
 -- Notice that the length of the path is very important
 @[simp]

@@ -5,6 +5,8 @@ import FraudProof.DataStructures.MTree
 import Init.Data.Nat.Basic
 import Mathlib.Tactic.Ring
 
+import Batteries.Data.Fin.Lemmas
+
 namespace Proposer
 ----------------------------------------------------------------------
 -- ** Proposers play two roles.
@@ -129,11 +131,25 @@ def inPathProof { len : Nat }  (p : Nat) ( pLt : p < len + 1) { hl ht : Hash } (
   : Hash
   := Fin.foldl p ( fun acc i => opHash acc ( pProof.pathWit ⟨ i.val , by omega ⟩)) hl
 
-abbrev PathSch := List (Unit ⊕ Unit)
+def DropHCKnowing {l : Nat} { hd ht : Hash }
+  (p : PathProof (l + 1) hd ht)
+  : PathProof l (inPathProof 1 (by simp ) p) ht
+  := { pathWit := fun w => match w with
+                           | ⟨ pVal , pLt ⟩ => p.pathWit ⟨ pVal + 1, by omega ⟩
+     , goodPath := by
+                have pG := p.goodPath
+                rw [ Fin.foldl_succ ] at pG
+                unfold inPathProof
+                simp
+                rw [ Fin.foldl_succ, Fin.foldl_zero ]
+                assumption
+       }
 
-structure PathSchProof (p : PathSch) (ht : Hash) where
-  pNNil : 0 < p.length
-  pathWit : Fin p.length -> Hash
-  goodP : Fin.foldl p.length _ ( pathWit ⟨ 0 , pNNil ⟩ ) = ht
+-- abbrev PathSch := List (Unit ⊕ Unit)
+
+-- structure PathSchProof (p : PathSch) (ht : Hash) where
+--   pNNil : 0 < p.length
+--   pathWit : Fin p.length -> Hash
+--   goodP : Fin.foldl p.length _ ( pathWit ⟨ 0 , pNNil ⟩ ) = ht
 
 end Knowing
