@@ -254,20 +254,21 @@ namespace WinningChooser
 
 open BotUpLin
 
--- We need initial conditions!!
--- Conditions on what pathNode[0] and pathNode[last] are !
-theorem ChooserGL (gameLength : Nat) (glNZ : 0 < gameLength) :
+theorem ChooserGLHeadWrong (gameLength : Nat) (glNZ : 0 < gameLength) :
     forall
     (headH lastH : Hash)
+    (hbot : Hash )
     (proposer : Proposer.HC gameLength)
     -- Game Invariant
     -- Hashes were proposed by |proposer|
     (gmInvHead : proposer.pathNode ⟨ 0 , by simp ⟩ = headH)
     (gmInvLast : proposer.pathNode ⟨ gameLength , by simp ⟩ = lastH)
+    --
+    (hNEQ : headH != hbot )
     -- proposer is not good
-    (badH : LosingProposer.notAllGames gameLength proposer)
+    -- (badH : LosingProposer.notAllGames gameLength proposer)
     -- We need to know pathproof.
-    (know : Knowing.PathProof gameLength headH lastH)
+    (know : Knowing.PathProof gameLength hbot lastH)
     ,
     HashPathDrop gameLength glNZ proposer (KnowingChooser know 1 (by simpa)) headH lastH
     = Winner.Chooser
@@ -275,6 +276,52 @@ theorem ChooserGL (gameLength : Nat) (glNZ : 0 < gameLength) :
     induction gameLength with
     | zero => simp at glNZ
     | succ pn HInd =>
-      intros hb ht P invH invL badP k
-      _
+      intros hbBad ht hb P invH invL badP k
+      unfold HashPathDrop
+      cases pn with
+      | zero => simp; have pWit := k.pathWit; have gP := k.goodPath; simp at *  ;
+                rw [ Fin.foldl_succ , Fin.foldl_zero ] at gP;
+                rw [ <- gP ]
+                apply opHash_neq
+                assumption
+      | succ ppn =>
+        simp [KnowingChooser] at *
+        cases hKC : KChooser (ppn + 1 + 1) hb ht k 1 _ hbBad (P.pathNode 1) ht with
+        | Left => simp; simp [KChooser] at hKC;
+                  by_cases h : P.pathNode 1 = Knowing.inPathProof 1 (by simp) k
+                  · rw [ h  ] at hKC; simp at hKC
+                    unfold Knowing.inPathProof at h; rw [ Fin.foldl_succ , Fin.foldl_zero ] at h
+                    rw [ h ]
+                    apply opHash_neq
+                    assumption
+                  · rw [ ite_cond_eq_false ] at hKC
+                    unfold Knowing.inPathProof at h; rw [ Fin.foldl_succ , Fin.foldl_zero ] at h
+                    simp at hKC
+                    have gP := k.goodPath
+                    unfold Knowing.inPathProof at hKC
+                    rw [ gP ] at hKC
+                    contradiction
+                    -- proof obligation from ite_cond_eq_false
+                    {exact eq_false h}
+        | Right =>
+                simp
+                unfold KChooser at hKC
+                by_cases h :  P.pathNode 1 = Knowing.inPathProof 1 (by simp) k
+                · rw [ h ] at hKC; simp at hKC
+                  unfold Knowing.inPathProof at hKC; rw [ Fin.foldl_zero ] at hKC
+                  rw [ hKC ] at badP
+                  contradiction
+                · rw [ ite_cond_eq_false ] at hKC
+                  simp at hKC
+                  -- unfold Knowing.inPathProof at h;rw [ Fin.foldl_succ , Fin.foldl_zero ] at h
+                  have hE := HInd (P.pathNode 1) ht (Knowing.inPathProof 1 (by simp) k) ( Proposer.DropHeadHC P )
+                             ( by simp [ Proposer.DropHeadHC ] ) ( by simp [Proposer.DropHeadHC]; assumption )
+                             h (Knowing.DropHCKnowing k)
+                  rw [ <- hE ]
+                  congr
+
+
+
+                  { _ }
+
 end WinningChooser
