@@ -43,23 +43,60 @@ def KnowingChooser {gl : Nat}{hb ht : Hash}( k : Knowing.PathProof gl hb ht ) (c
   strategy := KChooser gl hb ht k cut cR
   }
 
--- For example, if we are choosing between whatever range, we can choose
--- whatever that it is the same.
---------------------------------------------------------------------------------
---
+-- -- For example, if we are choosing between whatever range, we can choose
+-- -- whatever that it is the same.
+-- --------------------------------------------------------------------------------
 
---------------------------------------------------------------------------------
--- def BadWiseChooser (PH PL: Hash -> Bool) (hd lt : Hash)
---  -- There is one bound that holding proporety PH PL
---  (boundH : PH hd ∨ PL lt)
---  --
---  : Chooser.Side
---  := match hHD : PH hd , hLT : PL lt with
---    | _ , true => Chooser.Side.Right -- We prioritize upper bound when possible.
---    | true , _  => Chooser.Side.Left
---    | false  , false => by rw [ hHD , hLT ] at boundH; simp at boundH
+-- --------------------------------------------------------------------------------
+-- -- Linear Chooser.
+-- -- Linear chooser start from something that may be wrong, but has as end point
+-- -- the root of the tree.
+-- Assuming we are walking trhough a path towards |lt|.
+-- @[simp]
+def LinChooser
+    -- Knowing elements
+    (hd : Hash) ( nextInPath : Hash)
+    --
+    (head next : Hash )
+    : Chooser.Side
+    :=
+    if head != hd
+    then if next = nextInPath
+         then Chooser.Side.Left
+         else Chooser.Side.Right
+    else -- Head is hd
+      if next != nextInPath
+      then Chooser.Side.Left
+      else Chooser.Side.Right
 
--- The above chooser does not always choose properly. [low, mid] , [mid, high]
--- such that |low| is not correct but |mid, high| are.
---
---------------------------------------------------------------------------------
+-- @[simp]
+def KnowingLinChooser
+   ( len : Nat ) (hb ht : Hash)
+   ( path : Knowing.PathProof len hb ht )
+   : Chooser.LinPlayer len
+   := {
+   strategy := fun p phead pnext =>
+   LinChooser
+     -- First the ones that really are
+     (Knowing.inPathProof p.val (by omega) path )
+     (Knowing.inPathProof p.val.succ (by omega) path)
+     -- Then the ones proposed by the proposer
+     phead pnext
+}
+-- --------------------------------------------------------------------------------
+
+-- --------------------------------------------------------------------------------
+-- -- def BadWiseChooser (PH PL: Hash -> Bool) (hd lt : Hash)
+-- --  -- There is one bound that holding proporety PH PL
+-- --  (boundH : PH hd ∨ PL lt)
+-- --  --
+-- --  : Chooser.Side
+-- --  := match hHD : PH hd , hLT : PL lt with
+-- --    | _ , true => Chooser.Side.Right -- We prioritize upper bound when possible.
+-- --    | true , _  => Chooser.Side.Left
+-- --    | false  , false => by rw [ hHD , hLT ] at boundH; simp at boundH
+
+-- -- The above chooser does not always choose properly. [low, mid] , [mid, high]
+-- -- such that |low| is not correct but |mid, high| are.
+-- --
+-- --------------------------------------------------------------------------------

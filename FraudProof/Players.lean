@@ -98,6 +98,10 @@ structure  Player ( gameLength : Nat) where
     -- Hash Strategies
     hashStr : HC gameLength
 
+-- Generic Proposer structure
+structure IPlayer (cut len : Nat)(hb ht : Hash) where
+  str : Fin len -> Hash
+
 ----------------------------------------------------------------------
 end Proposer
 
@@ -115,6 +119,25 @@ structure Player where
     -- [Hbot, Hmid] , [Hmid, Htop] -> Left/Right
     strategy : Hash → Hash → Hash → Side
 
+-- Generic Chooser structure
+structure IPlayer (cut len : Nat)(hb ht : Hash) where
+  str : Hash -> Side
+
+-- Lin Player is a family of straties, one for each step!
+-- it is an array of functions choosing sides!
+structure LinPlayer (len : Nat) where
+  strategy : Fin len -> Hash → Hash → Side
+
+@[simp]
+def LinPlayer.chooseNow {len : Nat} (lNZ : 0 < len) : LinPlayer len -> Hash -> Hash -> Side
+ := fun p => p.strategy ⟨ 0 , lNZ ⟩
+
+-- Next chooser definition. Notice that I did the same with the Proposer.
+-- @[simp]
+def LinPlayer.nextChooser {len : Nat} (C : LinPlayer (len + 1)) : LinPlayer len
+  := { strategy := fun p => match p with
+                        | ⟨ val , lt ⟩ => C.strategy ⟨ val + 1 , by simpa ⟩}
+
 end Chooser
 
 --
@@ -125,6 +148,11 @@ namespace Knowing
 structure PathProof (len : Nat) (hhd htl : Hash) where
   pathWit : Fin len -> PathElem -- array of positioned hashes of length |len|
   goodPath : Fin.foldl len (fun acc p => opHash acc ( pathWit p )) hhd = htl
+
+-- structure PathToProof (len : Nat) (hend : Hash) where
+--  lenNZ : 0 < len
+--  pathWit : Fin len -> PathElem
+--  goodPath : Fin.foldl (len - 1)  ( fun acc p => opHash acc ( pathWit ⟨ p.val + 1 , by omega  ⟩  ) ) (pathWit ⟨ 0 , lenNZ ⟩ ) = hend
 
 -- PathNode
 def inPathProof { len : Nat }  (p : Nat) ( pLt : p < len + 1) { hl ht : Hash } ( pProof : PathProof len hl ht )
