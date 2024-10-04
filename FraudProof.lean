@@ -270,7 +270,7 @@ theorem ChooserGLHeadWrong (gameLength : Nat) (glNZ : 0 < gameLength) :
     -- We need to know pathproof.
     (know : Knowing.PathProof gameLength hbot lastH)
     ,
-    HashPathDrop gameLength glNZ proposer (KnowingChooser know 1 (by simpa)) headH lastH
+    HashPathDrop gameLength glNZ proposer (KnowingLinChooser gameLength hbot lastH know) headH lastH
     = Winner.Chooser
     := by
     induction gameLength with
@@ -285,43 +285,51 @@ theorem ChooserGLHeadWrong (gameLength : Nat) (glNZ : 0 < gameLength) :
                 apply opHash_neq
                 assumption
       | succ ppn =>
-        simp [KnowingChooser] at *
-        cases hKC : KChooser (ppn + 1 + 1) hb ht k 1 _ hbBad (P.pathNode 1) ht with
-        | Left => simp; simp [KChooser] at hKC;
-                  by_cases h : P.pathNode 1 = Knowing.inPathProof 1 (by simp) k
-                  · rw [ h  ] at hKC; simp at hKC
-                    unfold Knowing.inPathProof at h; rw [ Fin.foldl_succ , Fin.foldl_zero ] at h
-                    rw [ h ]
-                    apply opHash_neq
-                    assumption
-                  · rw [ ite_cond_eq_false ] at hKC
-                    unfold Knowing.inPathProof at h; rw [ Fin.foldl_succ , Fin.foldl_zero ] at h
-                    simp at hKC
-                    have gP := k.goodPath
-                    unfold Knowing.inPathProof at hKC
-                    rw [ gP ] at hKC
-                    contradiction
-                    -- proof obligation from ite_cond_eq_false
-                    {exact eq_false h}
+        simp [KnowingLinChooser] at *
+        -- cases hKC : KChooser (ppn + 1 + 1) hb ht k 1 _ hbBad (P.pathNode 1) ht with
+        cases hKC :  LinChooser (Knowing.inPathProof 0 _ k) (Knowing.inPathProof 1 _ k) hbBad (P.pathNode 1) with
+        | Left => simp; simp [LinChooser] at hKC;
+                  have hbB : ¬ hbBad = Knowing.inPathProof 0 (by simp) k := sorry
+                  rw [ ite_cond_eq_false ] at hKC
+                  simp at hKC
+                  unfold Knowing.inPathProof at hKC; rw [ Fin.foldl_succ , Fin.foldl_zero ] at hKC
+                  rw [ hKC ]
+                  apply opHash_neq
+                  assumption
+                  {exact eq_false hbB}
+
+                  -- · rw [ h  ] at hKC; simp at hKC
+                  --   unfold Knowing.inPathProof at h; rw [ Fin.foldl_succ , Fin.foldl_zero ] at h
+                  --   rw [ h ]
+                  --   apply opHash_neq
+                  --   assumption
+                  -- · rw [ ite_cond_eq_false ] at hKC
+                  --   unfold Knowing.inPathProof at h; rw [ Fin.foldl_succ , Fin.foldl_zero ] at h
+                  --   simp at hKC
+                    -- have gP := k.goodPath
+                    -- unfold Knowing.inPathProof at hKC; rw [ Fin.foldl_succ , Fin.foldl_zero ] at hKC
+                    -- -- rw [ gP ] at hKC
+                    -- contradiction
+                    -- -- proof obligation from ite_cond_eq_false
+                    -- {exact eq_false _}
         | Right =>
                 simp
-                unfold KChooser at hKC
-                by_cases h :  P.pathNode 1 = Knowing.inPathProof 1 (by simp) k
-                · rw [ h ] at hKC; simp at hKC
-                  unfold Knowing.inPathProof at hKC; rw [ Fin.foldl_zero ] at hKC
-                  rw [ hKC ] at badP
-                  contradiction
-                · rw [ ite_cond_eq_false ] at hKC
-                  simp at hKC
-                  -- unfold Knowing.inPathProof at h;rw [ Fin.foldl_succ , Fin.foldl_zero ] at h
-                  have hE := HInd (P.pathNode 1) ht (Knowing.inPathProof 1 (by simp) k) ( Proposer.DropHeadHC P )
-                             ( by simp [ Proposer.DropHeadHC ] ) ( by simp [Proposer.DropHeadHC]; assumption )
-                             h (Knowing.DropHCKnowing k)
-                  rw [ <- hE ]
-                  congr
+                unfold LinChooser at hKC
+                have hbB : ¬ hbBad = Knowing.inPathProof 0 (by simp) k := sorry
+                rw [ ite_cond_eq_true ] at hKC
+                simp at hKC
+                have hE := HInd (P.pathNode 1) ht (Knowing.inPathProof 1 (by simp) k)
+                                ( Proposer.DropHeadHC P )
+                                ( by simp [ Proposer.DropHeadHC ] )
+                                ( by simp [Proposer.DropHeadHC]; assumption )
+                                hKC (Knowing.DropHCKnowing k)
+                rw [ <- hE ]
+                simp [ Chooser.LinPlayer.nextChooser ]
+                congr
+                simp [ Knowing.inPathProof, Knowing.DropHCKnowing ]
+                rw [ Fin.foldl_succ , Fin.foldl_zero ]
+                sorry -- Need lemma about Fin.foldl p (fun acc d => op acc (d + 1)) (op b 0) = Fin.foldl (p+1) ... b
 
-
-
-                  { _ }
+                { simpa }
 
 end WinningChooser
