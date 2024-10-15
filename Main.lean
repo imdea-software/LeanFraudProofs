@@ -17,6 +17,10 @@ def externalHashing' (str : String) : IO (Option String) :=
 
 def externalHashing (str : String) : IO String :=
   IO.Process.runCmdWithInput python (Array.mkArray2 pyHash str)
+
+def combHashing (str1 str2 : String) : IO String :=
+  -- str1 ⊕ str2 = H(str1 ++ str2)
+  externalHashing (str1.append str2)
 ------------------------------------------------------------
 
 ------------------------------------------------------------

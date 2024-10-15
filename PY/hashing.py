@@ -8,7 +8,8 @@ import sys # basic argument
 # args
 if len(sys.argv) >= 2:
     arg = sys.argv[1]
-    karg = Web3.solidity_keccak(['string'],[arg])
+    # karg = Web3.solidity_keccak(['string'],[arg])
+    karg = Web3.keccak(text=arg)
     hexBarg = HexBytes(karg)
     print(hexBarg.hex())
 else:
