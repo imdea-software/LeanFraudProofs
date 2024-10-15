@@ -14,3 +14,7 @@ require "leanprover-community" / "mathlib"
 @[default_target]
 lean_lib «FraudProof» where
   -- add any library configuration options here
+
+lean_exe "demo" where
+  root := `Main
+  supportInterpreter := true

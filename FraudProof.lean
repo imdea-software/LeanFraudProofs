@@ -154,10 +154,14 @@ theorem PropHashWins (gL : Nat) : LogWinningProp' gL
      )
 end LogGame
 
-namespace LosingProposer
 
+namespace LosingProposer
+-- Small module to start reasoning about bad proposers.
+-- Not necessarily winning choosers.
 open Proposer
 
+-- One of the properties making /good/ proposers does no hold.
+--
 def notZero (gl : Nat) (P : HC gl)(hZ : Hash) : Prop := P.pathNode ⟨ 0 , by simp ⟩ != hZ
 def notRoot (gl : Nat) (P : HC gl)(hR : Hash) : Prop := P.pathNode ⟨ gl , by simp ⟩ != hR
 def notAllGames (gl : Nat)(P : HC gl) : Prop :=
@@ -177,72 +181,19 @@ def BadProposer { gl : Nat } (P : HC gl) ( hb ht : Hash ) : Prop
     ∨ gl = 0 -- HC 0 is empty
 
 
-theorem losingLin
-  ( gameLength : Nat) (gNZ : 0 < gameLength)
-  (hinit hroot : Hash)
-  (P : HC gameLength)
-  (C : Chooser.Player)
-  : BotUpLin.InitHashPathGameLastToHead gameLength gNZ hinit hroot P C = Winner.Chooser
-  -> notZero gameLength P hinit
-  ∨ notRoot gameLength P hroot
-  ∨ notAllGames gameLength P
-  := by revert hinit hroot P C
-        induction gameLength with
-        | zero => contradiction
-        | succ pn HInd =>
-               intros hinit hroot P C LH
-               simp [BotUpLin.InitHashPathGameLastToHead] at *
-               cases pn with
-               | zero => simp; clear HInd
-                         unfold BotUpLin.HashPathCheck at LH
-                         simp at LH
-                         by_cases hInit : (P.pathNode ⟨ 0 , by simp ⟩ = hinit)
-                         · right; by_cases hRoot : (P.pathNode ⟨ 1 , by simp ⟩ = hroot)
-                           · right; unfold notAllGames;
-                             exists 0; simp at *
-                             rw [ hInit, hRoot]
-                             intro FP
-                             apply LH
-                             rw [ FP ]
-                           · left; unfold notRoot; simp; assumption
-                         · left; unfold notZero; simp;assumption
-               | succ ppn =>
-                      unfold BotUpLin.HashPathCheck at LH
-                      simp at *
-                      cases chooser : C.strategy hinit (P.pathNode ⟨ 1 , by simp ⟩) hroot with
-                      | Left => -- chosed range (hinit, node 1)
-                        simp at *
-                        rw [ chooser ] at LH
-                        simp at LH
-                        --
-                        by_cases h : P.pathNode 0 = hinit -- Chooser knows P strategies?
-                        · right; right; unfold notAllGames
-                          exists 0; simp; intro PF; apply LH; rw [ PF ]; congr; symm; assumption
-                        · left; simpa [ notZero ]
-                        --
-                      | Right => -- should be symm to the other one, in this case, we should know that hinit is rigth!
-                        simp at *
-                        rw [ chooser ] at LH
-                        simp at LH
-                        --
-                        have lma : BotUpLin.HashPathCheck (ppn + 1 + 1) P C (P.pathNode 1) hroot 1 ( by simp )
-                                 = BotUpLin.HashPathCheck (ppn + 1) (DropHeadHC P) C ((DropHeadHC P).pathNode 0) hroot 0 (by simp)
-                                 := sorry -- To be proved.
-                        --
-                        rw [ lma ] at LH
-                        replace HInd := HInd (P.pathNode 1) hroot (DropHeadHC P) C LH
-                        clear LH gNZ
-                        simp at *
-                        right
-                        cases HInd with
-                        | inl H => simp [notZero, DropHeadHC] at H
-                        | inr HInd => cases HInd with
-                                      | inl Hl => left; simp [notRoot, DropHeadHC] at *; assumption
-                                      | inr Hr => right; simp [notAllGames,DropHeadHC] at *;
-                                                  let ⟨ w , wp ⟩ := Hr
-                                                  let ⟨ wLt , wf ⟩ := wp
-                                                  exists w.succ
-                                                  exists (by omega)
+-- This depends on the game we are playing.
+-- If we want to have a theorem like the following one, we need to think a bit
+-- better our hypotheses.
+--
+-- theorem losingLin
+--   ( gameLength : Nat) (gNZ : 0 < gameLength)
+--   (hinit hroot : Hash)
+--   (P : HC gameLength)
+--   (C : Chooser.Player)
+--   : BotUpLin.InitHashPathGameLastToHead gameLength gNZ hinit hroot P C = Winner.Chooser
+--   -> notZero gameLength P hinit
+--   ∨ notRoot gameLength P hroot
+--   ∨ notAllGames gameLength P
 
 end LosingProposer
 
@@ -253,6 +204,10 @@ namespace WinningChooser
 -- previous namespace.
 
 open BotUpLin
+
+-- The following theorem is to prove that
+-- If we know a path of length |gameLength| from |hbot| to |lastH|, |know :Knowing.PathProof gameLength hbot lastH|,
+-- we can build a chooser to play the game, if the proposer proposed a wrong initial hash |headH|.
 
 theorem ChooserGLHeadWrong (gameLength : Nat) (glNZ : 0 < gameLength) :
     forall

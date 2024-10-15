@@ -138,9 +138,32 @@ Main file proving that:
 *** [ ] Chooser Guarantees
 If someone wrongly challenges a posted Merkle Tree, we can defend it and win.
 It is a similar theorem to winning strategies when challenged. But on the other side.
+
+**** [X] Linear games
+**** [ ] Log Games
+**** [ ] Multicut games
+
 *** [ ] Model Merkle Tree chain?
 Should we model the idea of posting Merkle Trees and the possibility of challenges.
+
+**** [X] Computing Hashes?
+
+#+begin_src bash :noeval
+python3 -m venv venv
+source ./venv/bin/activate.fish
+
+python3 -m pip install web3
+#+end_src
+
+Delegating this to Python.
+#+begin_src python :noeval
+from web3 import web3 # hashfunctions.
+
+print(web3.solidity_keccak(['string'],['testing']))
+#+end_src
+
 *** [ ] Validity Proofs
+*** [ ] IO Interactions
 
 
 * To build the whole project
