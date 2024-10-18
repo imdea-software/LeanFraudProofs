@@ -69,6 +69,18 @@ def LinChooser
       then Chooser.Side.Left
       else Chooser.Side.Right
 
+def KnowingLinChooserSkl ( len : Nat ) {skl : Fin len -> Unit ⊕ Unit} {hb ht : Hash}
+   ( path : Knowing.PathProofSeq len skl hb ht )
+   : Chooser.LinPlayer len
+   := {
+   strategy := fun p phead pnext =>
+   LinChooser
+     -- First the ones that really are
+     (Knowing.inPathSeq p.val (by omega) path )
+     (Knowing.inPathSeq p.val.succ (by omega) path)
+     -- Then the ones proposed by the proposer
+     phead pnext
+}
 -- @[simp]
 def KnowingLinChooser
    ( len : Nat ) (hb ht : Hash)
@@ -83,6 +95,7 @@ def KnowingLinChooser
      -- Then the ones proposed by the proposer
      phead pnext
 }
+
 -- --------------------------------------------------------------------------------
 
 -- --------------------------------------------------------------------------------

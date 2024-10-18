@@ -1,16 +1,15 @@
--- I don't want to define values.
+abbrev Value := String
 
-opaque Value : Type
-opaque ValEq : Value -> Value -> Bool
+-- opaque ValEq : Value -> Value -> Bool
 
-axiom ValEqRfl ( v : Value ) : ValEq v v
+-- axiom ValEqRfl ( v : Value ) : ValEq v v
 
-instance : BEq Value where
-    beq := ValEq
+-- instance : BEq Value where
+--     beq := ValEq
 
--- Lawful
-axiom ValBEqEq : forall { a b : Value }, (a == b) = true -> a = b
+-- -- Lawful
+-- axiom ValBEqEq : forall { a b : Value }, (a == b) = true -> a = b
 
-instance : LawfulBEq Value where
-  eq_of_beq := ValBEqEq
-  rfl := fun {a} => ValEqRfl a
+-- instance : LawfulBEq Value where
+--   eq_of_beq := ValBEqEq
+--   rfl := fun {a} => ValEqRfl a

@@ -38,9 +38,13 @@ def DropHeadHC {n : Nat}(hc : HC (n+1)) : HC n :=
 lemma DropHeadEq {n : Nat}( hc : HC n.succ )
      : forall (m : Nat) (mLt : m < n + 1)
      , hc.pathNode ⟨ m.succ , by simpa ⟩ = (DropHeadHC hc).pathNode ⟨ m , mLt ⟩
-     := by intros m mLt
-           unfold DropHeadHC
-           simp
+     := by intros m mLt; simp [DropHeadHC]
+
+
+lemma DropHeadEqSib {n : Nat} ( hc : HC n.succ.succ )
+      : forall (m : Nat) (mLt : m < n+1)
+      , hc.pathSib ⟨ m.succ , by simpa ⟩ = (DropHeadHC hc).pathSib ⟨ m , mLt ⟩
+      := by intros m mLt; simp [DropHeadHC]
 
 def DropLastHC {n : Nat} ( hc : HC (n+1) ) : HC n :=
  { pathNode := fun fn => match fn with
@@ -149,16 +153,41 @@ structure PathProof (len : Nat) (hhd htl : Hash) where
   pathWit : Fin len -> PathElem -- array of positioned hashes of length |len|
   goodPath : Fin.foldl len (fun acc p => opHash acc ( pathWit p )) hhd = htl
 
--- structure PathToProof (len : Nat) (hend : Hash) where
---  lenNZ : 0 < len
---  pathWit : Fin len -> PathElem
---  goodPath : Fin.foldl (len - 1)  ( fun acc p => opHash acc ( pathWit ⟨ p.val + 1 , by omega  ⟩  ) ) (pathWit ⟨ 0 , lenNZ ⟩ ) = hend
+structure PathProofSeq (len : Nat) (skl : Fin len -> Unit ⊕ Unit ) (hhd htl : Hash) where
+  pathWit : Fin len -> Hash -- array of positioned hashes of length |len|
+  goodPath : Fin.foldl len
+             (fun acc p => opHash acc ( match skl p with -- map
+                                        | Sum.inl _ => Sum.inl (pathWit p)
+                                        | Sum.inr _ => Sum.inr (pathWit p)
+                                       )) hhd
+             = htl
+
+def inPathSeq { len : Nat } (p : Nat) ( pLt : p < len + 1)
+    {skl : Fin len -> SkElem}{ hl ht : Hash } ( pProof : PathProofSeq len skl hl ht )
+  : Hash
+  := Fin.foldl p ( fun acc i => opHash acc ( (skl ⟨ i.val , by omega⟩).fill $ pProof.pathWit ⟨ i.val , by omega ⟩)) hl
 
 -- PathNode
 def inPathProof { len : Nat }  (p : Nat) ( pLt : p < len + 1) { hl ht : Hash } ( pProof : PathProof len hl ht )
   : Hash
   := Fin.foldl p ( fun acc i => opHash acc ( pProof.pathWit ⟨ i.val , by omega ⟩)) hl
 
+def DropHCKnowingSeq {l : Nat} {skl : Fin (l + 1) -> SkElem} { hd ht : Hash }
+  (p : PathProofSeq (l + 1) skl hd ht)
+  : PathProofSeq l (fun p => match p with
+                            | ⟨ val , Lt ⟩ => skl ⟨ val + 1, by omega ⟩) (inPathSeq 1 (by simp ) p) ht
+  := {
+  pathWit := fun w => match w with
+                      | ⟨ pVal, Lt ⟩ => p.pathWit ⟨ pVal + 1 , by omega ⟩
+  , goodPath := by
+    have pG := p.goodPath
+    rw [ Fin.foldl_succ ] at pG
+    unfold inPathSeq
+    simp
+    rw [ Fin.foldl_succ, Fin.foldl_zero ]
+    simp at *
+    assumption
+}
 def DropHCKnowing {l : Nat} { hd ht : Hash }
   (p : PathProof (l + 1) hd ht)
   : PathProof l (inPathProof 1 (by simp ) p) ht

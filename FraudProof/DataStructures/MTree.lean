@@ -23,30 +23,68 @@ match t with
 -- Path in Merkle Trees are hashes indicating its position.
 abbrev PathElem := Sum Hash Hash
 
+abbrev SkElem := Sum Unit Unit
+
+@[simp]
+def SkElem.fill (skl : SkElem) (h : Hash) : PathElem
+  := match skl with
+    | Sum.inl _ => Sum.inl h
+    | Sum.inr _ => Sum.inr h
+
+@[simp]
+def PathElem.forget (h : PathElem) : SkElem
+  := match h with
+     | Sum.inl _ => Sum.inl ()
+     | Sum.inr _ => Sum.inr ()
+
 abbrev Path := List PathElem
+abbrev Skeleton := List SkElem
+
+@[simp]
+def Skeleton.fill (skl : Skeleton) (hs : Fin skl.length -> Hash) : Path
+ := match skl with
+    | List.nil => List.nil
+    | List.cons s ss => s.fill (hs ⟨ 0 , by simp ⟩ )  :: Skeleton.fill ss (fun p => hs ⟨ p.val + 1 , by simp ⟩)
+
+@[simp]
+def MapSeq {α β : Type} { n : Nat } (f : α → β)
+  : (Fin n -> α) -> (Fin n -> β) := fun s p => f $ s p
+
+@[simp]
+def MapSeqKey {α β : Type} {n : Nat} (f : Nat -> α -> β)
+  : (Fin n -> α) -> (Fin n -> β) := fun s p => f p.val $ s p
+
+@[simp]
+def SeqForget { n : Nat } : (Fin n -> PathElem) -> (Fin n -> SkElem)
+  := MapSeq PathElem.forget
 
 def opHash (h : Hash) (e : PathElem) : Hash :=
 match e with
 | Sum.inl hl => hl ⊕ h
 | Sum.inr hr => h ⊕ hr
 
-theorem opHash_neq {hl hr : Hash} {el er : PathElem}
-  : ¬ (hl = hr) -> ¬ opHash hl el = opHash hr er
+theorem opHash_neqRight {hl hr : Hash} {pl pr : Hash}
+ : ¬ (hl = hr) -> ¬ opHash hl (Sum.inl pl) = opHash hr (Sum.inl pr)
+ := by intro H
+       simp [ opHash ]
+       apply hop_neq_right
+       assumption
+
+theorem opHash_neqLeft {hl hr : Hash} {pl pr : Hash}
+ : ¬ (hl = hr) -> ¬ opHash hl (Sum.inr pl) = opHash hr (Sum.inr pr)
+ := by intro H
+       simp [ opHash ]
+       apply hop_neq_left
+       assumption
+
+theorem opHash_neq {hl hr : Hash} {path : PathElem}-- {el er : PathElem}
+  : ¬ (hl = hr) -> ¬ opHash hl path = opHash hr path
   := by
   intro hneq
   unfold opHash
-  cases el with
-  | inl el =>
-    simp
-    cases er with
-    | inl er => simp; apply hop_neq_rigth; assumption
-    | inr er => simp;  apply hop_neq_rl ; assumption
-  | inr el =>
-    simp
-    cases er with
-    | inl er => simp; apply hop_neq_lr ; assumption
-    | inr er => simp;  apply hop_neq_left ; assumption
-
+  cases path with
+  | inl pl => simp; apply hop_neq_right; assumption
+  | inr pl => simp; apply hop_neq_left ; assumption
 
 -- Get the result of applying a path to a hash
 -- Notice that the length of the path is very important
