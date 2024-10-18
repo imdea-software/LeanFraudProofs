@@ -139,7 +139,9 @@ Main file proving that:
 If someone wrongly challenges a posted Merkle Tree, we can defend it and win.
 It is a similar theorem to winning strategies when challenged. But on the other side.
 
-**** [X] Linear games
+**** [ ] Linear games
+Found a bug here. My bad when deffining hash props.
+Fixed, but I made a bug in proof evident.
 **** [ ] Log Games
 **** [ ] Multicut games
 
@@ -161,6 +163,7 @@ from web3 import web3 # hashfunctions.
 
 print(web3.solidity_keccak(['string'],['testing']))
 #+end_src
+**** [ ] Removing opaque types.
 
 *** [ ] Validity Proofs
 *** [ ] IO Interactions

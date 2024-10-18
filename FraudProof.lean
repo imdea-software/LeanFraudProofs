@@ -209,76 +209,154 @@ open BotUpLin
 -- If we know a path of length |gameLength| from |hbot| to |lastH|, |know :Knowing.PathProof gameLength hbot lastH|,
 -- we can build a chooser to play the game, if the proposer proposed a wrong initial hash |headH|.
 
-theorem ChooserGLHeadWrong (gameLength : Nat) (glNZ : 0 < gameLength) :
+-- This theorem is tighter than the other one. It says (when built with the proper arguments)
+-- that the skeleton path proposed by the proposer leads to another value (from the root.)
+theorem ChooserGLHeadWrongSeq (gameLength : Nat) (glNZ : 0 < gameLength) :
     forall
     (headH lastH : Hash)
     (hbot : Hash )
     (proposer : Proposer.HC gameLength)
-    -- Game Invariant
-    -- Hashes were proposed by |proposer|
-    -- (gmInvHead : proposer.pathNode ⟨ 0 , by simp ⟩ = headH)
-    -- (gmInvLast : proposer.pathNode ⟨ gameLength , by simp ⟩ = lastH)
     --
-    (hNEQ : headH != hbot ) -- It is used! Shall I say something to the dev team?
-    -- proposer is not good
-    -- (badH : LosingProposer.notAllGames gameLength proposer)
-    -- We need to know pathproof.
-    (know : Knowing.PathProof gameLength hbot lastH)
+    (hNEQ : headH != hbot )
+    --
+    (knowFrom : Knowing.PathProofSeq gameLength (SeqForget proposer.pathSib) hbot lastH)
     ,
-    HashPathDrop gameLength glNZ proposer (KnowingLinChooser gameLength hbot lastH know) headH lastH
+    HashPathDrop gameLength glNZ proposer (KnowingLinChooserSkl gameLength knowFrom) headH lastH
     = Winner.Chooser
     := by
     induction gameLength with
-    | zero => simp at glNZ
+    | zero => simp at glNZ -- imp case
     | succ pn HInd =>
-      intros hbBad ht hb P badP k
+      intros headH lastH hbot proposer headNEqbot K
       unfold HashPathDrop
-      cases pn with
-      | zero => simp; have gP := k.goodPath; simp at *; -- have pWit := k.pathWit;
-                rw [ Fin.foldl_succ , Fin.foldl_zero ] at gP;
-                rw [ <- gP ]
-                apply opHash_neq
-                assumption
+      cases pn with -- two cases depending where in the path we are.
+      | zero => simp; have gP := K.goodPath; simp at *
+                rw [ Fin.foldl_succ , Fin.foldl_zero] at gP
+                match Hp0 : proposer.pathSib 0 with
+                  | Sum.inl x => rw [ Hp0 ] at gP; simp at gP; rw [ <- gP ]
+                                 apply opHash_neqRight
+                                 assumption
+                  | Sum.inr x => rw [ Hp0 ] at gP; simp at gP; rw [ <- gP ]
+                                 apply opHash_neqLeft
+                                 assumption
       | succ ppn =>
-        simp [KnowingLinChooser] at *
-        cases hKC :  LinChooser (Knowing.inPathProof 0 _ k) (Knowing.inPathProof 1 _ k) hbBad (P.pathNode 1) with
-        | Left => simp; simp [LinChooser] at hKC;
-                  have hbB
-                    : ¬ hbBad = Knowing.inPathProof 0 (by simp) k
-                    := by simpa [ Knowing.inPathProof ]
-                  rw [ ite_cond_eq_false ] at hKC
-                  simp at hKC
-                  unfold Knowing.inPathProof at hKC; rw [ Fin.foldl_succ , Fin.foldl_zero ] at hKC
-                  rw [ hKC ]
-                  apply opHash_neq
-                  assumption
+        simp [ KnowingLinChooserSkl ] at *
+        cases hkC : LinChooser (Knowing.inPathSeq 0 _ K) (Knowing.inPathSeq 1 _ K) headH (proposer.pathNode 1) with
+          | Left => simp; simp [LinChooser] at hkC
+                    have hbB
+                    : ¬ headH = Knowing.inPathSeq 0 (by simp) K
+                    := by simpa [ Knowing.inPathSeq ]
+                    rw [ ite_cond_eq_false ] at hkC
+                    simp at hkC
+                    unfold Knowing.inPathSeq at hkC; rw [ Fin.foldl_succ, Fin.foldl_zero ] at hkC
+                    rw [ hkC ]
+                    simp
+                    match Hp0 : proposer.pathSib 0 with
+                    | Sum.inl x =>
+                                 simp
+                                 apply opHash_neqRight
+                                 assumption
+                    | Sum.inr x =>
+                                 simp
+                                 apply opHash_neqLeft
+                                 assumption
+                    --
+                    { exact eq_false hbB }
+          | Right => simp
+                     unfold LinChooser at hkC
+                     have hbB
+                     : ¬ headH = Knowing.inPathSeq 0 (by simp) K
+                     := by simpa [ Knowing.inPathSeq ]
+                     rw [ ite_cond_eq_true ] at hkC
+                     simp at hkC
+                     have hE := HInd (proposer.pathNode 1) lastH (Knowing.inPathSeq 1 (by simp) K)
+                                      ( Proposer.DropHeadHC proposer )
+                                      hkC (Knowing.DropHCKnowingSeq K)
+                     rw [ <- hE ]
+                     simp [ Chooser.LinPlayer.nextChooser ]
+                     congr
+                     simp [ Knowing.inPathSeq , Knowing.DropHCKnowingSeq]
+                     rw [ Fin.foldl_succ, Fin.foldl_zero ]
+                     apply funext₃
+                     intro p a b
+                     repeat rw [ Fin.foldl_succ ]
+                     simp
+                     congr
 
-                  -- Proof obligations
-                  {exact eq_false hbB}
+                     --
+                     { simpa }
 
-        | Right =>
-                simp
-                unfold LinChooser at hKC
-                have hbB -- |hb| is |Knowing.inPathProof 0 (by simp) k|
-                     : ¬ hbBad = Knowing.inPathProof 0 (by simp) k
-                     := by simpa [ Knowing.inPathProof ]
-                rw [ ite_cond_eq_true ] at hKC
-                simp at hKC
-                have hE := HInd (P.pathNode 1) ht (Knowing.inPathProof 1 (by simp) k)
-                                ( Proposer.DropHeadHC P )
-                                -- ( by simp [ Proposer.DropHeadHC ] )
-                                -- ( by simp [Proposer.DropHeadHC]; assumption )
-                                hKC (Knowing.DropHCKnowing k)
-                rw [ <- hE ]
-                simp [ Chooser.LinPlayer.nextChooser ]
-                congr
-                simp [ Knowing.inPathProof, Knowing.DropHCKnowing ]
-                rw [ Fin.foldl_succ , Fin.foldl_zero ]
-                clear HInd badP hbB hKC -- Removing stuff to see the goal
-                apply funext₃
-                intro p a b
-                repeat rw [ Fin.foldl_succ  (fun acc i ↦ opHash acc (k.pathWit ⟨↑i, (by omega)⟩)) hb ]
-                rfl
-                -- Proof obligations
-                { simpa }
+-- theorem ChooserGLHeadWrong (gameLength : Nat) (glNZ : 0 < gameLength) :
+--     forall
+--     (headH lastH : Hash)
+--     (hbot : Hash )
+--     (proposer : Proposer.HC gameLength)
+--     -- Game Invariant
+--     -- Hashes were proposed by |proposer|
+--     (gmInvHead : proposer.pathNode ⟨ 0 , by simp ⟩ = headH)
+--     (gmInvLast : proposer.pathNode ⟨ gameLength , by simp ⟩ = lastH)
+--     --
+--     (hNEQ : headH != hbot ) -- It is used! Shall I say something to the dev team?
+--     -- proposer is not good
+--     -- (badH : LosingProposer.notAllGames gameLength proposer)
+--     -- We need to know pathproof.
+--     (know : Knowing.PathProof gameLength hbot lastH)
+--     ,
+--     HashPathDrop gameLength glNZ proposer (KnowingLinChooser gameLength hbot lastH know) headH lastH
+--     = Winner.Chooser
+--     := by
+--     induction gameLength with
+--     | zero => simp at glNZ
+--     | succ pn HInd =>
+--       intros hbBad ht hb P Inv1 Inv2 badP k
+--       unfold HashPathDrop
+--       cases pn with
+--       | zero => simp; have gP := k.goodPath; simp at *; -- have pWit := k.pathWit;
+--                 rw [ Fin.foldl_succ , Fin.foldl_zero ] at gP;
+--                 rw [ <- gP ]
+
+--                 apply opHash_neq
+--                 assumption
+--       | succ ppn =>
+--         simp [KnowingLinChooser] at *
+--         cases hKC :  LinChooser (Knowing.inPathProof 0 _ k) (Knowing.inPathProof 1 _ k) hbBad (P.pathNode 1) with
+--         | Left => simp; simp [LinChooser] at hKC;
+--                   have hbB
+--                     : ¬ hbBad = Knowing.inPathProof 0 (by simp) k
+--                     := by simpa [ Knowing.inPathProof ]
+--                   rw [ ite_cond_eq_false ] at hKC
+--                   simp at hKC
+--                   unfold Knowing.inPathProof at hKC; rw [ Fin.foldl_succ , Fin.foldl_zero ] at hKC
+--                   rw [ hKC ]
+--                   apply opHash_neq
+--                   assumption
+
+--                   -- Proof obligations
+--                   {exact eq_false hbB}
+
+--         | Right =>
+--                 simp
+--                 unfold LinChooser at hKC
+--                 have hbB -- |hb| is |Knowing.inPathProof 0 (by simp) k|
+--                      : ¬ hbBad = Knowing.inPathProof 0 (by simp) k
+--                      := by simpa [ Knowing.inPathProof ]
+--                 rw [ ite_cond_eq_true ] at hKC
+--                 simp at hKC
+--                 have hE := HInd (P.pathNode 1) ht (Knowing.inPathProof 1 (by simp) k)
+--                                 ( Proposer.DropHeadHC P )
+--                                 -- ( by simp [ Proposer.DropHeadHC ] )
+--                                 -- ( by simp [Proposer.DropHeadHC]; assumption )
+--                                 hKC (Knowing.DropHCKnowing k)
+--                 rw [ <- hE ]
+--                 simp [ Chooser.LinPlayer.nextChooser ]
+--                 congr
+--                 simp [ Knowing.inPathProof, Knowing.DropHCKnowing ]
+--                 rw [ Fin.foldl_succ , Fin.foldl_zero ]
+--                 clear HInd badP hbB hKC -- Removing stuff to see the goal
+--                 apply funext₃
+--                 intro p a b
+--                 repeat rw [ Fin.foldl_succ  (fun acc i ↦ opHash acc (k.pathWit ⟨↑i, (by omega)⟩)) hb ]
+--                 rfl
+--                 -- Proof obligations
+--                 { simpa }
 end WinningChooser

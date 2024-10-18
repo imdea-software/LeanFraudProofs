@@ -21,6 +21,8 @@ def externalHashing (str : String) : IO String :=
 def combHashing (str1 str2 : String) : IO String :=
   -- str1 ⊕ str2 = H(str1 ++ str2)
   externalHashing (str1.append str2)
+
+
 ------------------------------------------------------------
 
 ------------------------------------------------------------
@@ -28,7 +30,7 @@ def combHashing (str1 str2 : String) : IO String :=
 def main : IO Unit :=
   do
     let enc <- externalHashing "hasheame"
-    IO.println s!"Hello! This is goint to be a simple demo of our humble piece of software"
+    IO.println "Hello! This is goint to be a simple demo of our humble piece of software"
     IO.println s!"Hashed:{enc}"
 
 ------------------------------------------------------------
