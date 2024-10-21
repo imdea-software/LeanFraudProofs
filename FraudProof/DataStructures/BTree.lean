@@ -169,7 +169,4 @@ section BTree
     def buildTree ( v : α ) ( path : TreePath α ) : BTree α :=
         buildTreeN ( BTree.leaf v ) path
     ----------------------------------------
-
-
-
 end BTree

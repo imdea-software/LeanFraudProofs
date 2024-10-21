@@ -2,7 +2,7 @@
 -- Import modules here that should be built as part of the library.
 
 -- Data Structures
-import FraudProof.DataStructures.Value
+-- import FraudProof.DataStructures.Value
 import FraudProof.DataStructures.Hash
 import FraudProof.DataStructures.BTree
 import FraudProof.DataStructures.MTree
@@ -30,12 +30,15 @@ open Proposer
 open WinningProposer
 open BotUpLin
 
+-- Hashes type
+variable {ℍ : Type}
+
 -- ** /Good
-theorem GChalWinsHtoLHashes (gameLength : Nat) :
+theorem GChalWinsHtoLHashes [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ](gameLength : Nat) :
     forall
-    (headH lastH : Hash)
+    (headH lastH : ℍ)
     (proposer : PropHash gameLength headH lastH)
-    (chooser : Chooser.Player),
+    (chooser : Chooser.Player ℍ),
     InitHashPathGameHeadToLast gameLength proposer.pathLenNZ headH lastH proposer.strategies chooser = Winner.Proposer
     := by
     induction gameLength with
@@ -49,7 +52,7 @@ theorem GChalWinsHtoLHashes (gameLength : Nat) :
       unfold HashPathCheckBack
       simp
       cases pn with
-      | zero => simp; exact GCLemmas.GChalOneH _
+      | zero => simp; have ep := @GCLemmas.GChalOneH _ _ hv hr A; rw [ ep ]
       | succ n =>
         simp
         cases D.strategy hv (A.strategies.pathNode ⟨ (n + 1), _ ⟩) hr with
@@ -59,9 +62,9 @@ theorem GChalWinsHtoLHashes (gameLength : Nat) :
           have HI := HN hv ((A.strategies.pathNode ⟨n + 1, by simp⟩)) (GCShifts.DropLast _ hv hr A) D
           unfold GCShifts.DropLast at HI
           simp at HI
-          have eqDropNode := DropLastNodeEq A.strategies
-          have eqDropSib := DropLastSibEq A.strategies
-          have eqInj := HashPathFunInj (by simp) (n + 1) (by simp) (by simp) (DropLastHC A.strategies) A.strategies ( by rw [Fin.forall_iff]; exact eqDropNode ) ( by rw [Fin.forall_iff] ; exact eqDropSib ) D hv (A.strategies.pathNode ⟨ n+1 , by simp ⟩ )
+          have eqDropNode := DropLastNodeEq ℍ A.strategies
+          have eqDropSib := DropLastSibEq ℍ A.strategies
+          have eqInj := HashPathFunInj (by simp) (n + 1) (by simp) (by simp) (DropLastHC ℍ A.strategies) A.strategies ( by rw [Fin.forall_iff]; exact eqDropNode ) ( by rw [Fin.forall_iff] ; exact eqDropSib ) D hv (A.strategies.pathNode ⟨ n+1 , by simp ⟩ )
           rw [ <- eqInj ]
           assumption
         | Right =>
@@ -75,12 +78,15 @@ theorem GChalWinsHtoLHashes (gameLength : Nat) :
           rw [ aroot ] at lastGame
           rw [ <- lastGame ]
 
-theorem GChalWinsHtoL (gameLength : Nat)
-      (v : Value) (mt : MTree)
+theorem GChalWinsHtoL {α ℍ : Type}
+      [BEq ℍ][LawfulBEq ℍ]
+      [m : Hash α ℍ][HashMagma ℍ]
+      (gameLength : Nat)
+      (v : α) (mt : MTree ℍ)
       (proposer : WinningProposer.WinningProp gameLength v mt)
-      (chooser : Chooser.Player)
-      : InitHashPathGameHeadToLast gameLength proposer.pathLenNZ (H v) mt.hash proposer.strategies chooser = Winner.Proposer
-      := GChalWinsHtoLHashes gameLength (H v) mt.hash proposer chooser
+      (chooser : Chooser.Player ℍ)
+      : InitHashPathGameHeadToLast gameLength proposer.pathLenNZ (m.mhash v) mt.hash proposer.strategies chooser = Winner.Proposer
+      := GChalWinsHtoLHashes gameLength (m.mhash v) mt.hash proposer chooser
 
   -- We cannot recover witnesses, because Lean has proof irrelevance hardcoded.
   -- theorem KWinsHtoL ( v : Value ) ( tree : BTree Value ) (vInTree : valueIn v tree)
@@ -89,15 +95,19 @@ theorem GChalWinsHtoL (gameLength : Nat)
   --     _Game = Winner.Proposer
 
 theorem WinningProposer
-    ( v : Value ) ( btree : BTree Value )
-    (path : TreePath Value) (pathNNil : 0 < path.length)
+    {α ℍ : Type}
+    [BEq α][LawfulBEq α]
+    [m : Hash α ℍ][HashMagma ℍ]
+    [BEq ℍ][LawfulBEq ℍ]
+    ( v : α ) ( btree : BTree α )
+    (path : TreePath α) (pathNNil : 0 < path.length)
     ( vInBTree : valueInProof v btree = some path)
-: forall (chooser : Chooser.Player),
-  have winprop := Build.WProposerCreate v btree path pathNNil vInBTree
-  InitHashPathGameHeadToLast path.length pathNNil (H v) (hash_BTree btree).hash winprop.strategies chooser = Winner.Proposer
+: forall (chooser : Chooser.Player ℍ),
+  have winprop := @Build.WProposerCreate ℍ α _ _ _ _ v btree path pathNNil vInBTree
+  InitHashPathGameHeadToLast path.length pathNNil (m.mhash v) (hash_BTree btree).hash winprop.strategies chooser = Winner.Proposer
 :=  by
   intros ch wp
-  exact GChalWinsHtoL path.length v _ _ _
+  exact GChalWinsHtoL path.length v _ wp ch
 
 
 end LinearGame
@@ -109,19 +119,22 @@ namespace LogGame
 open Proposer
 open WinningProposer
 
+variable {ℍ : Type}
+
 -- Predicate to do induction over.
 @[simp]
-def LogWinningProp' (gL : Nat) : Prop :=
+def LogWinningProp' [BEq ℍ][HashMagma ℍ] (gL : Nat) : Prop :=
     forall
-    (headH lastH : Hash)
+    (headH lastH : ℍ)
     (proposer : PropHash gL headH lastH)
-    (chooser : Chooser.Player),
+    (chooser : Chooser.Player ℍ),
     MembershipGame_2STG gL
     proposer.strategies chooser
     proposer.pathLenNZ -- path is not Zero
     headH lastH = Winner.Proposer
 
-theorem PropHashWins (gL : Nat) : LogWinningProp' gL
+theorem PropHashWins [heq : BEq ℍ][LawfulBEq ℍ][mhash : HashMagma ℍ](gL : Nat)
+  : @LogWinningProp' ℍ heq mhash gL
   := @Nat.case_strong_induction_on LogWinningProp' gL
      ( -- Empty base case
      by simp
@@ -160,11 +173,12 @@ namespace LosingProposer
 -- Not necessarily winning choosers.
 open Proposer
 
+variable {ℍ : Type}
 -- One of the properties making /good/ proposers does no hold.
 --
-def notZero (gl : Nat) (P : HC gl)(hZ : Hash) : Prop := P.pathNode ⟨ 0 , by simp ⟩ != hZ
-def notRoot (gl : Nat) (P : HC gl)(hR : Hash) : Prop := P.pathNode ⟨ gl , by simp ⟩ != hR
-def notAllGames (gl : Nat)(P : HC gl) : Prop :=
+def notZero [BEq ℍ](gl : Nat) (P : HC ℍ gl)(hZ : ℍ) : Prop := P.pathNode ⟨ 0 , by simp ⟩ != hZ
+def notRoot [BEq ℍ](gl : Nat) (P : HC ℍ gl)(hR : ℍ) : Prop := P.pathNode ⟨ gl , by simp ⟩ != hR
+def notAllGames [BEq ℍ][HashMagma ℍ](gl : Nat)(P : HC ℍ gl) : Prop :=
   exists (p : Nat)(pRange : p < gl),
     P.pathNode ⟨ p + 1 ,  by simp; assumption ⟩ != opHash (P.pathNode ⟨ p , by omega ⟩ ) (P.pathSib ⟨ p , pRange ⟩)
 
@@ -174,7 +188,7 @@ def notAllGames (gl : Nat)(P : HC gl) : Prop :=
 -- + notRoot, final hash is not correct.
 -- + there is one hash along the way that does not match up: exists p, node[p+1] = node[p] ⊕ sib[p]
 --
-def BadProposer { gl : Nat } (P : HC gl) ( hb ht : Hash ) : Prop
+def BadProposer [BEq ℍ][HashMagma ℍ]{ gl : Nat } (P : HC ℍ gl) ( hb ht : ℍ ) : Prop
     := notZero gl P hb
     ∨ notRoot gl P ht
     ∨ notAllGames gl P
@@ -205,17 +219,20 @@ namespace WinningChooser
 
 open BotUpLin
 
+variable {ℍ : Type}
 -- The following theorem is to prove that
 -- If we know a path of length |gameLength| from |hbot| to |lastH|, |know :Knowing.PathProof gameLength hbot lastH|,
 -- we can build a chooser to play the game, if the proposer proposed a wrong initial hash |headH|.
 
 -- This theorem is tighter than the other one. It says (when built with the proper arguments)
 -- that the skeleton path proposed by the proposer leads to another value (from the root.)
-theorem ChooserGLHeadWrongSeq (gameLength : Nat) (glNZ : 0 < gameLength) :
+theorem ChooserGLHeadWrongSeq
+    [BEq ℍ][LawfulBEq ℍ] [HashMagma ℍ][SLawFulHash ℍ]
+    (gameLength : Nat) (glNZ : 0 < gameLength) :
     forall
-    (headH lastH : Hash)
-    (hbot : Hash )
-    (proposer : Proposer.HC gameLength)
+    (headH lastH : ℍ)
+    (hbot : ℍ )
+    (proposer : Proposer.HC ℍ gameLength)
     --
     (hNEQ : headH != hbot )
     --
@@ -270,7 +287,7 @@ theorem ChooserGLHeadWrongSeq (gameLength : Nat) (glNZ : 0 < gameLength) :
                      rw [ ite_cond_eq_true ] at hkC
                      simp at hkC
                      have hE := HInd (proposer.pathNode 1) lastH (Knowing.inPathSeq 1 (by simp) K)
-                                      ( Proposer.DropHeadHC proposer )
+                                      ( Proposer.DropHeadHC ℍ proposer )
                                       hkC (Knowing.DropHCKnowingSeq K)
                      rw [ <- hE ]
                      simp [ Chooser.LinPlayer.nextChooser ]

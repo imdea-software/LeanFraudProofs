@@ -1,4 +1,9 @@
+
+namespace ValueString
+
 abbrev Value := String
+
+end ValueString
 
 -- opaque ValEq : Value -> Value -> Bool
 

@@ -21,32 +21,35 @@ namespace Proposer
 --     -- the missing hash.
 --     final : Hash → Hash → Hash
 
+--  Hash Type
+variable (ℍ : Type)
+
 -- *** Hash Strategies structure
 structure HC (n : Nat) where
   -- Hashes along the way
-  pathNode : Fin ( n + 1 ) -> Hash
+  pathNode : Fin ( n + 1 ) -> ℍ
   -- Path elem knows how to hash.
-  pathSib : Fin n -> PathElem
+  pathSib : Fin n -> PathElem ℍ
 
-def DropHeadHC {n : Nat}(hc : HC (n+1)) : HC n :=
+def DropHeadHC {n : Nat}(hc : HC ℍ (n+1)) : HC ℍ n :=
   { pathNode := fun fn => match fn with
                 | Fin.mk nV nLt => hc.pathNode ⟨ nV + 1, by simp; assumption ⟩
   , pathSib := fun fn => match fn with
                 | Fin.mk nV nLt => hc.pathSib ⟨ nV + 1, by simp; assumption ⟩
   }
 
-lemma DropHeadEq {n : Nat}( hc : HC n.succ )
+lemma DropHeadEq {n : Nat}( hc : HC ℍ n.succ )
      : forall (m : Nat) (mLt : m < n + 1)
-     , hc.pathNode ⟨ m.succ , by simpa ⟩ = (DropHeadHC hc).pathNode ⟨ m , mLt ⟩
+     , hc.pathNode ⟨ m.succ , by simpa ⟩ = (DropHeadHC ℍ hc).pathNode ⟨ m , mLt ⟩
      := by intros m mLt; simp [DropHeadHC]
 
 
-lemma DropHeadEqSib {n : Nat} ( hc : HC n.succ.succ )
+lemma DropHeadEqSib {n : Nat} ( hc : HC ℍ n.succ.succ )
       : forall (m : Nat) (mLt : m < n+1)
-      , hc.pathSib ⟨ m.succ , by simpa ⟩ = (DropHeadHC hc).pathSib ⟨ m , mLt ⟩
+      , hc.pathSib ⟨ m.succ , by simpa ⟩ = (DropHeadHC ℍ hc).pathSib ⟨ m , mLt ⟩
       := by intros m mLt; simp [DropHeadHC]
 
-def DropLastHC {n : Nat} ( hc : HC (n+1) ) : HC n :=
+def DropLastHC {n : Nat} ( hc : HC ℍ (n+1) ) : HC ℍ n :=
  { pathNode := fun fn => match fn with
                          | Fin.mk nV nLt => hc.pathNode ⟨ nV , by exact Nat.lt_succ_of_lt nLt⟩
  , pathSib := fun fn => match fn with
@@ -54,7 +57,7 @@ def DropLastHC {n : Nat} ( hc : HC (n+1) ) : HC n :=
  }
 
 -- Take m out of n from strategies arrays.
-def takeHC {n : Nat}(m : Nat) (mLtn : m < n + 1) (hc : HC n) : HC m :=
+def takeHC {n : Nat}(m : Nat) (mLtn : m < n + 1) (hc : HC ℍ n) : HC ℍ m :=
 { pathNode :=
   fun p => match p with
            | ⟨ pVal, pLt ⟩ => hc.pathNode ⟨ pVal, by omega⟩
@@ -64,7 +67,7 @@ def takeHC {n : Nat}(m : Nat) (mLtn : m < n + 1) (hc : HC n) : HC m :=
 }
 
 -- Drop
-def dropHC {n : Nat} (m : Nat) (mLtn : m < n + 1) (hc : HC n) : HC (n - m) :=
+def dropHC {n : Nat} (m : Nat) (mLtn : m < n + 1) (hc : HC ℍ n) : HC ℍ (n - m) :=
 { pathNode :=
   fun p => match p with
            | ⟨ pVal, pLt ⟩ => hc.pathNode ⟨ m + pVal, by omega⟩
@@ -74,71 +77,73 @@ def dropHC {n : Nat} (m : Nat) (mLtn : m < n + 1) (hc : HC n) : HC (n - m) :=
 }
 
 -- checking I am doing the right math
-lemma LastFirst (m n : Nat) (mLtn : m < n + 1) (hc : HC n)
-      : (takeHC m mLtn hc).pathNode ⟨ m , by omega ⟩ = (dropHC m mLtn hc).pathNode ⟨ 0 , by omega ⟩
+lemma LastFirst (m n : Nat) (mLtn : m < n + 1) (hc : HC ℍ n)
+      : (takeHC ℍ m mLtn hc).pathNode ⟨ m , by omega ⟩ = (dropHC ℍ m mLtn hc).pathNode ⟨ 0 , by omega ⟩
       := by simp [takeHC , dropHC]
 
-lemma DropLastNodeEq { n : Nat }( hc : HC (n+1))
+lemma DropLastNodeEq { n : Nat }( hc : HC ℍ (n+1))
       : forall (m : Nat) ( mLt : m < n+1 ),
       hc.pathNode ⟨ m , by apply Nat.lt_succ_of_lt; assumption⟩
-      = (DropLastHC hc).pathNode ⟨ m , mLt ⟩
+      = (DropLastHC ℍ hc).pathNode ⟨ m , mLt ⟩
       := by
       intros m mLt
       unfold DropLastHC
       simp
 
-lemma DropLastSibEq { n : Nat }( hc : HC (n+1))
+lemma DropLastSibEq { n : Nat }( hc : HC ℍ (n+1))
       : forall (m : Nat) ( mLt : m < n), hc.pathSib ⟨ m , by trans n ; assumption; simp⟩
-      = (DropLastHC hc).pathSib ⟨ m , mLt ⟩
+      = (DropLastHC ℍ hc).pathSib ⟨ m , mLt ⟩
       := by
       unfold DropLastHC
       intros m mLt
       simp
-
---
-structure  Player ( gameLength : Nat) where
-    -- Leaf value
-    value : Value
-    -- Hash Strategies
-    hashStr : HC gameLength
 
 -- Generic Proposer structure
-structure IPlayer (cut len : Nat)(hb ht : Hash) where
-  str : Fin len -> Hash
+structure IPlayer (cut len : Nat)(hb ht : ℍ) where
+  str : Fin len -> ℍ
 
-----------------------------------------------------------------------
+structure  Player (α :Type) ( gameLength : Nat) where
+    -- Leaf value
+    value : α
+    -- Hash Strategies
+    hashStr : HC ℍ gameLength
+
 end Proposer
+----------------------------------------------------------------------
 
-namespace Chooser
 ----------------------------------------------------------------------
 -- ** Choosers choose between two different ranges.
 -- So we define the two possible moves as
+namespace Chooser
+
 inductive Side : Type :=
     | Left
     | Right
 
+
+variable (ℍ : Type)
 -- Chooser players chose between hashes at each moment.
 structure Player where
     -- Strategy, given two ranges of hashes chosses one.
     -- [Hbot, Hmid] , [Hmid, Htop] -> Left/Right
-    strategy : Hash → Hash → Hash → Side
+    strategy : ℍ → ℍ → ℍ → Side
 
 -- Generic Chooser structure
-structure IPlayer (cut len : Nat)(hb ht : Hash) where
-  str : Hash -> Side
+structure IPlayer (cut len : Nat)(hb ht : ℍ) where
+  str : ℍ -> Side
 
 -- Lin Player is a family of straties, one for each step!
 -- it is an array of functions choosing sides!
 structure LinPlayer (len : Nat) where
-  strategy : Fin len -> Hash → Hash → Side
+  strategy : Fin len -> ℍ → ℍ → Side
 
 @[simp]
-def LinPlayer.chooseNow {len : Nat} (lNZ : 0 < len) : LinPlayer len -> Hash -> Hash -> Side
+def LinPlayer.chooseNow {len : Nat} (lNZ : 0 < len) : LinPlayer ℍ len -> ℍ -> ℍ -> Side
  := fun p => p.strategy ⟨ 0 , lNZ ⟩
 
 -- Next chooser definition. Notice that I did the same with the Proposer.
 -- @[simp]
-def LinPlayer.nextChooser {len : Nat} (C : LinPlayer (len + 1)) : LinPlayer len
+def LinPlayer.nextChooser {len : Nat} (C : LinPlayer ℍ (len + 1)) : LinPlayer ℍ len
   := { strategy := fun p => match p with
                         | ⟨ val , lt ⟩ => C.strategy ⟨ val + 1 , by simpa ⟩}
 
@@ -149,57 +154,59 @@ end Chooser
 namespace Knowing
 -- Knowing a path means to provide all required hashes such that we can build a
 -- path in the merkle tree
-structure PathProof (len : Nat) (hhd htl : Hash) where
-  pathWit : Fin len -> PathElem -- array of positioned hashes of length |len|
-  goodPath : Fin.foldl len (fun acc p => opHash acc ( pathWit p )) hhd = htl
 
-structure PathProofSeq (len : Nat) (skl : Fin len -> Unit ⊕ Unit ) (hhd htl : Hash) where
-  pathWit : Fin len -> Hash -- array of positioned hashes of length |len|
-  goodPath : Fin.foldl len
-             (fun acc p => opHash acc ( match skl p with -- map
-                                        | Sum.inl _ => Sum.inl (pathWit p)
-                                        | Sum.inr _ => Sum.inr (pathWit p)
-                                       )) hhd
-             = htl
+  variable {ℍ : Type}
+  structure PathProof [HashMagma ℍ](len : Nat) (hhd htl : ℍ) where
+    pathWit : Fin len -> PathElem ℍ -- array of positioned hashes of length |len|
+    goodPath : Fin.foldl len (fun acc p => opHash acc ( pathWit p )) hhd = htl
 
-def inPathSeq { len : Nat } (p : Nat) ( pLt : p < len + 1)
-    {skl : Fin len -> SkElem}{ hl ht : Hash } ( pProof : PathProofSeq len skl hl ht )
-  : Hash
-  := Fin.foldl p ( fun acc i => opHash acc ( (skl ⟨ i.val , by omega⟩).fill $ pProof.pathWit ⟨ i.val , by omega ⟩)) hl
+  structure PathProofSeq [HashMagma ℍ](len : Nat) (skl : Fin len -> Unit ⊕ Unit ) (hhd htl : ℍ) where
+    pathWit : Fin len -> ℍ -- array of positioned hashes of length |len|
+    goodPath : Fin.foldl len
+              (fun acc p => opHash acc ( match skl p with -- map
+                                          | Sum.inl _ => Sum.inl (pathWit p)
+                                          | Sum.inr _ => Sum.inr (pathWit p)
+                                        )) hhd
+              = htl
 
--- PathNode
-def inPathProof { len : Nat }  (p : Nat) ( pLt : p < len + 1) { hl ht : Hash } ( pProof : PathProof len hl ht )
-  : Hash
-  := Fin.foldl p ( fun acc i => opHash acc ( pProof.pathWit ⟨ i.val , by omega ⟩)) hl
+  def inPathSeq { len : Nat } [HashMagma ℍ](p : Nat) ( pLt : p < len + 1)
+      {skl : Fin len -> SkElem}{ hl ht : ℍ } ( pProof : PathProofSeq len skl hl ht )
+    : ℍ
+    := Fin.foldl p ( fun acc i => opHash acc ( (skl ⟨ i.val , by omega⟩).fill $ pProof.pathWit ⟨ i.val , by omega ⟩)) hl
 
-def DropHCKnowingSeq {l : Nat} {skl : Fin (l + 1) -> SkElem} { hd ht : Hash }
-  (p : PathProofSeq (l + 1) skl hd ht)
-  : PathProofSeq l (fun p => match p with
-                            | ⟨ val , Lt ⟩ => skl ⟨ val + 1, by omega ⟩) (inPathSeq 1 (by simp ) p) ht
-  := {
-  pathWit := fun w => match w with
-                      | ⟨ pVal, Lt ⟩ => p.pathWit ⟨ pVal + 1 , by omega ⟩
-  , goodPath := by
-    have pG := p.goodPath
-    rw [ Fin.foldl_succ ] at pG
-    unfold inPathSeq
-    simp
-    rw [ Fin.foldl_succ, Fin.foldl_zero ]
-    simp at *
-    assumption
-}
-def DropHCKnowing {l : Nat} { hd ht : Hash }
-  (p : PathProof (l + 1) hd ht)
-  : PathProof l (inPathProof 1 (by simp ) p) ht
-  := { pathWit := fun w => match w with
-                           | ⟨ pVal , pLt ⟩ => p.pathWit ⟨ pVal + 1, by omega ⟩
-     , goodPath := by
-                have pG := p.goodPath
-                rw [ Fin.foldl_succ ] at pG
-                unfold inPathProof
-                simp
-                rw [ Fin.foldl_succ, Fin.foldl_zero ]
-                assumption
+  -- PathNode
+  def inPathProof { len : Nat } [HashMagma ℍ]  (p : Nat) ( pLt : p < len + 1) { hl ht : ℍ } ( pProof : PathProof len hl ht )
+    : ℍ
+    := Fin.foldl p ( fun acc i => opHash acc ( pProof.pathWit ⟨ i.val , by omega ⟩)) hl
+
+  def DropHCKnowingSeq {l : Nat} {skl : Fin (l + 1) -> SkElem} { hd ht : ℍ }[HashMagma ℍ]
+    (p : PathProofSeq (l + 1) skl hd ht)
+    : PathProofSeq l (fun p => match p with
+                              | ⟨ val , Lt ⟩ => skl ⟨ val + 1, by omega ⟩) (inPathSeq 1 (by simp ) p) ht
+    := {
+    pathWit := fun w => match w with
+                        | ⟨ pVal, Lt ⟩ => p.pathWit ⟨ pVal + 1 , by omega ⟩
+    , goodPath := by
+      have pG := p.goodPath
+      rw [ Fin.foldl_succ ] at pG
+      unfold inPathSeq
+      simp
+      rw [ Fin.foldl_succ, Fin.foldl_zero ]
+      simp at *
+      assumption
+  }
+  def DropHCKnowing {l : Nat} { hd ht : ℍ }[HashMagma ℍ]
+    (p : PathProof (l + 1) hd ht)
+    : PathProof l (inPathProof 1 (by simp ) p) ht
+    := { pathWit := fun w => match w with
+                            | ⟨ pVal , pLt ⟩ => p.pathWit ⟨ pVal + 1, by omega ⟩
+       , goodPath := by
+                  have pG := p.goodPath
+                  rw [ Fin.foldl_succ ] at pG
+                  unfold inPathProof
+                  simp
+                  rw [ Fin.foldl_succ, Fin.foldl_zero ]
+                  assumption
        }
 
 -- abbrev PathSch := List (Unit ⊕ Unit)

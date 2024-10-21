@@ -1,39 +1,70 @@
 import FraudProof.DataStructures.Value
 
--- Hash definitions?
-abbrev Hash := String
+----------------------------------------
+-- * Generic Hash Function (for us)
+-- Hash from |v| to |h|
+-- plus a comb function.
+@[class] structure Hash (α ℍ : Type) where
+  mhash : α -> ℍ
+@[class] structure HashMagma (ℍ : Type) where
+  comb : ℍ -> ℍ -> ℍ
 
-@[class] structure SHashDefOp (v h : Type) where
-  hash : v -> h
-  comb : h -> h -> h
+-- def impComp {α β : Type}{hStr : SHashDefOp α β} : β -> β -> β := hStr.comb
+-- infix:65 " ⊕ " => impComp -- left-assoc
 
-@[class] structure SLawFulHash (v h : Type) where
-  hops : SHashDefOp v h
-  -- No collisitions?
-  noCollisions : forall (a b : v), a ≠ b -> hops.hash a ≠ hops.hash b
-  -- NeqLeft
-  neqLeft : forall (a1 a2 b : h), a1 ≠ a2 -> hops.comb a1 b ≠ hops.comb a2 b
-  neqRight : forall (a b1 b2 : h), b1 ≠ b2 -> hops.comb a b1 ≠ hops.comb a b2
+@[class] structure CollResistant (α ℍ : Type)[op : Hash α ℍ] where
+  -- Collision resistant? It should be hard to find these guys.
+  noCollisions : forall (a b : α), a ≠ b -> op.mhash a ≠ op.mhash b
 
+-- Lawful versions
+@[class] structure SLawFulHash (ℍ : Type)[m : HashMagma ℍ] where
+  -- Combine diff hashes are diff.
+  neqLeft : forall (a1 a2 b1 b2 : ℍ), a1 ≠ a2 -> m.comb a1 b1 ≠ m.comb a2 b2
+  neqRight : forall (a1 a2 b1 b2 : ℍ), b1 ≠ b2 -> m.comb a1 b1 ≠ m.comb a2 b2
 
--- Assume there is a way to combine hashes
-opaque Hash_Comb : Hash → Hash → Hash
-infix:65 " ⊕ " => Hash_Comb -- left-assoc
+----------------------------------------
 
-opaque H : Value → Hash
+----------------------------------------
+-- * Original Hash Definitions
+-- We proved almost everything assuming opaque types and stuff.
+namespace StringHash
 
--- We assume there are no collisions.
-axiom hash_prop (v1 v2 : Value) : v1 ≠ v2 → H v1 ≠ H v2
+  open ValueString
 
-axiom hop_neq_left {al ar bl br : Hash}
-  : ¬ al = bl -> ¬ Hash_Comb al ar = bl ⊕ br
+  abbrev Hash := String
 
-axiom hop_neq_right {al ar bl br : Hash}
-  : ¬ (ar = br) -> ¬ (Hash_Comb al ar = Hash_Comb bl br)
+  -- Assume there is a way to combine hashes
+  opaque Hash_Comb : Hash → Hash → Hash
+  -- infix:65 " ⊕ " => Hash_Comb -- left-assoc
 
--- These two are nonsense!
--- axiom hop_neq_lr {al ar bl br : Hash}
---   : ¬ (al = br) -> ¬ (Hash_Comb al ar = Hash_Comb bl br)
+  opaque H : Value → Hash
 
--- axiom hop_neq_rl {al ar bl br : Hash}
---   : ¬ (ar = bl) -> ¬ (Hash_Comb al ar = Hash_Comb bl br)
+  -- We assume there are no collisions.
+  axiom hash_prop (v1 v2 : Value) : v1 ≠ v2 → H v1 ≠ H v2
+
+  axiom hop_neq_left {al ar bl br : Hash}
+    : ¬ al = bl -> ¬ Hash_Comb al ar = Hash_Comb bl br
+
+  axiom hop_neq_right {al ar bl br : Hash}
+    : ¬ (ar = br) -> ¬ (Hash_Comb al ar = Hash_Comb bl br)
+
+end StringHash
+
+----------------------------------------
+-- * Old definitions as news
+--
+
+namespace HashString
+  abbrev StrHash (α : Type) := Hash α String
+  -- abbrev LawFulStrHash (α : Type)(m : HashMagma String) := @SLawFulHash String m String
+
+  open ValueString
+  abbrev PlainHash := Hash String String
+  -- abbrev LawFulPlain (m : HashMagma ℍ):= @SLawFulHash String m String
+  -- #check LawFulPlain
+
+end HashString
+
+----------------------------------------
+-- Useful names
+----------------------------------------
