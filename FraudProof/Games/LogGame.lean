@@ -5,7 +5,7 @@ import FraudProof.Games.OneStepGame
 
 -- Utils and definitions
 import FraudProof.DataStructures.MTree
-import FraudProof.DataStructures.Hash
+  import FraudProof.DataStructures.Hash
 
 -- I am sure there is a Lean way to do this.
 -- Instead of using axioms, I use 'sorry lemmas' so we can prove them later.
@@ -14,12 +14,14 @@ lemma midLtBot {a b : Nat} : a + 1 < b -> a < (a + b) / 2 := by omega
 lemma eq_of_lt {a b : Nat} : a < b -> ¬ ( a + 1 < b ) -> a + 1 = b := by omega
 
 -- Game description that works, second stage.
-def MembershipGame_2STG (pathLen : Nat) (A : Proposer.HC pathLen) (D : Chooser.Player)
+def MembershipGame_2STG {ℍ : Type}
+    [BEq ℍ][HashMagma ℍ]
+    (pathLen : Nat) (A : Proposer.HC ℍ pathLen) (D : Chooser.Player ℍ)
     (pNZ : 0 < pathLen)
     -- → ( H_bot : p_bot < p_top )
     -- → ( H_top : p_top < n + 1 )
     -- →
-    (h_bot h_top : Hash) : Winner
+    (h_bot h_top : ℍ) : Winner
     :=
     match pathLen with
     -- Impossible case
@@ -30,8 +32,8 @@ def MembershipGame_2STG (pathLen : Nat) (A : Proposer.HC pathLen) (D : Chooser.P
       let mid := (g / 2) + 1
       have midLtGL : mid < g.succ.succ := by omega
       let h_mid := A.pathNode ⟨ mid , by apply Nat.lt_succ_of_lt; assumption ⟩
-      let left_Proposer := Proposer.takeHC mid (by omega) A
-      let right_Proposer := Proposer.dropHC mid (by omega) A
+      let left_Proposer := Proposer.takeHC ℍ mid (by omega) A
+      let right_Proposer := Proposer.dropHC ℍ mid (by omega) A
         match D.strategy h_bot h_mid h_top with
             | Chooser.Side.Left =>
                 MembershipGame_2STG mid left_Proposer D (by simp) h_bot h_mid
@@ -52,5 +54,7 @@ def MembershipGame_2STG (pathLen : Nat) (A : Proposer.HC pathLen) (D : Chooser.P
 
 -- Protocol
 -- Note Cesar add value to the interface or change the name?
-def MembershipGame (n : Nat) (nNZ : 0 < n) (A : Proposer.HC n) (D : Chooser.Player) (bHash tHash : Hash) : Winner
+def MembershipGame {ℍ : Type}
+    [BEq ℍ][HashMagma ℍ]
+    (n : Nat) (nNZ : 0 < n) (A : Proposer.HC ℍ n) (D : Chooser.Player ℍ) (bHash tHash : ℍ) : Winner
   := MembershipGame_2STG n A D nNZ bHash tHash

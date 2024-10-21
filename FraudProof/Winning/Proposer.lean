@@ -1,5 +1,5 @@
 -- Definitions
-import FraudProof.DataStructures.Value
+-- import FraudProof.DataStructures.Value
 import FraudProof.DataStructures.MTree
 import FraudProof.DataStructures.Hash
 
@@ -22,19 +22,19 @@ open Proposer
 --  Winning Proposer Definition!
 namespace WinningProposer
 
-
 section GoodProp
+  variable {ℍ : Type}
   variable (n : Nat)
-  variable (Player : HC n)
+  variable (Player : HC ℍ n)
 
   @[simp]
-  def GoodInit (h : Hash) := Player.pathNode 0 = h
+  def GoodInit (h : ℍ) := Player.pathNode 0 = h
 
   @[simp]
-  def GoodRoot (h : Hash ) := Player.pathNode ⟨ n , by simp ⟩ = h
+  def GoodRoot (h : ℍ ) := Player.pathNode ⟨ n , by simp ⟩ = h
 
   @[simp]
-  def GoodMid  :=
+  def GoodMid [HashMagma ℍ]:=
     forall (m : Nat) (mLtn : m < n ),
     Player.pathNode ⟨ (m + 1) , by apply Nat.succ_lt_succ;assumption⟩ =
     opHash ( Player.pathNode ⟨ m , by apply Nat.lt_add_one_of_lt; assumption ⟩) ( Player.pathSib ⟨ m , mLtn ⟩ )
@@ -47,11 +47,11 @@ end GoodProp
 -- Hash |hr| is the hash of |mt|.
 -- Another definition is that |PropHash n hv hr| is a path from |hv| to |hr| of
 -- length |n|.
-structure PropHash (pathLen : Nat) (hv hr : Hash) where
+structure PropHash {ℍ : Type}[HashMagma ℍ](pathLen : Nat) (hv hr : ℍ) where
   -- The path is grater than 0. Otherwise, we don't have a tree.
   pathLenNZ : 0 < pathLen
   -- We have a strategy.
-  strategies : HC pathLen
+  strategies : HC ℍ pathLen
   -- First node in our path is hash |hv|
   nodeZero : GoodInit pathLen strategies hv
   -- Last node in our path is hash |hr|
@@ -60,10 +60,10 @@ structure PropHash (pathLen : Nat) (hv hr : Hash) where
   allGames : GoodMid pathLen strategies
 
 -- Higher definition linking the intuition stated before.
-def WinningProp (pathLen : Nat) (v : Value) (mt : MTree)
-   := PropHash pathLen (H v) mt.hash
+def WinningProp {α ℍ : Type}[m : Hash α ℍ][HashMagma ℍ](pathLen : Nat) (v : α) (mt : MTree ℍ)
+   := PropHash pathLen (m.mhash v) mt.hash
 
-lemma WinningOne {hb ht : Hash} (P : PropHash 1 hb ht)
+lemma WinningOne {ℍ : Type}[HashMagma ℍ]{hb ht : ℍ} (P : PropHash 1 hb ht)
       : opHash hb (P.strategies.pathSib ⟨ 0 , by omega ⟩) = ht
       := by
         match P with
@@ -87,10 +87,12 @@ namespace GCShifts
 -- Drop Head, Drop Last
 open WinningProposer
 
-def DropHead (pLen : Nat) (hv hr : Hash)(A : PropHash (pLen + 1 + 1) hv hr) :
+variable {ℍ : Type}
+
+def DropHead [HashMagma ℍ](pLen : Nat) (hv hr : ℍ)(A : PropHash (pLen + 1 + 1) hv hr) :
   PropHash (pLen+1) (A.strategies.pathNode ⟨ 1 , by simp ⟩) hr :=
   { pathLenNZ := by simp
-  , strategies := DropHeadHC A.strategies
+  , strategies := DropHeadHC ℍ A.strategies
   , nodeZero := by
              unfold GoodInit
              unfold DropHeadHC
@@ -108,10 +110,10 @@ def DropHead (pLen : Nat) (hv hr : Hash)(A : PropHash (pLen + 1 + 1) hv hr) :
              exact A.allGames (m+1) (by simp; assumption)
   }
 
-def DropLast (pLen : Nat) (hv hr : Hash) (A : PropHash (pLen + 1 + 1) hv hr)
+def DropLast [HashMagma ℍ](pLen : Nat) (hv hr : ℍ) (A : PropHash (pLen + 1 + 1) hv hr)
   : PropHash (pLen + 1) hv (A.strategies.pathNode ⟨ pLen + 1, by simp ⟩) :=
   { pathLenNZ := by simp
-  , strategies := DropLastHC A.strategies
+  , strategies := DropLastHC ℍ A.strategies
   , nodeZero := by
              unfold DropLastHC
              simp
@@ -134,8 +136,9 @@ namespace GCOps
 -- We should merge with the above section, but for now I'll keep it split.
 
 open WinningProposer
+variable {ℍ : Type}
 
-def eqLength {hb ht : Hash} (n m : Nat) (eqnm : n = m) (P : PropHash n hb ht)
+def eqLength [HashMagma ℍ]{hb ht : ℍ} (n m : Nat) (eqnm : n = m) (P : PropHash n hb ht)
   : PropHash m hb ht
   := { pathLenNZ := by rw [ <- eqnm]; exact P.pathLenNZ
      , strategies :=
@@ -158,11 +161,11 @@ def eqLength {hb ht : Hash} (n m : Nat) (eqnm : n = m) (P : PropHash n hb ht)
                       exact pAG w (by omega)
 }
 
-def take_proposer {hb ht : Hash} (m n : Nat) (mNZ : 0 < m) (hmn : m < n + 1 )
+def take_proposer [HashMagma ℍ]{hb ht : ℍ} (m n : Nat) (mNZ : 0 < m) (hmn : m < n + 1 )
   (P : PropHash n hb ht)
  : PropHash m hb (P.strategies.pathNode ⟨ m , by assumption ⟩)
  := { pathLenNZ := mNZ
-    , strategies := Proposer.takeHC m (by omega) P.strategies
+    , strategies := Proposer.takeHC ℍ m (by omega) P.strategies
     , nodeZero := by have pNodeZ := P.nodeZero
                      simp [takeHC] at *
                      assumption
@@ -173,11 +176,11 @@ def take_proposer {hb ht : Hash} (m n : Nat) (mNZ : 0 < m) (hmn : m < n + 1 )
                      exact pAllGames w (by omega)
 }
 
-def drop_proposer {hb ht: Hash} (m n : Nat) (hmn : m < n)
+def drop_proposer [HashMagma ℍ]{hb ht: ℍ} (m n : Nat) (hmn : m < n)
   (P : PropHash n hb ht)
   : PropHash (n - m) (P.strategies.pathNode ⟨ m , by omega ⟩) ht
   := { pathLenNZ := by omega
-     , strategies := dropHC m (by omega) P.strategies
+     , strategies := dropHC ℍ m (by omega) P.strategies
      , nodeZero := by simp [ dropHC ]
      , nodeRoot := by have lt := P.nodeRoot
                       simp [ dropHC] at *
@@ -194,7 +197,8 @@ def drop_proposer {hb ht: Hash} (m n : Nat) (hmn : m < n)
 end GCOps
 
 namespace GCLemmas
-  lemma GChalOneH { hv hr : Hash } ( gc : WinningProposer.PropHash 1 hv hr):
+  variable {ℍ : Type}
+  lemma GChalOneH [HashMagma ℍ]{ hv hr : ℍ } ( gc : WinningProposer.PropHash 1 hv hr):
     opHash hv (gc.strategies.pathSib 0) = hr
     := by
     cases gc with
@@ -217,57 +221,58 @@ end GCLemmas
 namespace OldLemmas
 -- Strategy definitions.
 ----------------------------------------
+variable {ℍ : Type}
 -- Definition of an array of hashes based on a path.
 -- It defines hashes in a path.
 -- @[simp]
-def NodeHashPathF ( hv : Hash ) ( path : Path ) (n : Fin (path.length + 1)) : Hash
+def NodeHashPathF [HashMagma ℍ]( hv : ℍ ) ( path : Path ℍ) (n : Fin (path.length + 1)) : ℍ
 := match n with
   | Fin.mk nval nproof =>
     (ScanPath hv path)[nval]'( by unfold ScanPath; rw [ List.length_scanl ]; assumption )
 
 -- Same as before, but with out Fin.
-def NodeHashPath ( hv : Hash ) ( path : Path ) ( n : Nat ) ( nLt : n < (path.length + 1) ) : Hash :=
+def NodeHashPath [HashMagma ℍ]( hv : ℍ ) ( path : Path ℍ) ( n : Nat ) ( nLt : n < (path.length + 1) ) : ℍ :=
   have nL : n < (ScanPath hv path).length := by unfold ScanPath; rw [ List.length_scanl ]; assumption
   (ScanPath hv path)[n]
 
 -- Similar to the nodes, proposers may be required to provide sibling hashes.
 @[simp]
-def SibsF' { m : Nat} (path : Path) {eqLen : m = path.length} (n : Fin m) : PathElem
+def SibsF' { m : Nat} (path : Path ℍ) {eqLen : m = path.length} (n : Fin m) : PathElem ℍ
   := match n with
   | Fin.mk nVal nLt => List.get path ⟨ nVal , by rw [ <- eqLen ]; exact nLt ⟩
-def Sibs ( path : Path ) ( n : Nat ) ( nLpath : n < path.length ) : PathElem :=
+def Sibs ( path : Path ℍ) ( n : Nat ) ( nLpath : n < path.length ) : PathElem ℍ :=
    path[n]
 ----------------------------------------
 
 ----------------------------------------
 -- Lemmas
 @[simp]
-lemma SibsF0 ( p : PathElem ) (path : Path) : @SibsF' _ (p :: path) rfl ⟨ 0 , by simp ⟩ = p := by {
+lemma SibsF0 ( p : PathElem ℍ) (path : Path ℍ) : @SibsF' _ _ (p :: path) rfl ⟨ 0 , by simp ⟩ = p := by {
   unfold SibsF'
   simp
 }
 
 @[simp]
-lemma Sibs0 ( p : PathElem ) (path : Path) {pl : 0 < (p::path).length}:
+lemma Sibs0 ( p : PathElem ℍ ) (path : Path ℍ) {pl : 0 < (p::path).length}:
   Sibs (p :: path) 0 pl = p := by
   unfold Sibs
   simp
 
 @[simp]
-lemma hachChainF0 hv ps : NodeHashPathF hv ps 0 = hv := by
+lemma hachChainF0 [o : HashMagma ℍ] hv ps : @NodeHashPathF ℍ o hv ps 0 = hv := by
   unfold NodeHashPathF
   unfold ScanPath
   simp
 
 @[simp]
-lemma hachChain0 hv ps pLt : NodeHashPath hv ps 0 pLt = hv := by
+lemma hachChain0 [o : HashMagma ℍ] hv ps pLt : @NodeHashPath ℍ o hv ps 0 pLt = hv := by
   unfold NodeHashPath
   simp
 
-lemma hashChainF ps ( n : Fin ps.length ) :
-  ( hv : Hash ) ->
+lemma hashChainF [HashMagma ℍ] ps ( n : Fin ps.length ) :
+  ( hv : ℍ ) ->
   NodeHashPathF hv ps { val := n.val + 1, isLt := by simp}
-  = opHash ( NodeHashPathF hv ps n ) (@SibsF' _ ps (by simp) n) := by
+  = opHash ( NodeHashPathF hv ps n ) (@SibsF' ℍ _ ps (by simp) n) := by
   unfold NodeHashPathF
   unfold ScanPath
   induction ps with
@@ -292,14 +297,14 @@ lemma hashChainF ps ( n : Fin ps.length ) :
     assumption
 
 
-lemma hashChain  ps :
+lemma hashChain [HashMagma ℍ]  ps :
   (n : Nat) ->
   -- Proof irrelevance ??
   (nLt : n < ps.length ) ->
   (NSuccLt : n + 1 < ps.length + 1 ) ->
   (NLtSucc : n < ps.length + 1 ) ->
   --
-  ( hv : Hash ) ->
+  ( hv : ℍ ) ->
   NodeHashPath hv ps (n + 1) NSuccLt -- ( by simp; assumption )
   = opHash ( NodeHashPath hv ps n NLtSucc) -- ( by trans ps.length; assumption; simp) )
            (Sibs ps n nLt ) -- ( by assumption )
@@ -344,97 +349,98 @@ def Drop0 { α : Type } {n : Nat} ( f : Fin (n + 1) → α ) : Fin n → α :=
 
 ----------------------------------------------------------------------
 namespace Build
-section HashProposer
-  -- Let |h| be a |Hash| and |path| a path in the tree leading to a value |v|,
-  -- such that |H v| = |h|
-  variable (h : Hash)
-  -- variable (path : TreePath Value)
-  variable (path : Path)
+variable (ℍ : Type)
+    section HashProposer
+    -- Let |h| be a |Hash| and |path| a path in the tree leading to a value |v|,
+    -- such that |H v| = |h|
+    variable (h : ℍ)
+    -- variable (path : TreePath Value)
+    variable (path : Path ℍ)
 
-  -- Definition!
-  def HPlayer : HC path.length
-    :=
-    -- let pathElem : Path := treeTohashPath path
-    -- have eqLen : pathElem.length = path.length := by exact List.length_map _ _
-    { pathNode := fun p =>
-      match p with
-      | Fin.mk pVal pLt =>
-        (List.scanl opHash h path)[pVal]'( by rw [List.length_scanl] ; assumption )
-    , pathSib := List.get path
-    -- fun s => match s with
-    --                       | Fin.mk sVal sLt => List.get path ⟨ sVal  , sLt⟩
-    }
+    -- Definition!
+    def HPlayer [HashMagma ℍ]: HC ℍ path.length
+        :=
+        -- let pathElem : Path := treeTohashPath path
+        -- have eqLen : pathElem.length = path.length := by exact List.length_map _ _
+        { pathNode := fun p =>
+        match p with
+        | Fin.mk pVal pLt =>
+            (List.scanl opHash h path)[pVal]'( by rw [List.length_scanl] ; assumption )
+        , pathSib := List.get path
+        -- fun s => match s with
+        --                       | Fin.mk sVal sLt => List.get path ⟨ sVal  , sLt⟩
+        }
 
-  -- pathNode[n+1] = pathNode[n] ⊕ pathSib[n]
-  lemma midGameCorrect:
-    forall (n : Nat) (nLt : n < path.length),
-      let HP := HPlayer h path
-      HP.pathNode ⟨ n + 1 , by simp; assumption ⟩
-      = opHash (HP.pathNode ⟨ n , by trans path.length; assumption; simp ⟩) (HP.pathSib ⟨ n , nLt⟩)
-      := by
-      intros n nLt
-      unfold HPlayer
-      simp
-      rw [ ScanlGetN, ScanlGetN ]
-      rw [ <- List.foldl_concat opHash ]
-      rw [ <- List.concat_nil ]
-      rw [ List.append_concat, List.append_nil, List.take_concat_get ]
+    -- pathNode[n+1] = pathNode[n] ⊕ pathSib[n]
+    lemma midGameCorrect [HashMagma ℍ]:
+        forall (n : Nat) (nLt : n < path.length),
+        let HP := HPlayer ℍ h path
+        HP.pathNode ⟨ n + 1 , by simp; assumption ⟩
+        = opHash (HP.pathNode ⟨ n , by trans path.length; assumption; simp ⟩) (HP.pathSib ⟨ n , nLt⟩)
+        := by
+        intros n nLt
+        unfold HPlayer
+        simp
+        rw [ ScanlGetN, ScanlGetN ]
+        rw [ <- List.foldl_concat opHash ]
+        rw [ <- List.concat_nil ]
+        rw [ List.append_concat, List.append_nil, List.take_concat_get ]
 
-      -- Obligations
-      { trans path.length; assumption; simp}
-      { simp; assumption }
-end HashProposer
+        -- Obligations
+        { trans path.length; assumption; simp}
+        { simp; assumption }
+    end HashProposer
 
-  def WinningProposerPath
-    (h : Hash) (path : Path)
+def WinningProposerPath
+    [HashMagma ℍ]
+    (h : ℍ) (path : Path ℍ)
     ( pathNNil : 0 < path.length )
     : WinningProposer.PropHash path.length h (listPathHashes h path)
     :=
     { pathLenNZ := pathNNil
-    , strategies := HPlayer h path
+    , strategies := HPlayer ℍ h path
     , nodeZero := by simp [ HPlayer ]
     , nodeRoot := by simp [ HPlayer ]
                      rw [ ScanlGetN ]
                      simp
                      simp
-    , allGames := by simp
-                     intros m mLtn
-                     exact midGameCorrect h path m mLtn
+    , allGames := by simp; intros m mLtn; exact midGameCorrect ℍ h path m mLtn
     }
 
-  def WinningProposerTreePath (v : Value) (path : TreePath Value) (pathNNil : 0 < path.length)
-  := WinningProposerPath (H v) (treeTohashPath path) (by unfold treeTohashPath; rw [ List.length_map ]; assumption)
+def WinningProposerTreePath {α :Type}[o : Hash α ℍ][HashMagma ℍ](v : α) (path : TreePath α) (pathNNil : 0 < path.length)
+  := WinningProposerPath ℍ (o.mhash v) (treeTohashPath path) (by unfold treeTohashPath; rw [ List.length_map ]; assumption)
 
-  @[simp]
-  def LP_HPlayer {m n : Nat} (eqMN : m = n) (p : HC m) : HC n
-  := { pathNode := fun k => match k with
-                            | ⟨ kV , kLtn ⟩ => p.pathNode ⟨ kV , by rw [ eqMN ]; assumption ⟩
-     , pathSib := fun k => match k with
-                            | ⟨ kV , kLtn ⟩ => p.pathSib ⟨ kV , by rw [ eqMN ]; assumption ⟩
-     }
+@[simp]
+def LP_HPlayer {m n : Nat} (eqMN : m = n) (p : HC ℍ m) : HC ℍ n
+:= { pathNode := fun k => match k with
+                        | ⟨ kV , kLtn ⟩ => p.pathNode ⟨ kV , by rw [ eqMN ]; assumption ⟩
+    , pathSib := fun k => match k with
+                        | ⟨ kV , kLtn ⟩ => p.pathSib ⟨ kV , by rw [ eqMN ]; assumption ⟩
+    }
 
 
   -- Let |v| be a value, |bt| a binary tree of values, such thah |v| is in |bt|,
   -- i.e. there is a non-empty path |path| from |v| to the root.
   -- We can create a winning strategy.
-  def WProposerCreate ( v : Value ) (bt : BTree Value) (path : TreePath Value) (pathNNil : 0 < path.length)
-      ( vInTree : valueInProof v bt = some path )
-      : WinningProposer.WinningProp path.length v (hash_BTree bt)
-      := have eqLen : path.length = List.length (treeTohashPath path) := (by unfold treeTohashPath; rw [ List.length_map ])
+def WProposerCreate {α : Type}[aeq : BEq α][aeqLaw : LawfulBEq α][m : Hash α ℍ][op : HashMagma ℍ]( v : α ) (bt : BTree α) (path : TreePath α) (pathNNil : 0 < path.length)
+    ( vInTree : valueInProof v bt = some path )
+    : @WinningProposer.WinningProp α ℍ m op path.length v (hash_BTree bt)
+    := have eqLen : path.length = List.length (@treeTohashPath α ℍ _ _ path)
+       := (by unfold treeTohashPath; rw [ List.length_map ])
     { pathLenNZ := pathNNil
-    , strategies := LP_HPlayer (by rw [ eqLen ]) (HPlayer (H v) (treeTohashPath path))
+    , strategies := LP_HPlayer ℍ (by rw [ eqLen ]) (HPlayer ℍ (m.mhash v) (treeTohashPath path))
     , nodeZero := by simp [HPlayer]
     , nodeRoot := by simp [HPlayer]
                      rw [ ScanlGetN, eqLen]
                      unfold treeTohashPath
                      rw [ List.take_length]
+                     -- exact @VinTree α ℍ aeq aeqLaw m op v bt path vInTree
                      exact VinTree v bt path vInTree
                      -- Proof Obligations
                      { simp }
-    , allGames := by simp; intros m mLtn
-                     exact midGameCorrect (H v) (List.map hashElem path) m (by rw [ List.length_map ]; assumption)
+    , allGames := by simp; intros mVal mLtn
+                     exact midGameCorrect ℍ (m.mhash v) (List.map hashElem path) mVal (by rw [ List.length_map ]; assumption)
     }
-
 
 end Build
 ----------------------------------------------------------------------

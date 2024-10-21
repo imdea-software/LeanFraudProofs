@@ -4,78 +4,84 @@ import FraudProof.DataStructures.Hash
 
 import Mathlib.Data.Sum.Basic
 
-def hashElem : BTree Value ⊕ BTree Value  → PathElem :=
-  let hashTree := ( MTree.hash ∘ hash_BTree )
-  Sum.map  hashTree hashTree
+section ValHash
+  variable { α ℍ : Type }
+  def hashElem [Hash α ℍ][HashMagma ℍ] : BTree α ⊕ BTree α → PathElem ℍ:=
+    let hashTree := ( MTree.hash ∘ hash_BTree )
+    Sum.map  hashTree hashTree
+
+  ----------------------------------------
+  -- Tree Path to Hash Path
+  @[simp]
+  def treeTohashPath [Hash α ℍ][HashMagma ℍ]: TreePath α → Path ℍ :=
+    List.map hashElem
+
+  @[simp]
+  lemma TreeLenEq [h : Hash α ℍ][o : HashMagma ℍ](path : TreePath α)
+    : (@treeTohashPath _ _ h o path).length = path.length
+    := by exact List.length_map _ _
+
+  lemma RevTreeLenEq [h : Hash α ℍ][o : HashMagma ℍ]( path : TreePath α )
+    : (@treeTohashPath _ _ h o path).reverse.length = path.length
+    := by simp
+
+
+  -- Theorems
+  theorem VinTree
+          [BEq α]
+          [LawfulBEq α]
+          [h : Hash α ℍ]
+          [HashMagma ℍ]
+          (v : α)
+          (btree : BTree α)
+          (path : TreePath α)
+          (vInTree : valueInProof v btree = some path)
+          : List.foldl opHash (h.mhash v) (List.map hashElem path)
+            = (hash_BTree btree).hash :=
+  by
+    revert vInTree path
+    induction btree with
+    | leaf w =>
+      intros path vInTree
+      simp [valueInProof] at vInTree
+      have pathE := vInTree.right
+      rw [ <- pathE ]
+      simp [hash_BTree, MTree.hash]
+      have vwEq := vInTree.left
+      congr
+    | node bL bR HL HR =>
+      intros path vInPath
+      simp [valueInProof] at vInPath
+      -- v is in Left or righ.
+      cases vInL : valueInProof v bL with
+      -- v is in bL
+      | some ps =>
+        simp [vInL] at vInPath
+        have HLV := HL ps vInL
+        simp [hash_BTree, comb_MTree]
+        rw [ <- vInPath ]
+        simp
+        rw [ HLV ]
+        unfold hashElem
+        simp [opHash, MTree.hash]
+      | none => -- v not in bL
+          cases vInR : valueInProof v bR with
+          | some ps =>
+                simp [vInL, vInR] at vInPath
+                have HLR := HR ps vInR
+                rw [ <- vInPath ]
+                simp
+                rw [ HLR ]
+                simp [ hashElem, opHash, MTree.hash, hash_BTree, comb_MTree]
+          | none => -- impossible
+                simp [vInL, vInR] at vInPath
+end ValHash
+----------------------------------------
 
 ----------------------------------------
--- Tree Path to Hash Path
-@[simp]
-def treeTohashPath : TreePath Value  → Path :=
-  List.map hashElem
-
-@[simp]
-lemma TreeLenEq (path : TreePath Value)
-  : (treeTohashPath path).length = path.length
-  := by exact List.length_map _ _
-
-lemma RevTreeLenEq ( path : TreePath Value )
-  : (treeTohashPath path).reverse.length = path.length
-  := by simp
-
-----------------------------------------
-
-
 def sumP {α : Type}  : Sum α α → α := (Sum.elim id id)
 
 -- PathComputation v p = List.drop 1 (ScanPath v p)
 @[simp]
-def ScanPath ( v : Hash ) ( path : Path ) : List Hash
+def ScanPath {ℍ : Type}[HashMagma ℍ] ( v : ℍ ) ( path : Path ℍ) : List ℍ
 := List.scanl opHash v path
-
-
--- Theorems
-theorem VinTree
-        (v : Value)
-        (btree : BTree Value)
-        (path : TreePath Value)
-        (vInTree : valueInProof v btree = some path)
-        : List.foldl opHash (H v) (List.map hashElem path)
-          = (hash_BTree btree).hash :=
-by
-  revert vInTree path
-  induction btree with
-  | leaf w =>
-    intros path vInTree
-    simp [valueInProof] at vInTree
-    have pathE := vInTree.right
-    rw [ <- pathE ]
-    simp [hash_BTree, MTree.hash]
-    have vwEq := vInTree.left
-    rw [ vwEq ]
-  | node bL bR HL HR =>
-    intros path vInPath
-    simp [valueInProof] at vInPath
-    -- v is in Left or righ.
-    cases vInL : valueInProof v bL with
-    -- v is in bL
-    | some ps =>
-      simp [vInL] at vInPath
-      have HLV := HL ps vInL
-      simp [hash_BTree, comb_MTree]
-      rw [ <- vInPath ]
-      simp
-      rw [ HLV ]
-      unfold hashElem
-      simp [opHash, MTree.hash]
-    | none => -- v not in bL
-        cases vInR : valueInProof v bR with
-        | some ps =>
-               simp [vInL, vInR] at vInPath
-               have HLR := HR ps vInR
-               rw [ <- vInPath ]
-               simp
-               rw [ HLR ]
-               simp [ hashElem, opHash, MTree.hash, hash_BTree, comb_MTree]
-        | none => -- impossible
-               simp [vInL, vInR] at vInPath

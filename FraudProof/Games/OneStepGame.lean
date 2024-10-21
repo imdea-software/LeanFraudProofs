@@ -1,7 +1,7 @@
 -- Definitions
 import FraudProof.DataStructures.Hash
 import FraudProof.DataStructures.MTree
-import FraudProof.DataStructures.Value
+-- import FraudProof.DataStructures.Value
 
 -- Utilities.
 import FraudProof.Extras.List -- ( TakeAppend )
@@ -24,10 +24,11 @@ import Mathlib.Tactic.Ring
 -- One Step Def
 @[simp]
 def MembershipGame_OneStep
+    {ℍ : Type}[BEq ℍ][HashMagma ℍ]
      ( n : Nat )
-     ( P : Proposer.HC n)
+     ( P : Proposer.HC ℍ n)
      ( p_bot : Fin n )
-     ( h_bot h_top : Hash )
+     ( h_bot h_top : ℍ )
     : Winner
 :=
   if opHash h_bot (P.pathSib p_bot) == h_top
@@ -36,8 +37,9 @@ def MembershipGame_OneStep
 
 @[simp]
 def GameOneStep
-  (P : Proposer.HC 1)
-  (hL hT : Hash) : Winner
+  {ℍ : Type}[BEq ℍ][HashMagma ℍ]
+  (P : Proposer.HC ℍ 1)
+  (hL hT : ℍ) : Winner
   := if opHash hL (P.pathSib ⟨ 0 , by simp ⟩) == hT then Winner.Proposer else Winner.Chooser
 
 
@@ -46,9 +48,10 @@ def GameOneStep
 ----------------------------------------
 -- Winning along a path
 -- This is a chain!
-def AllwaysWinnig (p p' : _ ) ( path' : List Hash ) :=
+def AllwaysWinnig {ℍ : Type}[BEq ℍ][HashMagma ℍ]
+  (p p' : ℍ ) ( path' : List ℍ) :=
   let path := p :: p' :: path'
-  forall (A : Proposer.HC path.length)
+  forall (A : Proposer.HC ℍ path.length)
          ( n : Nat ) ( nLt : n <  path.length - 2),
          MembershipGame_OneStep path.length A ⟨ n , by trans path.length - 2; assumption; simp ; rw [ List.length ]; simp ⟩
                                               path[n] path[n+1] = Winner.Proposer
@@ -57,11 +60,11 @@ def AllwaysWinnig (p p' : _ ) ( path' : List Hash ) :=
 ----------------------------------------
 -- Good Challenger always win.
 --
-def rootHash ( v : Value ) ( path' : TreePath Value ) : Hash :=
-  listPathHashes (H v) (treeTohashPath path')
+def rootHash {α ℍ : Type}[m : Hash α ℍ][HashMagma ℍ]( v : α ) ( path' : TreePath α ) : ℍ :=
+  listPathHashes (m.mhash v) (treeTohashPath path')
 
-theorem irootHash ( v : Value ) ( e : BTree Value ⊕ BTree Value) ( path : TreePath Value ):
-        rootHash v (e :: path) = listPathHashes ( opHash (H v) (hashElem e) ) (treeTohashPath path)
+theorem irootHash {α ℍ : Type}[m : Hash α ℍ][HashMagma ℍ]( v : α ) ( e : BTree α ⊕ BTree α) ( path : TreePath α ):
+        rootHash v (e :: path) = listPathHashes ( opHash (m.mhash v) (hashElem e) ) (treeTohashPath path)
         := by {
           match path with
           | List.nil =>
