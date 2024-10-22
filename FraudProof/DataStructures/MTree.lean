@@ -18,6 +18,16 @@ def hash_BTree { α ℍ : Type}[o : Hash α ℍ][HashMagma ℍ] (t : BTree α) :
   | BTree.leaf v => MTree.node (o.mhash v)
   | BTree.node hL hR => comb_MTree ( hash_BTree hL ) ( hash_BTree  hR )
 
+-- Eff HashingTree
+def hashM {α ℍ : Type}{m : Type -> Type}[Monad m]
+    (hL : α -> m ℍ)(hC : ℍ -> ℍ -> m ℍ)(t : BTree α) : m (MTree ℍ)
+    := match t with
+      | BTree.leaf v => MTree.node <$> hL v
+      | BTree.node nL nR =>
+        do let l <- hashM hL hC nL
+           let r <- hashM hL hC nR
+           MTree.node <$> hC l.hash r.hash
+
 ----------------------------------------
 -- * Paths
 -- Path in Merkle Trees are hashes indicating its position.

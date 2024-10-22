@@ -172,10 +172,37 @@ from web3 import web3 # hashfunctions.
 
 print(web3.solidity_keccak(['string'],['testing']))
 #+end_src
-**** [ ] Removing opaque types.
-
+**** [X] Removing opaque types.
+See 'Hash Classes'
 *** [ ] Validity Proofs
+*** [X] Hash Classes
+#+begin_src Lean :noeval
+-- Hash function
+@[class] structure Hash (α ℍ : Type) where
+  mhash : α -> ℍ
+-- Hash comb function
+@[class] structure HashMagma (ℍ : Type) where
+  comb : ℍ -> ℍ -> ℍ
+
+-- Laws
+-- Collision resistant?
+@[class] structure CollResistant (α ℍ : Type)[op : Hash α ℍ] where
+  -- Collision resistant? It should be hard to find these guys.
+  noCollisions : forall (a b : α), a ≠ b -> op.mhash a ≠ op.mhash b
+
+-- Similar but for magma op.
+@[class] structure SLawFulHash (ℍ : Type)[m : HashMagma ℍ] where
+  -- Combine diff hashes are diff.
+  neqLeft : forall (a1 a2 b1 b2 : ℍ), a1 ≠ a2 -> m.comb a1 b1 ≠ m.comb a2 b2
+  neqRight : forall (a1 a2 b1 b2 : ℍ), b1 ≠ b2 -> m.comb a1 b1 ≠ m.comb a2 b2
+
+#+end_src
 *** [ ] IO Interactions
+**** [X] From Opaque to Classes
+**** [ ] Keccak256 is a valid IO Hash?
+**** [ ] IO Merkle Tree generation.
+
+** Hash Function
 
 
 * To build the whole project

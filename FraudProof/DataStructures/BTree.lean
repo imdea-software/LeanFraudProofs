@@ -1,6 +1,9 @@
 -- Importing Values
 import FraudProof.DataStructures.Value
 
+-- Induction proofs
+import Mathlib.Data.Nat.Defs
+
 /-! # Binary Tree -/
 
 -- BTree Basic Definition
@@ -8,6 +11,66 @@ inductive BTree (α : Type ): Type
 | leaf (v : α)
 | node ( bL bR : BTree α )
 deriving instance BEq for BTree
+
+
+-- Acc
+@[simp]
+def pairUp' {α : Type} (acc : Option (BTree α)) (ls : List (BTree α)) : List (BTree α)
+  := match ls with
+     | .nil => match acc with
+              | none => []
+              | some a => [a]
+     | .cons p ps => match acc with
+                    | none => pairUp' (some p) ps
+                    | some a => BTree.node a p :: (pairUp' none ps)
+
+theorem pairSize' {α : Type} (ls : List (BTree α))
+  : forall (p : Option (BTree α)), (pairUp' p ls).length ≤ ls.length.succ
+  := by induction ls with
+        | nil => intro p
+                 cases p with
+                 | none => simp
+                 | some _ => simp
+        | cons p ps HI =>
+           intro w
+           cases w with
+           | none =>
+                  simp
+                  have := HI (some p)
+                  omega
+           | some _ =>
+             simp
+             have := HI none
+             assumption
+
+theorem pairSizeNone {α : Type} (ls : List (BTree α))
+  : (pairUp' none ls).length ≤ ls.length
+  := by cases ls with
+       | nil => simp
+       | cons p ps => simp; apply pairSize'
+
+@[simp]
+def pairUp {α : Type} (ls : List (BTree α)) := pairUp' none ls
+
+theorem pairSize {α : Type} (ls : List (BTree α))
+  : (pairUp ls).length ≤ ls.length
+  := by simp; apply pairSizeNone
+
+def List.fromList' {α : Type}(ls : List (BTree α)) : Option (BTree α)
+  := match ls with
+     | [] => none
+     | x :: [] => some x
+     | x :: y :: rs => fromList' (pairUp (x :: y :: rs))
+     termination_by ls.length
+     decreasing_by
+       simp_wf
+       have := pairSizeNone rs
+       omega
+
+def List.fromList {α : Type}(ls : List α) : Option (BTree α)
+ := (ls.map BTree.leaf).fromList'
+
+-- Next fromListOne, but need to prove stuff.
 
 abbrev TreePathElem ( α : Type ):=  Sum (BTree α) (BTree α)
 abbrev TreePath (α : Type ):= List (Sum (BTree α) (BTree α))
