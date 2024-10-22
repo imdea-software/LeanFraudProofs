@@ -139,8 +139,17 @@ Main file proving that:
 If someone wrongly challenges a posted Merkle Tree, we can defend it and win.
 It is a similar theorem to winning strategies when challenged. But on the other side.
 
+**** [ ] Main Idea: Path Skeletons
+We need path skeletons to prove that choosers have winning strategies.
+Theorem is like:
+#+begin_quote
+Following the same path provided by proposers, correct choosers know the how to
+fill the same path with corrects hashes. Knowing that something is wrong, i.e.
+the last hash proposed is wrong but the first is right (it is the hash of the
+root assumed correct.), choosers can choose wisely when to challenge.
+#+end_quote
 **** [ ] Linear games
-Found a bug here. My bad when deffining hash props.
+Found a bug here. My bad when defining hash props.
 Fixed, but I made a bug in proof evident.
 **** [ ] Log Games
 **** [ ] Multicut games
