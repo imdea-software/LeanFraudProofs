@@ -24,7 +24,13 @@ section PythonRelPath
     := (relPydir projectRoot).join $ mkFilePath ["hashing.py"]
 end PythonRelPath
 
+-- File path definition plus some basic checks
+def fileExistsOrError (fp : System.FilePath) : IO System.FilePath :=
+  Monad.cond fp.pathExists (return fp) ( throw $ IO.userError s!"File {fp.toString} not found :-(" )
+
+
 def pythonFileP : IO System.FilePath := relPython <$> IO.currentDir
+
 def hashFileP : IO System.FilePath := relPyHash <$> IO.currentDir
 
 ------------------------------------------------------------
@@ -38,31 +44,28 @@ def externalHashing' (str : String) : IO (Option String) :=
      then return none
      else return (some res.stdout)
 
-def externalHashing (str : String) : IO String :=
-  do
-   let python <- pythonFileP
-   let pyHash <- hashFileP
-   IO.Process.runCmdWithInput python.toString (Array.mkArray2 pyHash.toString str)
+section PyHash
+  variable (python pyhash : String)
 
---------------------
+    def externalHashing (str : String) : IO String :=
+    IO.Process.runCmdWithInput python (Array.mkArray2 pyhash str)
+
+    def combHashing (str1 str2 : String) : IO String :=
+    externalHashing python pyhash (str1.append str2)
+
 -- Hash instances (flagged as unsafe)
-unsafe instance ecck : Hash String String where
-  mhash str := match unsafeIO $ externalHashing str with
-               | .error _ => ""
-               | .ok h => h
+    unsafe instance ecck : Hash String String where
+    mhash str := match unsafeIO $ externalHashing python pyhash str with
+                | .error _ => ""
+                | .ok h => h
 
--- comb
-def combHashing (str1 str2 : String) : IO String :=
-  externalHashing (str1.append str2)
+    unsafe def unsafeExtComb (str1 str2 : String) : String
+      := match unsafeIO (combHashing python pyhash str1 str2) with
+        | .error _ => ""
+        | .ok hash => hash
 
-unsafe def unsafeExtComb (str1 str2 : String) : String
-  := match unsafeIO (combHashing str1 str2) with
-    | .error _ => ""
-    | .ok hash => hash
-
-unsafe instance ecckMagma : HashMagma String where
-  comb := unsafeExtComb
-
+    unsafe instance ecckMagma : HashMagma String where
+      comb := unsafeExtComb python pyhash
 ------------------------------------------------------------
 -- * Laws
 -- We only need laws to prove theorems.
@@ -79,33 +82,41 @@ unsafe instance ecckMagma : HashMagma String where
 -- * Small Demo with elements
 -- .
 -- Some elements, we can IO them.
-def elements : List String := ["esto", "es", "una", "demo"]
 
-unsafe def elemsHashes : List String := elements.map ecck.mhash
-unsafe def elemsTree : BTree String :=
-  match elemsHashes.fromList with
-    | none => sorry -- it's unsafe, I don't case about stuff anymore.
-    | some t => t
+-- unsafe def elemsHashes : List String := elements.map (ecck.mhash python pyhash)
+-- unsafe def elemsTree : BTree String :=
+--   match elemsHashes.fromList with
+--     | none => sorry -- it's unsafe, I don't case about stuff anymore.
+--     | some t => t
 
--- Get Merkle Tree
-unsafe def elemsMTree : MTree String := hash_BTree elemsTree
+-- -- Get Merkle Tree
+-- unsafe def elemsMTree : MTree String := hash_BTree elemsTree
 ------------------------------------------------------------
+end PyHash
+--------------------
 
+
+def elements : List String := ["esto", "es", "una", "demo"]
 ------------------------------------------------------------
 -- Main entry point.
 def main : IO Unit :=
   do
     IO.println "Hello Human?"
     IO.println "This s a simple demo of our humble piece of software"
+    -- Getting Hash function
+    let python <- pythonFileP >>= fileExistsOrError
+    let pyHash <- hashFileP >>= fileExistsOrError
+    let hash := externalHashing python.toString pyHash.toString
+    let magmaHash := combHashing python.toString pyHash.toString
+    --
     IO.println s!"Elements of the tree :{elements}"
-    let encs <- Monad.mapM externalHashing elements
+    let encs <- Monad.mapM hash elements
     IO.println s!"Hashed elements:{encs}"
     let btree := encs.fromList
     IO.println "Generated a balanced tree."
     match btree with
       | none => IO.println "empty tree?"
       | some t => do
-                    let mt <- hashM externalHashing combHashing t
+                    let mt <- hashM hash magmaHash t
                     IO.println s!"And presents the following MTree root hash {mt.hash}"
-    -- let enc <- externalHashing "Testing hashing function!"
 ------------------------------------------------------------
