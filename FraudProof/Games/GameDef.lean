@@ -1,7 +1,11 @@
 import FraudProof.DataStructures.Hash
 import FraudProof.Players
 
-inductive Winner : Type := | Proposer | Chooser
+inductive Player : Type := | Proposer | Chooser
+abbrev Winner := Player
+
+-- inductive Winner : Type := | Proposer | Chooser
+-- inductive Player : Type := | Proposer | Chooser
 
 
 -- |Singlecutgame| describes a game cutting once at |cut| the game verifies that
