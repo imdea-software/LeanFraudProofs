@@ -39,7 +39,7 @@ theorem GChalWinsHtoLHashes [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ](gameLength :
     (headH lastH : ℍ)
     (proposer : PropHash gameLength headH lastH)
     (chooser : Chooser.Player ℍ),
-    InitHashPathGameHeadToLast gameLength proposer.pathLenNZ headH lastH proposer.strategies chooser = Winner.Proposer
+    InitHashPathGameHeadToLast gameLength proposer.pathLenNZ headH lastH proposer.strategies chooser = Player.Proposer
     := by
     induction gameLength with
     | zero => -- Impossible
@@ -85,14 +85,14 @@ theorem GChalWinsHtoL {α ℍ : Type}
       (v : α) (mt : MTree ℍ)
       (proposer : WinningProposer.WinningProp gameLength v mt)
       (chooser : Chooser.Player ℍ)
-      : InitHashPathGameHeadToLast gameLength proposer.pathLenNZ (m.mhash v) mt.hash proposer.strategies chooser = Winner.Proposer
+      : InitHashPathGameHeadToLast gameLength proposer.pathLenNZ (m.mhash v) mt.hash proposer.strategies chooser = Player.Proposer
       := GChalWinsHtoLHashes gameLength (m.mhash v) mt.hash proposer chooser
 
   -- We cannot recover witnesses, because Lean has proof irrelevance hardcoded.
   -- theorem KWinsHtoL ( v : Value ) ( tree : BTree Value ) (vInTree : valueIn v tree)
   --   : let ⟨ path , pPath ⟩ := valueInToProof v tree vInTree
   --   exists (proposer : WinningProposer.WinningProp path.length v _),
-  --     _Game = Winner.Proposer
+  --     _Game = Player.Proposer
 
 theorem WinningProposer
     {α ℍ : Type}
@@ -104,7 +104,7 @@ theorem WinningProposer
     ( vInBTree : valueInProof v btree = some path)
 : forall (chooser : Chooser.Player ℍ),
   have winprop := @Build.WProposerCreate ℍ α _ _ _ _ v btree path pathNNil vInBTree
-  InitHashPathGameHeadToLast path.length pathNNil (m.mhash v) (hash_BTree btree).hash winprop.strategies chooser = Winner.Proposer
+  InitHashPathGameHeadToLast path.length pathNNil (m.mhash v) (hash_BTree btree).hash winprop.strategies chooser = Player.Proposer
 :=  by
   intros ch wp
   exact GChalWinsHtoL path.length v _ wp ch
@@ -131,7 +131,7 @@ def LogWinningProp' [BEq ℍ][HashMagma ℍ] (gL : Nat) : Prop :=
     MembershipGame_2STG gL
     proposer.strategies chooser
     proposer.pathLenNZ -- path is not Zero
-    headH lastH = Winner.Proposer
+    headH lastH = Player.Proposer
 
 theorem PropHashWins [heq : BEq ℍ][LawfulBEq ℍ][mhash : HashMagma ℍ](gL : Nat)
   : @LogWinningProp' ℍ heq mhash gL
@@ -204,7 +204,7 @@ def BadProposer [BEq ℍ][HashMagma ℍ]{ gl : Nat } (P : HC ℍ gl) ( hb ht : �
 --   (hinit hroot : Hash)
 --   (P : HC gameLength)
 --   (C : Chooser.Player)
---   : BotUpLin.InitHashPathGameLastToHead gameLength gNZ hinit hroot P C = Winner.Chooser
+--   : BotUpLin.InitHashPathGameLastToHead gameLength gNZ hinit hroot P C = Player.Chooser
 --   -> notZero gameLength P hinit
 --   ∨ notRoot gameLength P hroot
 --   ∨ notAllGames gameLength P
@@ -239,7 +239,7 @@ theorem ChooserGLHeadWrongSeq
     (knowFrom : Knowing.PathProofSeq gameLength (SeqForget proposer.pathSib) hbot lastH)
     ,
     HashPathDrop gameLength glNZ proposer (KnowingLinChooserSkl gameLength knowFrom) headH lastH
-    = Winner.Chooser
+    = Player.Chooser
     := by
     induction gameLength with
     | zero => simp at glNZ -- imp case
@@ -320,7 +320,7 @@ theorem ChooserGLHeadWrongSeq
 --     (know : Knowing.PathProof gameLength hbot lastH)
 --     ,
 --     HashPathDrop gameLength glNZ proposer (KnowingLinChooser gameLength hbot lastH know) headH lastH
---     = Winner.Chooser
+--     = Player.Chooser
 --     := by
 --     induction gameLength with
 --     | zero => simp at glNZ

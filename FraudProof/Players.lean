@@ -110,6 +110,26 @@ structure  Player (α :Type) ( gameLength : Nat) where
 
 end Proposer
 ----------------------------------------------------------------------
+-- ** Correct Hash Proposer
+
+namespace IProposer
+-- Higher level name.
+abbrev proposeFromTree {α ℍ : Type}[Hash α ℍ][HashMagma ℍ]
+    : BTree α -> MTree ℍ := hash_BTree
+
+def proposeFromList {α ℍ : Type}[Hash α ℍ][HashMagma ℍ]
+    : List α -> Option (MTree ℍ) := Option.map hash_BTree ∘ List.fromList
+
+-- We can also have some type information.
+def validPropose {α ℍ : Type}[Hash α ℍ][HashMagma ℍ]
+    (valid : α -> Bool) (ls : List α) : Option (MTree ℍ)
+    := if List.all ls valid
+       then proposeFromList ls
+       else none
+
+end IProposer
+
+----------------------------------------------------------------------
 
 ----------------------------------------------------------------------
 -- ** Choosers choose between two different ranges.
@@ -217,3 +237,30 @@ namespace Knowing
 --   goodP : Fin.foldl p.length _ ( pathWit ⟨ 0 , pNNil ⟩ ) = ht
 
 end Knowing
+
+
+----------------------------------------
+-- * Strategy generation.
+-- Given a list of elements, this is public information known by all, this
+-- module generates everything for the correct agent.
+namespace StrategyGeneration
+
+structure CorrectAgent {α : Type}(ℍ : Type) (ls : List α) where
+  -- Data
+  tree : BTree α
+  rootHash : ℍ --
+  -- Structures
+
+
+def build {α ℍ : Type}
+  -- Validity def
+  (valid : α -> Bool)
+  -- Knowledge
+  (es : List α)
+  --
+  : CorrectAgent ℍ es
+  := sorry
+
+
+end StrategyGeneration
+----------------------------------------

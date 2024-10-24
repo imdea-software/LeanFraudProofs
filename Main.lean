@@ -95,15 +95,26 @@ section PyHash
 end PyHash
 --------------------
 
-
 def elements : List String := ["esto", "es", "una", "demo"]
+
+-- Validity Function
+def strAlphaNum : String -> Bool := flip String.all Char.isAlphanum
+
+-- Helper
+def someOrFail {α : Type}(ov : Option α)(errmsg : String) : IO α
+ := match ov with
+    | none => throw $ IO.userError errmsg
+    | some v => return v
+
 ------------------------------------------------------------
 -- Main entry point.
 def main : IO Unit :=
   do
     IO.println "Hello Human?"
     IO.println "This s a simple demo of our humble piece of software"
-    -- Getting Hash function
+    --------------------
+    -- Getting IO Hash functions.
+    --
     let python <- pythonFileP >>= fileExistsOrError
     let pyHash <- hashFileP >>= fileExistsOrError
     let hash := externalHashing python.toString pyHash.toString
@@ -113,10 +124,13 @@ def main : IO Unit :=
     let encs <- Monad.mapM hash elements
     IO.println s!"Hashed elements:{encs}"
     let btree := encs.fromList
-    IO.println "Generated a balanced tree."
-    match btree with
-      | none => IO.println "empty tree?"
-      | some t => do
-                    let mt <- hashM hash magmaHash t
-                    IO.println s!"And presents the following MTree root hash {mt.hash}"
+    IO.println "Generated a balanced tree. We assumed both players know the tree."
+    let t <- someOrFail btree "Empty Tree" >>= hashM hash magmaHash
+    IO.println s!"And presents the following MTree root hash {t.hash}"
+    --------------------
+    -- Adding an extra elem that is not |strAlphanum| valid.
+    let inV := "notValid!" :: elements
+    let htree <- List.fromList <$> Monad.mapM hash inV
+    let t <- someOrFail htree "Empty Tree" >>= hashM hash magmaHash
+    IO.println s!"Propose {t.hash}"
 ------------------------------------------------------------

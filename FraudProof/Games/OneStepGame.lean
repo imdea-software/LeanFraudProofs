@@ -32,17 +32,15 @@ def MembershipGame_OneStep
     : Winner
 :=
   if opHash h_bot (P.pathSib p_bot) == h_top
-  then Winner.Proposer
-  else Winner.Chooser
+  then Player.Proposer
+  else Player.Chooser
 
 @[simp]
 def GameOneStep
   {ℍ : Type}[BEq ℍ][HashMagma ℍ]
   (P : Proposer.HC ℍ 1)
   (hL hT : ℍ) : Winner
-  := if opHash hL (P.pathSib ⟨ 0 , by simp ⟩) == hT then Winner.Proposer else Winner.Chooser
-
-
+  := if opHash hL (P.pathSib ⟨ 0 , by simp ⟩) == hT then Player.Proposer else Player.Chooser
 ----------------------------------------
 
 ----------------------------------------
@@ -54,7 +52,7 @@ def AllwaysWinnig {ℍ : Type}[BEq ℍ][HashMagma ℍ]
   forall (A : Proposer.HC ℍ path.length)
          ( n : Nat ) ( nLt : n <  path.length - 2),
          MembershipGame_OneStep path.length A ⟨ n , by trans path.length - 2; assumption; simp ; rw [ List.length ]; simp ⟩
-                                              path[n] path[n+1] = Winner.Proposer
+                                              path[n] path[n+1] = Player.Proposer
 ----------------------------------------
 
 ----------------------------------------
@@ -74,3 +72,17 @@ theorem irootHash {α ℍ : Type}[m : Hash α ℍ][HashMagma ℍ]( v : α ) ( e 
                 rw [ rootHash ]
                 simp
         }
+----------------------------------------
+
+----------------------------------------
+-- * Prop Validity Game
+--
+def PropOneShotGame {α : Type}
+    (valP : α -> Bool)(v : α)
+    (proposer : Player)
+    (challenger : Player)
+    : Winner :=
+    if valP v then proposer else challenger
+
+
+----------------------------------------
