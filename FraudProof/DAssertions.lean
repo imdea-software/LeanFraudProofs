@@ -14,7 +14,14 @@ structure GenDA (α β : Type) where
   -- From context there is a computational process |f| such that: |res = f(dt)|
   -- Other agents can challenge that.
 
-structure FromBtoMTree (α ℍ: Type) where
-  data : BTree α
-  merkleTree : ℍ
-  -- Implicit assumption: this.merkleTree = hash_BTree this.data
+-- Simply structuere
+-- structure FromBtoMTree (α ℍ: Type) where
+--   data : BTree α
+--   merkleTree : ℍ
+  -- Implicit assumption: this.merkleTree = MTree.hash $ hash_BTree this.data
+  -- This is missing BEq ℍ, isn't it?
+
+-- Valid Functions only act on predicates
+-- abbrev ValidB2M (α ℍ : Type)(_vf : α -> Bool) := FromBtoMTree α ℍ
+-- this is structurally the same as FromBtoMTree but different challenge.
+

@@ -234,7 +234,7 @@ theorem ChooserGLHeadWrongSeq
     (hbot : ℍ )
     (proposer : Proposer.HC ℍ gameLength)
     --
-    (hNEQ : headH != hbot )
+    (_hNEQ : headH != hbot )
     --
     (knowFrom : Knowing.PathProofSeq gameLength (SeqForget proposer.pathSib) hbot lastH)
     ,
@@ -277,7 +277,7 @@ theorem ChooserGLHeadWrongSeq
                                  simp
                                  apply opHash_neqLeft
                                  assumption
-                    --
+                    -- Proof ob
                     { apply eq_true; simpa }
           | Right => simp
                      unfold LinChooser at hkC
@@ -300,80 +300,7 @@ theorem ChooserGLHeadWrongSeq
                      simp
                      congr
 
-                     --
+                     -- Proof ob
                      { simpa }
 
--- theorem ChooserGLHeadWrong (gameLength : Nat) (glNZ : 0 < gameLength) :
---     forall
---     (headH lastH : Hash)
---     (hbot : Hash )
---     (proposer : Proposer.HC gameLength)
---     -- Game Invariant
---     -- Hashes were proposed by |proposer|
---     (gmInvHead : proposer.pathNode ⟨ 0 , by simp ⟩ = headH)
---     (gmInvLast : proposer.pathNode ⟨ gameLength , by simp ⟩ = lastH)
---     --
---     (hNEQ : headH != hbot ) -- It is used! Shall I say something to the dev team?
---     -- proposer is not good
---     -- (badH : LosingProposer.notAllGames gameLength proposer)
---     -- We need to know pathproof.
---     (know : Knowing.PathProof gameLength hbot lastH)
---     ,
---     HashPathDrop gameLength glNZ proposer (KnowingLinChooser gameLength hbot lastH know) headH lastH
---     = Player.Chooser
---     := by
---     induction gameLength with
---     | zero => simp at glNZ
---     | succ pn HInd =>
---       intros hbBad ht hb P Inv1 Inv2 badP k
---       unfold HashPathDrop
---       cases pn with
---       | zero => simp; have gP := k.goodPath; simp at *; -- have pWit := k.pathWit;
---                 rw [ Fin.foldl_succ , Fin.foldl_zero ] at gP;
---                 rw [ <- gP ]
-
---                 apply opHash_neq
---                 assumption
---       | succ ppn =>
---         simp [KnowingLinChooser] at *
---         cases hKC :  LinChooser (Knowing.inPathProof 0 _ k) (Knowing.inPathProof 1 _ k) hbBad (P.pathNode 1) with
---         | Left => simp; simp [LinChooser] at hKC;
---                   have hbB
---                     : ¬ hbBad = Knowing.inPathProof 0 (by simp) k
---                     := by simpa [ Knowing.inPathProof ]
---                   rw [ ite_cond_eq_false ] at hKC
---                   simp at hKC
---                   unfold Knowing.inPathProof at hKC; rw [ Fin.foldl_succ , Fin.foldl_zero ] at hKC
---                   rw [ hKC ]
---                   apply opHash_neq
---                   assumption
-
---                   -- Proof obligations
---                   {exact eq_false hbB}
-
---         | Right =>
---                 simp
---                 unfold LinChooser at hKC
---                 have hbB -- |hb| is |Knowing.inPathProof 0 (by simp) k|
---                      : ¬ hbBad = Knowing.inPathProof 0 (by simp) k
---                      := by simpa [ Knowing.inPathProof ]
---                 rw [ ite_cond_eq_true ] at hKC
---                 simp at hKC
---                 have hE := HInd (P.pathNode 1) ht (Knowing.inPathProof 1 (by simp) k)
---                                 ( Proposer.DropHeadHC P )
---                                 -- ( by simp [ Proposer.DropHeadHC ] )
---                                 -- ( by simp [Proposer.DropHeadHC]; assumption )
---                                 hKC (Knowing.DropHCKnowing k)
---                 rw [ <- hE ]
---                 simp [ Chooser.LinPlayer.nextChooser ]
---                 congr
---                 simp [ Knowing.inPathProof, Knowing.DropHCKnowing ]
---                 rw [ Fin.foldl_succ , Fin.foldl_zero ]
---                 clear HInd badP hbB hKC -- Removing stuff to see the goal
---                 apply funext₃
---                 intro p a b
---                 repeat rw [ Fin.foldl_succ  (fun acc i ↦ opHash acc (k.pathWit ⟨↑i, (by omega)⟩)) hb ]
---                 rfl
---                 -- Proof obligations
---                 { simpa }
 end WinningChooser
