@@ -12,6 +12,12 @@ inductive BTree (α : Type ): Type
 | node ( bL bR : BTree α )
 deriving instance BEq for BTree
 
+-- BTree with data in nodes. Useful to store markle tree intermedeari
+-- information.
+inductive ITree (α β : Type) : Type
+ | leaf (v : α)
+ | node (n : β) (l r : ITree α β)
+
 
 -- Acc
 @[simp]
