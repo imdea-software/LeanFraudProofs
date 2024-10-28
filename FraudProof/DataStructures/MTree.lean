@@ -48,6 +48,8 @@ def PathElem.forget {ℍ : Type}(h : PathElem ℍ) : SkElem
 
 abbrev Path (ℍ : Type):= List (PathElem ℍ)
 abbrev Skeleton := List SkElem
+-- |n| elements
+abbrev ISkeleton (n : Nat) := Fin n -> SkElem
 
 @[simp]
 def Skeleton.fill {ℍ : Type}(skl : Skeleton) (hs : Fin skl.length -> ℍ) : Path ℍ

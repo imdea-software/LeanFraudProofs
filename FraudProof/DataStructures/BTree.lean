@@ -12,6 +12,18 @@ inductive BTree (α : Type ): Type
 | node ( bL bR : BTree α )
 deriving instance BEq for BTree
 
+-- Shortest path indexed trees
+inductive STree (α β : Type) : (n : Nat) -> Type where
+  | leaf (v : α) (i : β) : STree α β 0
+  | nodeL {n m : Nat} (i : β) (nLTm : n < m) ( bL : STree α β n )( bR : STree α β m ) : STree α β n.succ
+  | nodeR {n m : Nat} (i : β) (mLTn : m < n) ( bL : STree α β n )( bR : STree α β m ) : STree α β m.succ
+
+def STree.getI {α β : Type} {n : Nat} (t : STree α β n) : β
+ := match t with
+ | .leaf _ i => i
+ | .nodeL i _ _ _ => i
+ | .nodeR i _ _ _ => i
+
 -- BTree with data in nodes. Useful to store markle tree intermedeari
 -- information.
 inductive ITree (α β : Type) : Type
