@@ -5,7 +5,15 @@ import FraudProof.DataStructures.BTree -- Btree
 import FraudProof.DataStructures.MTree -- MTree
 import FraudProof.DataStructures.Hash -- hash classes
 
+-- What if I modeled no posible moves as game ending.
+-- Adding a checking move as move. | LastElemChk |.
+def SemiGoodProposer {α ℍ : Type}
+   (data : BTree α)
+   : Skeleton -> Option (ProposerMoves ℍ)
+   := sorry
+
 -- Function generating a /good proposer/, i.e. a proposer winning the game.
+--
 def GoodProposer {α ℍ : Type} {n m : Nat}
     (data : STree α ℍ n)
     (mLTn : m < n)
