@@ -139,7 +139,7 @@ Main file proving that:
 If someone wrongly challenges a posted Merkle Tree, we can defend it and win.
 It is a similar theorem to winning strategies when challenged. But on the other side.
 
-**** [ ] Main Idea: Path Skeletons
+**** [X] Main Idea: Path Skeletons
 We need path skeletons to prove that choosers have winning strategies.
 Theorem is like:
 #+begin_quote
@@ -148,13 +148,13 @@ fill the same path with corrects hashes. Knowing that something is wrong, i.e.
 the last hash proposed is wrong but the first is right (it is the hash of the
 root assumed correct.), choosers can choose wisely when to challenge.
 #+end_quote
-**** [ ] Linear games
+**** [X] Linear games
 Found a bug here. My bad when defining hash props.
 Fixed, but I made a bug in proof evident.
 **** [ ] Log Games
 **** [ ] Multicut games
 
-*** [ ] Model Merkle Tree chain?
+*** [X] Model Merkle Tree chain?
 Should we model the idea of posting Merkle Trees and the possibility of challenges.
 
 **** [X] Computing Hashes?
@@ -201,6 +201,14 @@ See 'Hash Classes'
 **** [X] From Opaque to Classes
 **** [ ] Keccak256 is a valid IO Hash?
 **** [ ] IO Merkle Tree generation.
+*** [ ] A bit more general games
+**** [X] DAs
+DAs are weird computational data.
+\(\{ a : \alpha , b : \beta \}\) and a process \(f\) such that \( f(a) = b\).
+**** [X] Skeletons in BTree/Tree computations.
+**** [X] Implementation of winning Defensive strategy and challenging strategies.
+**** [ ] Proving the above?
+
 
 ** Hash Function
 
