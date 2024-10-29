@@ -1,8 +1,8 @@
-import FraudProof.DAssertions
+-- import FraudProof.DAssertions
 import FraudProof.Games.GameDef -- Players, Winner
 import FraudProof.Players
 
-import FraudProof.Games.ElemInTree -- Block hash consitency
+import FraudProof.Games.Base.ElemInTree -- Block hash consitency
 
 -- Property needed to verify this:
 -- A block is |vf : α -> Bool|-valid if all elements are valid.
@@ -17,9 +17,9 @@ def arbValid {α ℍ : Type}
     --
     (da : ElemInMTree α ℍ)
     --
-    (proposer : Skeleton -> ProposerMoves ℍ)
-    (chooser : Skeleton -> ProposerMoves ℍ -> ChooserSmp)
+    (proposer : Skeleton -> Option (PMoves ℍ))
+    (chooser : Skeleton -> PMoves ℍ -> Option ChooserSmp)
     : Winner
-    := if vFunc da.elem -- This is run by a trusted source.
+    := if not $ vFunc da.elem -- This is run by a trusted source.
     then Player.Proposer -- Insta win Proposer
     else arbElem .nil da proposer chooser
