@@ -10,6 +10,25 @@ section ValHash
     let hashTree := ( MTree.hash ∘ hash_BTree )
     Sum.map  hashTree hashTree
 
+  --- Computing intermediary trees.
+  def medTrees [m : Hash α ℍ][o : HashMagma ℍ] : BTree α -> ABTree α ℍ
+  | .leaf v => .leaf (m.mhash v) v
+  | .node bl br =>
+    let abl := medTrees bl
+    let abr := medTrees br
+    .node (o.comb abl.getI abr.getI) abl abr
+
+  def medITrees [m : Hash α ℍ][o : HashMagma ℍ]{n : Nat} : ITree α n -> STree α ℍ n
+  | .leaf v _ => .leaf v (m.mhash v)
+  | .nodeL _ p bl br =>
+    let abl := medITrees bl
+    let abr := medITrees br
+    .nodeL (o.comb abl.getI abr.getI) p abl abr
+  | .nodeR _ p bl br =>
+    let abl := medITrees bl
+    let abr := medITrees br
+    .nodeR (o.comb abl.getI abr.getI) p abl abr
+
   ----------------------------------------
   -- Tree Path to Hash Path
   @[simp]
