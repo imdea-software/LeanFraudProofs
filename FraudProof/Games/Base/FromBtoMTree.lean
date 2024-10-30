@@ -6,14 +6,15 @@ import FraudProof.DataStructures.BTree -- Btree
 import FraudProof.DataStructures.MTree -- MTree
 import FraudProof.DataStructures.Hash -- hash classes
 
--- Simply structuere
+----------------------------------------
+-- * Simply structure.
+-- This one is assuming that |α| is known. We can do a little bit better.
 structure FromBtoMTree (α ℍ: Type) where
   data : BTree α
   merkleTree : ℍ
   -- Hash α ℍ and HashMagma ℍ
   -- Implicit assumption: this.merkleTree = MTree.hash $ hash_BTree this.data
   -- This is missing BEq ℍ to /test/ equality.
-
 
 -- We assume the DA |da| was proposed by the proposer.
 -- If it is right, the proposer wins.
@@ -74,9 +75,11 @@ def arbitrationInit {α ℍ : Type} [BEq ℍ] [Hash α ℍ][HashMagma ℍ]
     : Winner
     := arbitrage .nil da proposer chooser
 
--- This is not enough.
+----------------------------------------
+-- * BTree as hashes.
+-- We know the structure of the data plus the hashes of their leaves.
 structure ComputationTree (ℍ : Type) where
-  computation : BTree Unit -- Btree in this case, in can be generalized
+  computation : BTree ℍ -- Btree in this case, in can be generalized
   res : ℍ
   -- {𝔸}, fold 𝔸_hash computation = res
   -- one binary operation and leafs (In this case, that's why BTree)
@@ -92,11 +95,11 @@ def compTreeArbitration {α ℍ : Type}
     : Winner :=
   match _R : da.computation with
   -- End of the game.
-  | .leaf _ =>
+  | .leaf h =>
     match reveler pos with
     -- Only accepted move here is |End|.
     | some (.End v) =>
-      condWProp $ o.mhash v == da.res
+      condWProp $ o.mhash v == h
     -- Here we have, no moves or more moves.
     | _ => Player.Chooser -- wins
   -- Playing.
@@ -118,27 +121,36 @@ def compTreeArbitration {α ℍ : Type}
  termination_by da.computation
  decreasing_by all_goals {simp_wf; rw [_R]; simp ; try omega}
 
+def arbInit {α ℍ : Type}
+    [BEq ℍ][Hash α ℍ][HashMagma ℍ]
+    (da : ComputationTree ℍ)
+    --
+    (reveler : Skeleton -> Option (PMoves' α (ℍ × ℍ)))
+    (chooser : Skeleton -> (ℍ × ℍ) -> Option ChooserMoves)
+    --
+    : Winner := compTreeArbitration .nil da reveler chooser
+
 ----------------------------------------
 -- * Index Trees (overcomplicated)
 -- Same as before, but with enriched trees with
 -- + pre-computed hashes (assumed correct?) <- removed this, we may not need them
 -- (add it to the next game)
--- + shortest path
--- structure DAIxTrees (α ℍ: Type) (n : Nat) where
---   data : ITree α n
---   merkleTree : ℍ
+-- + shortest path : for indexing trees (positions)
+-- + longest path provide full strategies
+structure DAIxTrees (α ℍ: Type) (s l : Nat) where
+  computationTree : LeafITree ℍ s l
+  merkleTree : ℍ
 
--- To implement something like this I need more information over the tree.
--- Like shortest and longest path lengths.
--- + shortest to index trees
--- + longest to ask for stategies.: ∀ (longest : Nat), (i : Fin longest -> ISkeleton i -> ProposerMoves )
--- def sizedArbitrage {α ℍ : Type}[BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
---     {p q : Nat} -- size
---     (pLTq : p ≤ q)
---     (pos : ISkeleton p)
---     (da : DAIxTrees α ℍ q)
---     --
---     (proposer : ISkeleton p -> ProposerMoves ℍ)
---     (nextProposer : _)
-
+-- We can define complete games. Players play until the end.
+-- We can easily adapt it to players abandoning the game, but we have the
+-- machinery to specify the game completely.
+def sizedArbitrage {α ℍ : Type}[BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+    {s l curr : Nat}
+    (currRange : s ≤ curr ∧ curr ≤ l)
+    (pos : ISkeleton curr)
+    (da : DAIxTrees α ℍ s l)
     --
+    (proposer : ISkeleton l -> PMoves' α (ℍ × ℍ))
+    (chooser : ISkeleton l -> (ℍ × ℍ) -> ChooserMoves)
+    --
+    : Winner := _

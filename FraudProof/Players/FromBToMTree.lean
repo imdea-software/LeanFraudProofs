@@ -37,7 +37,23 @@ def SemiCompleteProposer {α ℍ : Type}
      --  A /bad path/. That's why Indexed Trees with shortest path are complete.
      | .cons _ _ , .leaf _ _=> none
 
-
+def Proposer {α ℍ : Type}{s m l : Nat}
+  (_mLTs : m < s)
+  (data : MMTree α ℍ s l)
+  (iskl : ISkeleton m)
+  : PMoves' α (ℍ × ℍ)
+  := match s with
+    | 0 => match data with
+           | .leaf v _ => .End v
+    | .succ _ps =>
+      match m with
+      | 0 => match data with
+             | .node _ _pBot _pTop l r => .Next ⟨ l.getI , r.getI ⟩
+      | .succ _pm =>
+        -- Head skeleton path
+        match iskl ⟨ 0 , by simp ⟩ , data with
+        | .inl _ , .node _ _ _ l _ => Proposer (by omega) l (Fin.tail iskl)
+        | .inr _ , .node _ _ _ _ r => Proposer (by omega) r (Fin.tail iskl)
 
 -- * Chooser strategy
 -- Here we should act under the assumption something is wrong.
@@ -61,8 +77,11 @@ def SemiGoodChooser {α ℍ : Type} [BEq ℍ]
     SemiGoodChooser bl sk pM
   | .cons (.inr _) sk, .node _i _ br =>
     SemiGoodChooser br sk pM
-  | .cons _ _ , .leaf _ _ => none -- path is longer than the tree.
---
+  -- path is longer than the tree.
+  | .cons _ _ , .leaf _ _ => none
+
+----------------------------------------
+-- * Indexed Trees and Paths
 -- Function generating a /good proposer/ from a tree, i.e. a proposer winning
 -- the game.
 def GoodProposer {α ℍ : Type} {m n : Nat}
