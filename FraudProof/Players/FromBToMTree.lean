@@ -38,7 +38,7 @@ def SemiCompleteProposer {α ℍ : Type}
      | .cons _ _ , .leaf _ _=> none
 
 def Proposer {α ℍ : Type}{s m l : Nat}
-  (_mLTs : m < s)
+  (_mLTs : m ≤ s)
   (data : MMTree α ℍ s l)
   (iskl : ISkeleton m)
   : PMoves' α (ℍ × ℍ)

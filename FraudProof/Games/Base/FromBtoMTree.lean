@@ -6,6 +6,8 @@ import FraudProof.DataStructures.BTree -- Btree
 import FraudProof.DataStructures.MTree -- MTree
 import FraudProof.DataStructures.Hash -- hash classes
 
+import FraudProof.Extras.BToMTree -- Indexing MMTrees
+
 ----------------------------------------
 -- * Simply structure.
 -- This one is assuming that |α| is known. We can do a little bit better.
@@ -137,20 +139,42 @@ def arbInit {α ℍ : Type}
 -- (add it to the next game)
 -- + shortest path : for indexing trees (positions)
 -- + longest path provide full strategies
-structure DAIxTrees (α ℍ: Type) (s l : Nat) where
-  computationTree : LeafITree ℍ s l
-  merkleTree : ℍ
+structure DAIxTrees (ℍ: Type) (s l : Nat) where
+  computationTree : LeafITree ℍ s l -- Tree with Hashes as leaves
+  merkleTree : ℍ -- res
+
 
 -- We can define complete games. Players play until the end.
 -- We can easily adapt it to players abandoning the game, but we have the
 -- machinery to specify the game completely.
 def sizedArbitrage {α ℍ : Type}[BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
     {s l curr : Nat}
-    (currRange : s ≤ curr ∧ curr ≤ l)
+    (currRange : curr ≤ s )
+    (da : DAIxTrees ℍ s l)
     (pos : ISkeleton curr)
-    (da : DAIxTrees α ℍ s l)
     --
-    (proposer : ISkeleton l -> PMoves' α (ℍ × ℍ))
-    (chooser : ISkeleton l -> (ℍ × ℍ) -> ChooserMoves)
+    -- Players strategies should be define at all possible
+    -- board states.
+    (proposer : MMTree α ℍ s l)
+    (chooser : MMTree Unit (ℍ × ℍ -> ChooserMoves) s l)
     --
-    : Winner := _
+    : Winner :=
+    match IdxMMTreeI currRange da.computationTree pos , IdxMMTreeI currRange proposer pos with
+    -- Good Moves
+    -- Path leads to a leaf
+    | .inl ⟨ h , _ ⟩ , .inl ⟨ v , _ ⟩ =>
+       condWProp $ o.mhash v == h
+    -- Path leads to a node
+    | .inr ⟨ _ , bl , br ⟩ , .inr ⟨ _ , hl , hr ⟩ =>
+       match IdxMMTreeI currRange chooser pos with
+       | .inl _ => Player.Proposer -- wrong move
+       | .inr ⟨ f , _ , _ ⟩ =>
+         match f ⟨ hl , hr ⟩ with
+         | .Now =>
+          condWProp $ m.comb hl hr == da.merkleTree
+         | .Continue .Left =>
+           sizedArbitrage _ ⟨ _ , hl ⟩ (Fin.snoc pos (.inl ()))  _ _
+         | .Continue .Right => _
+    -- Bath Moves
+    | .inl _ , .inr _ => Player.Chooser -- Wrong move
+    | .inr _ , .inl _ => Player.Chooser -- Wrong move
