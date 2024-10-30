@@ -3,6 +3,7 @@ import FraudProof.DataStructures.MTree
 import FraudProof.DataStructures.Hash
 
 import Mathlib.Data.Sum.Basic
+import Mathlib.Data.Fin.Tuple.Basic -- Fin.tail
 
 section ValHash
   variable { α ℍ : Type }
@@ -28,6 +29,31 @@ section ValHash
     let abl := medITrees bl
     let abr := medITrees br
     .nodeR (o.comb abl.getI abr.getI) p abl abr
+
+  -- Accessing Indexed MMTrees
+  structure NData (β : Type) where
+    nodeI : β
+    leftI : β
+    rightI : β
+
+  structure LData (α β : Type) where
+    ldata : α
+    leafI : β
+
+  def IdxMMTreeI {α β : Type}{s l c : Nat}
+    ( _cLeqs : c ≤ s )
+    (d : MMTree α β s l)
+    (skl : ISkeleton c)
+    : (LData α β) ⊕ (NData β)
+  := match s , d with
+  | 0  , .leaf v i => .inl ⟨ v , i ⟩
+  | .succ pn , .node i _ _ l r =>
+    match c with
+    | 0 => .inr ⟨ i , l.getI , r.getI ⟩
+    | .succ pc => match skl ⟨ 0 , by simp ⟩ with
+      | .inl _ => IdxMMTreeI (by omega) l $ Fin.tail skl
+      | .inr _ => IdxMMTreeI (by omega) r $ Fin.tail skl
+
 
   ----------------------------------------
   -- Tree Path to Hash Path
