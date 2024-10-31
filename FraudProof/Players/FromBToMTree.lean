@@ -6,36 +6,77 @@ import FraudProof.DataStructures.BTree -- Btree
 import FraudProof.DataStructures.MTree -- MTree
 import FraudProof.DataStructures.Hash -- hash classes
 
+import FraudProof.Extras.BToMTree -- Btree
 -- Sequences
 import Mathlib.Data.Fin.Tuple.Basic -- Fin.tail
+
+-- * Proposer from Map-Forget-Populate
+structure ProposerDef (α ℍ : Type) where
+  values : Skeleton -> Option α
+  nodeH  : Skeleton -> Option (ℍ × ℍ)
+
+def AddValue {α ℍ : Type} (s : Skeleton) (r : Option α) (o : ProposerDef α ℍ) : ProposerDef α ℍ
+ := ⟨ fun s' => if s == s' then r else o.values s', o.nodeH ⟩
+def AddNodeH {α ℍ : Type} (s : Skeleton) (r : Option (ℍ × ℍ)) (o : ProposerDef α ℍ) : ProposerDef α ℍ
+ := ⟨ o.values, fun s' => if s == s' then r else o.nodeH s' ⟩
+
+def fromDataProposer' {α ℍ: Type} (t : ABTree ((α × ℍ) × Skeleton) (ℍ × Skeleton))
+  (acc : ProposerDef α ℍ) : ProposerDef α ℍ
+  := match t with
+    | .leaf ⟨ ⟨ v , _ ⟩ , skl ⟩ => AddValue skl (some v) acc
+    | .node ⟨ _ , skl ⟩ bl br => sorry
+
+-- def fromDataProposer' {α ℍ: Type} (t : ABTree (α × ℍ) ℍ) : ProposerDef α ℍ
+--  :=t.InjPath
+
+abbrev ProposerStrategy (α ℍ : Type):= ABTree (Option α) (Option (ℍ × ℍ))
+
+-- How bad people create their strategies? I dunno :shrug:
+def simpGoodGen {α ℍ : Type}[o : Hash α ℍ][m : HashMagma ℍ] (t : BTree α) : ProposerStrategy α ℍ
+ :=  (@propTree _ _ o m t).map (fun a => some $ a.1) (fun n => some $ n.2 )
+
+def GenProposer {α ℍ : Type} (pdef : ProposerDef α ℍ) (comp : ABTreeSkeleton)
+ : ProposerStrategy α ℍ
+ := comp.TSkeleton.map pdef.values pdef.nodeH
+
+-- * Chooser
+-- Using parenthesis to split concepts
+
+abbrev ChooserStrategy (ℍ : Type) := ABTree Unit ((ℍ × ℍ) -> Option ChooserMoves)
+-- Options?
+abbrev OChooserStrategy (ℍ : Type) := ABTree (Option Unit) ((ℍ × ℍ) -> Option ChooserMoves)
+
+def GenChooser {ℍ : Type} (cdef : Skeleton -> ((ℍ × ℍ) -> Option ChooserMoves)) (comp : ABTreeSkeleton)
+  : ChooserStrategy ℍ
+  := comp.TSkeleton.map (fun _ => ()) cdef
 
 -- What if I modeled no posible moves as game ending.
 -- Adding a checking move as move. | LastElemChk |.
 --
 -- This is a /semi/ good proposer. Skeletons could be of /wrong size/.
 def SemiGoodProposer {α ℍ : Type}
-   (data : ABTree α ℍ)
+   (data : ABTree (α × ℍ)  ℍ)
    (skl : Skeleton)
    : Option (PMoves ℍ)
    := match skl , data with
-   | .nil , .leaf _ _ => none -- We should not get here
+   | .nil , .leaf _ => none -- We should not get here
    | .nil , .node _ bl br => some $ .Next ⟨ bl.getI , br.getI ⟩
    | .cons (.inl _) sk , .node _ l _ => SemiGoodProposer l sk
    | .cons (.inr _) sk , .node _ _ r => SemiGoodProposer r sk
    | _ , _ => none
 
 def SemiCompleteProposer {α ℍ : Type}
-  (data : ABTree α ℍ)
+  (data : ABTree (α × ℍ) ℍ)
   (skl : Skeleton)
   : Option (PMoves' α (ℍ × ℍ))
   := match skl , data with
-     | .nil , .leaf _i v => some $ .End v
+     | .nil , .leaf v => some $ .End v.1
      | .nil , .node _i bl br => some $ .Next ⟨ bl.getI , br.getI ⟩
      | .cons (.inl _) rs , .node _i b _ => SemiCompleteProposer b rs
      | .cons (.inr _) rs , .node _i _ b => SemiCompleteProposer b rs
      --  Nonsense case, I think. This is a Skeleton longer than the data
      --  A /bad path/. That's why Indexed Trees with shortest path are complete.
-     | .cons _ _ , .leaf _ _=> none
+     | .cons _ _ , .leaf _=> none
 
 def Proposer {α ℍ : Type}{s m l : Nat}
   (_mLTs : m ≤ s)
@@ -60,13 +101,13 @@ def Proposer {α ℍ : Type}{s m l : Nat}
 -- If the proposed hash is wrong, we should detected.
 -- Assuming the hash, that's outised, it is not the one it should be.
 def SemiGoodChooser {α ℍ : Type} [BEq ℍ]
-  (data : ABTree α ℍ)
+  (data : ABTree (α × ℍ) ℍ)
   (skl : Skeleton)
   (pM : ℍ × ℍ)
   : Option ChooserMoves
   := match skl , data with
   -- the only valid hash is |_i| <<-- This is another assumption.
-  | .nil , .leaf _i _v => some .Now
+  | .nil , .leaf _v => some .Now
   | .nil , .node _i bl br =>
     if pM.1 == bl.getI ∧ pM.2 == br.getI -- Caught lying!
       then some .Now -- Breakes assumption, remember context hash is /wrong/ [and hash comb is unique.]
@@ -78,7 +119,7 @@ def SemiGoodChooser {α ℍ : Type} [BEq ℍ]
   | .cons (.inr _) sk, .node _i _ br =>
     SemiGoodChooser br sk pM
   -- path is longer than the tree.
-  | .cons _ _ , .leaf _ _ => none
+  | .cons _ _ , .leaf _ => none
 
 ----------------------------------------
 -- * Indexed Trees and Paths

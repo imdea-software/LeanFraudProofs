@@ -4,6 +4,8 @@ import FraudProof.DataStructures.Value
 -- Induction proofs
 import Mathlib.Data.Nat.Defs
 
+import Mathlib.Control.Bifunctor
+
 /-! # Binary Tree -/
 
 -- BTree Basic Definition
@@ -13,12 +15,32 @@ inductive BTree (α : Type ): Type
 deriving instance BEq for BTree
 
 inductive ABTree (α β : Type) : Type
- | leaf (i : β) (v : α)
+ | leaf (v : α)
  | node (i : β) ( bL bR : ABTree α β )
 
-def ABTree.getI {α β : Type}:  ABTree α β -> β
- | .leaf i _ => i
- | .node i _ _ => i
+abbrev ABTreeSkeleton := ABTree Unit Unit
+
+-- Projector
+def ABTree.getI' {α β γ : Type}(p : α -> γ)(q : β -> γ) : ABTree α β -> γ
+ | .leaf v => p v
+ | .node i _ _ => q i
+
+def ABTree.getI {α β : Type} : ABTree (α × β) β -> β
+ := ABTree.getI' (fun p => p.2) id
+
+def ABTree.map {α₁ α₂ β₁ β₂ : Type }
+   (f : α₁ -> α₂) (g : β₁ -> β₂)
+   : ABTree α₁ β₁ -> ABTree α₂ β₂
+   | .leaf v => .leaf $ f v
+   | .node i bl br => .node (g i) (bl.map f g) (br.map f g)
+
+instance : Bifunctor ABTree where
+ bimap := ABTree.map
+
+def ABTree.forget {α β : Type} : ABTree α β -> ABTree Unit Unit
+ := ABTree.map (fun _ => ()) (fun _ => ())
+
+-- TODO LawfulBifunctor
 
 -- Shortest path indexed trees.
 inductive STree (α β : Type) : (n : Nat) -> Type where

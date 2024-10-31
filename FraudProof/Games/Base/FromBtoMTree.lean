@@ -212,3 +212,10 @@ structure DAIxTrees (ℍ: Type) (s l : Nat) where
 --     -- Bath Moves
 --     | .inl _ , .inr _ => Player.Chooser -- Wrong move
 --     | .inr _ , .inl _ => Player.Chooser -- Wrong move
+
+----------------------------------------
+-- * MAP and stuff players.
+--
+
+def mapArbitrationGame _
+----------------------------------------
