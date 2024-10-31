@@ -123,6 +123,40 @@ def compTreeArbitration {α ℍ : Type}
  termination_by da.computation
  decreasing_by all_goals {simp_wf; rw [_R]; simp ; try omega}
 
+-- Indexed Traversing data.
+-- Last guard shows we still do not have enough data connecting
+-- previous options with current state.
+def compI {α ℍ : Type}
+    [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+    (pos : Skeleton)
+    (da : ComputationTree ℍ)
+    --
+    (reveler : Skeleton -> Option (PMoves' α (ℍ × ℍ)))
+    (chooser : Skeleton -> (ℍ × ℍ) -> Option ChooserMoves)
+    --
+    : Winner := match _HC : IndexBTree pos da.computation , reveler pos with
+    | some (.inl h), some (.End v)  =>
+      condWProp $ o.mhash v == h
+    | some (.inr ⟨ cl , cr ⟩) , some (.Next proposed) =>
+      match chooser pos proposed with
+      | some (.Now) =>
+        condWProp $ m.comb proposed.1 proposed.2 == da.res
+      | some (.Continue .Left) =>
+        compI (pos ++ [ .inl () ]) ⟨ cl , proposed.1 ⟩ reveler chooser
+      | some (.Continue .Right) =>
+        compI (pos ++ [ .inr () ]) ⟨ cr , proposed.2 ⟩ reveler chooser
+      -- No moves
+      | _ => Player.Proposer
+    -- Invalid moves from Proposer.
+    -- I don't think this guard is reachable?
+    | _ , _ => Player.Chooser
+termination_by da.computation
+decreasing_by
+  all_goals simp_wf
+  { have thS := (sizeIBTree pos da.computation cl cr _HC).1; assumption}
+  { have thS := (sizeIBTree pos da.computation cl cr _HC).2; assumption}
+
+
 def arbInit {α ℍ : Type}
     [BEq ℍ][Hash α ℍ][HashMagma ℍ]
     (da : ComputationTree ℍ)
@@ -147,34 +181,34 @@ structure DAIxTrees (ℍ: Type) (s l : Nat) where
 -- We can define complete games. Players play until the end.
 -- We can easily adapt it to players abandoning the game, but we have the
 -- machinery to specify the game completely.
-def sizedArbitrage {α ℍ : Type}[BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
-    {s l curr : Nat}
-    (currRange : curr ≤ s )
-    (da : DAIxTrees ℍ s l)
-    (pos : ISkeleton curr)
-    --
-    -- Players strategies should be define at all possible
-    -- board states.
-    (proposer : MMTree α ℍ s l)
-    (chooser : MMTree Unit (ℍ × ℍ -> ChooserMoves) s l)
-    --
-    : Winner :=
-    match IdxMMTreeI currRange da.computationTree pos , IdxMMTreeI currRange proposer pos with
-    -- Good Moves
-    -- Path leads to a leaf
-    | .inl ⟨ h , _ ⟩ , .inl ⟨ v , _ ⟩ =>
-       condWProp $ o.mhash v == h
-    -- Path leads to a node
-    | .inr ⟨ _ , bl , br ⟩ , .inr ⟨ _ , hl , hr ⟩ =>
-       match IdxMMTreeI currRange chooser pos with
-       | .inl _ => Player.Proposer -- wrong move
-       | .inr ⟨ f , _ , _ ⟩ =>
-         match f ⟨ hl , hr ⟩ with
-         | .Now =>
-          condWProp $ m.comb hl hr == da.merkleTree
-         | .Continue .Left =>
-           sizedArbitrage _ ⟨ _ , hl ⟩ (Fin.snoc pos (.inl ()))  _ _
-         | .Continue .Right => _
-    -- Bath Moves
-    | .inl _ , .inr _ => Player.Chooser -- Wrong move
-    | .inr _ , .inl _ => Player.Chooser -- Wrong move
+-- def sizedArbitrage {α ℍ : Type}[BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+--     {s l curr : Nat}
+--     (currRange : curr < s )
+--     (da : DAIxTrees ℍ s l)
+--     (pos : ISkeleton curr)
+--     --
+--     -- Players strategies should be define at all possible
+--     -- board states.
+--     (proposer : MMTree α ℍ s l)
+--     (chooser : MMTree Unit (ℍ × ℍ -> ChooserMoves) s l)
+--     --
+--     : Winner :=
+--     match IdxMMTreeI _ da.computationTree pos , IdxMMTreeI currRange proposer pos with
+--     -- Good Moves
+--     -- Path leads to a leaf
+--     | .inl ⟨ h , _ ⟩ , .inl ⟨ v , _ ⟩ =>
+--        condWProp $ o.mhash v == h
+--     -- Path leads to a node
+--     | .inr ⟨ _ , bl , br ⟩ , .inr ⟨ _ , hl , hr ⟩ =>
+--        match IdxMMTreeI currRange chooser pos with
+--        | .inl _ => Player.Proposer -- wrong move
+--        | .inr ⟨ f , _ , _ ⟩ =>
+--          match f ⟨ hl , hr ⟩ with
+--          | .Now =>
+--           condWProp $ m.comb hl hr == da.merkleTree
+--          | .Continue .Left =>
+--            sizedArbitrage _ ⟨ _ , hl ⟩ (Fin.snoc pos (.inl ())) _ _
+--          | .Continue .Right => _
+--     -- Bath Moves
+--     | .inl _ , .inr _ => Player.Chooser -- Wrong move
+--     | .inr _ , .inl _ => Player.Chooser -- Wrong move

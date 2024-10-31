@@ -11,6 +11,48 @@ section ValHash
     let hashTree := ( MTree.hash ∘ hash_BTree )
     Sum.map  hashTree hashTree
 
+
+  def IndexBTree {α : Type} : Skeleton -> BTree α -> Option (α ⊕ (BTree α × BTree α))
+  | .nil , .leaf v => some $ .inl v
+  | .nil , .node bl br => some $ .inr ⟨ bl , br ⟩
+  | .cons (.inl _) sks , .node bl _ => IndexBTree sks bl
+  | .cons (.inr _) sks , .node _ br => IndexBTree sks br
+  -- Skeleton path is longer than path in tree.
+  | .cons _ _ , .leaf _ => none
+
+  theorem sizeIBTree {α : Type}(skl : Skeleton) :
+  forall ( t cl cr : BTree α ),
+    IndexBTree skl t = some (.inr ⟨ cl , cr⟩)
+    -> sizeOf cl < sizeOf t ∧ sizeOf cr < sizeOf t
+  := by induction skl with
+   | nil =>
+      intros t cl cr a
+      cases t with
+      | leaf v =>
+        simp [IndexBTree] at a
+      | node kl kr =>
+        simp [IndexBTree] at *
+        have al := a.1
+        have ar := a.2
+        exact ⟨ by rw [al]; omega , by rw [ar]; omega ⟩
+   | cons s sks HI =>
+      intros t cl cr H
+      cases t with
+      -- Imp case
+      | leaf _ => simp [IndexBTree] at *
+      --
+      | node kl kr =>
+        cases s with
+        | inl _ =>
+          simp [IndexBTree] at H
+          have indI := HI kl cl cr H
+          simp; omega
+        | inr _ =>
+          simp [IndexBTree] at H
+          have indI := HI kr cl cr H
+          simp; omega
+
+
   --- Computing intermediary trees.
   def medTrees [m : Hash α ℍ][o : HashMagma ℍ] : BTree α -> ABTree α ℍ
   | .leaf v => .leaf (m.mhash v) v
@@ -31,28 +73,39 @@ section ValHash
     .nodeR (o.comb abl.getI abr.getI) p abl abr
 
   -- Accessing Indexed MMTrees
-  structure NData (β : Type) where
+  structure NData (α β : Type)  where
     nodeI : β
-    leftI : β
-    rightI : β
+    sL : Nat
+    sR : Nat
+    lL : Nat
+    lR : Nat
+    leftI : MMTree α β sL lL
+    rightI : MMTree α β sR lR
+    -- We also have proofs
+    sbot : Nat
+    sbotP : min sL sR = sbot
+    ltop : Nat
+    ltopP : max lL lR = ltop
+
+
 
   structure LData (α β : Type) where
     ldata : α
     leafI : β
 
-  def IdxMMTreeI {α β : Type}{s l c : Nat}
-    ( _cLeqs : c ≤ s )
-    (d : MMTree α β s l)
-    (skl : ISkeleton c)
-    : (LData α β) ⊕ (NData β)
-  := match s , d with
-  | 0  , .leaf v i => .inl ⟨ v , i ⟩
-  | .succ pn , .node i _ _ l r =>
-    match c with
-    | 0 => .inr ⟨ i , l.getI , r.getI ⟩
-    | .succ pc => match skl ⟨ 0 , by simp ⟩ with
-      | .inl _ => IdxMMTreeI (by omega) l $ Fin.tail skl
-      | .inr _ => IdxMMTreeI (by omega) r $ Fin.tail skl
+  -- def IdxMMTreeI {α β : Type}{s l c : Nat}
+  --   ( _cLeqs : c ≤ s )
+  --   (d : MMTree α β s l)
+  --   (skl : ISkeleton c)
+  --   : (LData α β) ⊕ (NData α β)
+  -- := match s , d with
+  -- | 0  , .leaf v i => .inl ⟨ v , i ⟩
+  -- | .succ pn , @MMTree.node _ _ sL sR lL lR sB lT i pB pT bl br =>
+  --   match c with
+  --   | 0 => .inr ⟨ i , l.getI , r.getI ⟩
+  --   | .succ pc => match skl ⟨ 0 , by simp ⟩ with
+  --     | .inl _ => IdxMMTreeI (by omega) l $ Fin.tail skl
+  --     | .inr _ => IdxMMTreeI (by omega) r $ Fin.tail skl
 
 
   ----------------------------------------

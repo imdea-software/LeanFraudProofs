@@ -27,7 +27,7 @@ inductive STree (α β : Type) : (n : Nat) -> Type where
   | nodeL {n m : Nat} (i : β) (nLeqm : n ≤ m) ( bL : STree α β n )( bR : STree α β m ) : STree α β n.succ
   | nodeR {n m : Nat} (i : β) (mLTn : m < n) ( bL : STree α β n )( bR : STree α β m ) : STree α β m.succ
 
-inductive MMTree (α β : Type) : (s l : Nat) -> Type where
+inductive MMTree (α β : Type) : (_s _l : Nat) -> Type where
   | leaf (v : α) (i : β) : MMTree α β 0 0
   | node {s1 s2 l1 l2 s l : Nat} (i : β) (sBot : min s1 s2 = s) (lTop : max l1 l2 = l) ( bL : MMTree α β s1 l1 )( bR : MMTree α β s2 l2 ) : MMTree α β s.succ l.succ
 
