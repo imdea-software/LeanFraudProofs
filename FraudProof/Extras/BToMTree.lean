@@ -5,11 +5,33 @@ import FraudProof.DataStructures.Hash
 import Mathlib.Data.Sum.Basic
 import Mathlib.Data.Fin.Tuple.Basic -- Fin.tail
 
+----------------------------------------
+-- Adding path to node?
+def ABTree.InjPath' {α β : Type} (p : Skeleton) : ABTree α β -> ABTree (α × Skeleton) (β × Skeleton)
+  | .leaf v => .leaf ⟨ v , p ⟩
+  | .node b bl br => .node ⟨ b , p ⟩ ( ABTree.InjPath' (p ++ [ .inl () ]) bl) ( ABTree.InjPath' (p ++ [ .inr () ]) br)
+
+def ABTree.InjPath {α β : Type} : ABTree α β -> ABTree (α × Skeleton) (β × Skeleton)
+  := ABTree.InjPath' []
+
+-- theorem ABTree.map t.InjPath Prod.1 Prod.1 = t
+-- theorem ABTree.I t pos = some _ => ABTree.I (t.InjPath) pos = some (_ × pos)
+
+-- Forgeting and then adding path
+def ABTree.TSkeleton' {α β : Type} (t : ABTree α β) : ABTree (Unit × Skeleton) (Unit × Skeleton)
+  := t.forget.InjPath
+
+-- Adding Path and Forgetting
+def ABTree.TSkeleton {α β : Type} : ABTree α β -> ABTree Skeleton Skeleton
+  := ABTree.map (fun p => p.2) (fun p => p.2) ∘ ABTree.InjPath
+
+----------------------------------------
 section ValHash
   variable { α ℍ : Type }
   def hashElem [Hash α ℍ][HashMagma ℍ] : BTree α ⊕ BTree α → PathElem ℍ:=
     let hashTree := ( MTree.hash ∘ hash_BTree )
     Sum.map  hashTree hashTree
+
 
 
   def IndexBTree {α : Type} : Skeleton -> BTree α -> Option (α ⊕ (BTree α × BTree α))
@@ -54,23 +76,32 @@ section ValHash
 
 
   --- Computing intermediary trees.
-  def medTrees [m : Hash α ℍ][o : HashMagma ℍ] : BTree α -> ABTree α ℍ
-  | .leaf v => .leaf (m.mhash v) v
+  def medTrees [m : Hash α ℍ][o : HashMagma ℍ] : BTree α -> ABTree (α × ℍ) ℍ
+  | .leaf v => .leaf ⟨  v , (m.mhash v) ⟩
   | .node bl br =>
     let abl := medTrees bl
     let abr := medTrees br
     .node (o.comb abl.getI abr.getI) abl abr
 
-  def medITrees [m : Hash α ℍ][o : HashMagma ℍ]{n : Nat} : ITree α n -> STree α ℍ n
-  | .leaf v _ => .leaf v (m.mhash v)
-  | .nodeL _ p bl br =>
-    let abl := medITrees bl
-    let abr := medITrees br
-    .nodeL (o.comb abl.getI abr.getI) p abl abr
-  | .nodeR _ p bl br =>
-    let abl := medITrees bl
-    let abr := medITrees br
-    .nodeR (o.comb abl.getI abr.getI) p abl abr
+  def propTree [m : Hash α ℍ][o : HashMagma ℍ] : BTree α  -> ABTree (α × ℍ) (ℍ × ℍ × ℍ)
+  | .leaf v => .leaf ⟨ v , m.mhash v ⟩
+  | .node bl br =>
+    let abl := propTree bl
+    let h1 := ABTree.getI' (fun e => e.2) (fun e => e.1) abl
+    let abr := propTree br
+    let h2 := ABTree.getI' (fun e => e.2) (fun e => e.1) abr
+    .node ⟨ o.comb h1 h2 , h1 , h2 ⟩  abl abr
+
+  -- def medITrees [m : Hash α ℍ][o : HashMagma ℍ]{n : Nat} : ITree α n -> STree α ℍ n
+  -- | .leaf v _ => .leaf v (m.mhash v)
+  -- | .nodeL _ p bl br =>
+  --   let abl := medITrees bl
+  --   let abr := medITrees br
+  --   .nodeL (o.comb abl.getI abr.getI) p abl abr
+  -- | .nodeR _ p bl br =>
+  --   let abl := medITrees bl
+  --   let abr := medITrees br
+  --   .nodeR (o.comb abl.getI abr.getI) p abl abr
 
   -- Accessing Indexed MMTrees
   structure NData (α β : Type)  where

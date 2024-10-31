@@ -252,14 +252,14 @@ structure CorrectAgent {α : Type}(ℍ : Type) (ls : List α) where
   -- Structures
 
 
-def build {α ℍ : Type}
-  -- Validity def
-  (valid : α -> Bool)
-  -- Knowledge
-  (es : List α)
-  --
-  : CorrectAgent ℍ es
-  := sorry
+-- def build {α ℍ : Type}
+--   -- Validity def
+--   (valid : α -> Bool)
+--   -- Knowledge
+--   (es : List α)
+--   --
+--   : CorrectAgent ℍ es
+--   := sorry
 
 
 end StrategyGeneration
