@@ -31,9 +31,22 @@ def AddNodeH {α ℍ : Type} (s : Skeleton) (r : Option (ℍ × ℍ)) (o : Propo
 
 abbrev ProposerStrategy (α ℍ : Type):= ABTree (Option α) (Option (ℍ × ℍ))
 
+def prevHashProp {α ℍ : Type}[BEq ℍ][o : Hash α ℍ]
+  -- [m : HashMagma ℍ]
+  (h : ℍ)(pstr : ProposerStrategy α ℍ)
+  : Prop :=
+  match pstr with
+  | .leaf (some a) => (o.mhash a) == h
+  -- | .node (some ⟨hl , hr ⟩) _ _ => m.comb hl hr == h
+  -- This does not matter, because none is just insta lossing.
+  | _ => true
+
 -- How bad people create their strategies? I dunno :shrug:
 def simpGoodGen {α ℍ : Type}[o : Hash α ℍ][m : HashMagma ℍ] (t : BTree α) : ProposerStrategy α ℍ
  :=  (@propTree _ _ o m t).map (fun a => some $ a.1) (fun n => some $ n.2 )
+
+-- def medTreeProposer {α ℍ : Type}[o : Hash α ℍ][m : HashMagma ℍ] (t : BTree α) : ProposerStrategy α ℍ
+--  := (@medTrees _ _ o m t).map (fun p => some $ p.1) (fun p => _)
 
 def GenProposer {α ℍ : Type} (pdef : ProposerDef α ℍ) (comp : ABTreeSkeleton)
  : ProposerStrategy α ℍ
@@ -58,13 +71,15 @@ def GenChooser {ℍ : Type} (cdef : Skeleton -> ((ℍ × ℍ) -> Option ChooserM
 def ChooserStr {ℍ : Type}[BEq ℍ] (gen : ℍ × ℍ × ℍ) (offered : ℍ × ℍ ) : Option ChooserMoves
  := match gen , offered with
     | ⟨ _ , gBl , gBr ⟩ , ⟨ ol , or ⟩ =>
-      if ol == gBl
-      then some .Now -- Because A.1 and hash properties of |comb|, we should challenge here.
-      else if or == gBr
-           then some .Now
-           else some $ .Continue .Left -- It does not matter from the point of
-           -- view of correctness but since we know the tree, we can follow the
-           -- shortest path.
+      if ol == gBl ∧ or == gBr then some $ .Now
+      else if ol != gBl then some $ .Continue .Left else some $ .Continue .Right
+
+      -- then some .Now -- Because A.1 and hash properties of |comb|, we should challenge here.
+      -- else if or == gBr
+      --      then some .Now
+      --      else some $ .Continue .Left -- It does not matter from the point of
+      --      -- view of correctness but since we know the tree, we can follow the
+      --      -- shortest path.
 
 def simpChooser {α ℍ : Type}[BEq ℍ][Hash α ℍ][HashMagma ℍ] ( t : BTree α ) : ChooserStrategy ℍ
  := (propTree t).map (fun _ => ()) ChooserStr

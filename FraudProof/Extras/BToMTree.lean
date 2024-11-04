@@ -76,12 +76,12 @@ section ValHash
 
 
   --- Computing intermediary trees.
-  def medTrees [m : Hash α ℍ][o : HashMagma ℍ] : BTree α -> ABTree (α × ℍ) ℍ
-  | .leaf v => .leaf ⟨  v , (m.mhash v) ⟩
-  | .node bl br =>
-    let abl := medTrees bl
-    let abr := medTrees br
-    .node (o.comb abl.getI abr.getI) abl abr
+  -- def medTrees [m : Hash α ℍ][o : HashMagma ℍ] : BTree α -> ABTree (α × ℍ) ℍ
+  -- | .leaf v => .leaf ⟨  v , (m.mhash v) ⟩
+  -- | .node bl br =>
+  --   let abl := medTrees bl
+  --   let abr := medTrees br
+  --   .node (o.comb abl.getI abr.getI) abl abr
 
   def propTree [m : Hash α ℍ][o : HashMagma ℍ] : BTree α  -> ABTree (α × ℍ) (ℍ × ℍ × ℍ)
   | .leaf v => .leaf ⟨ v , m.mhash v ⟩
@@ -91,6 +91,10 @@ section ValHash
     let abr := propTree br
     let h2 := ABTree.getI' (fun e => e.2) (fun e => e.1) abr
     .node ⟨ o.comb h1 h2 , h1 , h2 ⟩  abl abr
+
+  def medTrees [m : Hash α ℍ][o : HashMagma ℍ] (t : BTree α) : ABTree (α × ℍ) ℍ
+  := (@propTree _ _ m o t).map id (fun p => p.1)
+
 
   -- def medITrees [m : Hash α ℍ][o : HashMagma ℍ]{n : Nat} : ITree α n -> STree α ℍ n
   -- | .leaf v _ => .leaf v (m.mhash v)
