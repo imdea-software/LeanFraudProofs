@@ -20,6 +20,10 @@ import FraudProof.Games.OneStepGame
 import FraudProof.Games.LinearGame
 import FraudProof.Games.LogGame
 
+-- Computational Tree Games (DAs)
+import FraudProof.Games.Base.FromBtoMTree
+import FraudProof.Players.FromBToMTree
+import FraudProof.Extras.BToMTree
 
 import Batteries.Data.Fin.Lemmas
 
@@ -304,3 +308,54 @@ theorem ChooserGLHeadWrongSeq
                      { simpa }
 
 end WinningChooser
+----------------------------------------
+
+----------------------------------------
+-- * DA Block: From a Binary Tree with information at the leaves, we compute a
+-- Merkle Tree and just post hashes for the leaves and the top hash.
+namespace FromBTreeToMTree
+
+-- ** [Good] Proposers can defend its block against /all choosers/.  All
+-- choosers includes /good choosers/ too. However, there is an extrinsic (meta?)
+-- reasoning here. Good choosers will refrain from playing, they only play when
+-- they can detect that something is wrong. In this case, something wrong is
+-- when the top hash is not what it is supposed to be from /knowledge/.
+--
+theorem goodProposersWin
+  {α ℍ : Type}[BEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+  -- Assumptions about hashing
+  [CollResistant α ℍ] -- No two elemts share hashes
+  [SLawFulHash ℍ] -- Combining diff hashes returns diff hashes.
+  --
+  (knowledge : BTree α)
+  --
+  : forall (chooser : ChooserStrategy ℍ),
+  have abknowledge := @medTrees _ _ h m knowledge
+  have da : ComputationTree ℍ := ⟨ knowledge.map h.mhash , abknowledge.getI ⟩
+  have goodP : ProposerStrategy α ℍ := simpGoodGen knowledge
+  treeArbitrationGame da goodP chooser = Player.Proposer
+  := sorry
+
+-- * [Good] Choosers win when something is wrong.
+-- Something is wrong when top hash differs from what it should be.
+--
+theorem goodChoosersWin
+  {α ℍ : Type}[BEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+  -- Assumptions about hashing
+  [CollResistant α ℍ] -- No two elemts share hashes
+  [SLawFulHash ℍ] -- Combining diff hashes returns diff hashes.
+  --
+  (knowledge : BTree α)
+  (top : ℍ)
+  :
+  have abknowledge := @medTrees _ _ h m knowledge
+  have da : ComputationTree ℍ := ⟨ knowledge.map h.mhash , top ⟩
+  -- Hash |top| does not matches our knowledge
+  abknowledge.getI != top
+  --
+  -> forall (proposer : ProposerStrategy α ℍ),
+     treeArbitrationGame da proposer (simpChooser knowledge)
+     = Player.Chooser
+  := sorry
+end FromBTreeToMTree
+----------------------------------------
