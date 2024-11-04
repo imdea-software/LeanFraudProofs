@@ -20,11 +20,11 @@ def AddValue {α ℍ : Type} (s : Skeleton) (r : Option α) (o : ProposerDef α 
 def AddNodeH {α ℍ : Type} (s : Skeleton) (r : Option (ℍ × ℍ)) (o : ProposerDef α ℍ) : ProposerDef α ℍ
  := ⟨ o.values, fun s' => if s == s' then r else o.nodeH s' ⟩
 
-def fromDataProposer' {α ℍ: Type} (t : ABTree ((α × ℍ) × Skeleton) (ℍ × Skeleton))
-  (acc : ProposerDef α ℍ) : ProposerDef α ℍ
-  := match t with
-    | .leaf ⟨ ⟨ v , _ ⟩ , skl ⟩ => AddValue skl (some v) acc
-    | .node ⟨ _ , skl ⟩ bl br => sorry
+-- def fromDataProposer' {α ℍ: Type} (t : ABTree ((α × ℍ) × Skeleton) (ℍ × Skeleton))
+--   (acc : ProposerDef α ℍ) : ProposerDef α ℍ
+--   := match t with
+--     | .leaf ⟨ ⟨ v , _ ⟩ , skl ⟩ => AddValue skl (some v) acc
+--     | .node ⟨ _ , skl ⟩ bl br => sorry
 
 -- def fromDataProposer' {α ℍ: Type} (t : ABTree (α × ℍ) ℍ) : ProposerDef α ℍ
 --  :=t.InjPath
@@ -40,15 +40,34 @@ def GenProposer {α ℍ : Type} (pdef : ProposerDef α ℍ) (comp : ABTreeSkelet
  := comp.TSkeleton.map pdef.values pdef.nodeH
 
 -- * Chooser
+-- Types
 -- Using parenthesis to split concepts
-
 abbrev ChooserStrategy (ℍ : Type) := ABTree Unit ((ℍ × ℍ) -> Option ChooserMoves)
 -- Options?
 abbrev OChooserStrategy (ℍ : Type) := ABTree (Option Unit) ((ℍ × ℍ) -> Option ChooserMoves)
 
+-- Generating Strategies
+-- Chooser operates on the assumtion that the top hash is wrong.
+-- Otherwise it is not invoked at all.
 def GenChooser {ℍ : Type} (cdef : Skeleton -> ((ℍ × ℍ) -> Option ChooserMoves)) (comp : ABTreeSkeleton)
   : ChooserStrategy ℍ
   := comp.TSkeleton.map (fun _ => ()) cdef
+
+-- So, we assume that the A.1:|comb offered.1 offered.2 != gen.1|.
+--
+def ChooserStr {ℍ : Type}[BEq ℍ] (gen : ℍ × ℍ × ℍ) (offered : ℍ × ℍ ) : Option ChooserMoves
+ := match gen , offered with
+    | ⟨ _ , gBl , gBr ⟩ , ⟨ ol , or ⟩ =>
+      if ol == gBl
+      then some .Now -- Because A.1 and hash properties of |comb|, we should challenge here.
+      else if or == gBr
+           then some .Now
+           else some $ .Continue .Left -- It does not matter from the point of
+           -- view of correctness but since we know the tree, we can follow the
+           -- shortest path.
+
+def simpChooser {α ℍ : Type}[BEq ℍ][Hash α ℍ][HashMagma ℍ] ( t : BTree α ) : ChooserStrategy ℍ
+ := (propTree t).map (fun _ => ()) ChooserStr
 
 -- What if I modeled no posible moves as game ending.
 -- Adding a checking move as move. | LastElemChk |.
