@@ -2,6 +2,8 @@
 import FraudProof.Games.GameDef -- Players, Winner
 import FraudProof.Players
 
+import FraudProof.Players.FromBToMTree -- Complex Strategies
+
 import FraudProof.DataStructures.BTree -- Btree
 import FraudProof.DataStructures.MTree -- MTree
 import FraudProof.DataStructures.Hash -- hash classes
@@ -215,8 +217,37 @@ structure DAIxTrees (ℍ: Type) (s l : Nat) where
 
 ----------------------------------------
 -- * MAP and stuff players.
---
+-- Why did I do all this /quilombo/?
 
--- def mapArbitrationGame _
 --
+def treeArbitrationGame {α ℍ : Type}
+    [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+    (da : ComputationTree ℍ)
+    --
+    (reveler : ProposerStrategy α ℍ )
+    (chooser : ChooserStrategy ℍ)
+    --
+    : Winner :=
+    -- Reveler plays first
+    match da.computation , reveler with
+    | .leaf h, .leaf (some a) => -- TODO Should we check choser here?
+      condWProp $ o.mhash a == h
+    | .node bl br , .node (some proposition) nextProposerLeft nextProposerRight =>
+      match chooser with
+      | .node cfun nextChooserLeft nextChooserRight =>
+        match cfun proposition with
+        -- challenge hashes now.
+        | some .Now => condWProp $ m.comb proposition.1 proposition.2 == da.res
+        -- Chooser chooses to go left.
+        | some (.Continue .Left) =>
+          treeArbitrationGame ⟨ bl , proposition.1 ⟩ nextProposerLeft nextChooserLeft
+        -- Chooser chooses to go right.
+        | some (.Continue .Right) =>
+          treeArbitrationGame ⟨ br , proposition.2 ⟩ nextProposerRight nextChooserRight
+        -- No moves
+        | none => Player.Proposer
+      -- Chooser does not follows computation tree.
+      | _ => Player.Proposer
+    -- If reveler does not follow the compuetation tree, it loses.
+    | _ , _ => Player.Chooser
 ----------------------------------------
