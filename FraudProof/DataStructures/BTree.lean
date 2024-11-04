@@ -14,6 +14,13 @@ inductive BTree (α : Type ): Type
 | node ( bL bR : BTree α )
 deriving instance BEq for BTree
 
+def BTree.map {α β : Type}(f : α -> β) : BTree α -> BTree β
+ | .leaf v => .leaf $ f v
+ | .node bl br => .node (bl.map f) (br.map f)
+
+instance : Functor BTree where
+ map := BTree.map
+
 inductive ABTree (α β : Type) : Type
  | leaf (v : α)
  | node (i : β) ( bL bR : ABTree α β )

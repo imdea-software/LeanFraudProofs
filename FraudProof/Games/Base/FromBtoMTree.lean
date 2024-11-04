@@ -218,8 +218,15 @@ structure DAIxTrees (ℍ: Type) (s l : Nat) where
 ----------------------------------------
 -- * MAP and stuff players.
 -- Why did I do all this /quilombo/?
+-- The main reason is that now the game is played over the computation tree.
+-- No need to define an inductive relation to provide invariants through the
+-- game.
+-- If we wanna keep using skeletons, I think we need to have a better morphism,
+-- a histo-morphism, connecting the current skeleton /argument/ with the path
+-- travelled.
+-- Proposers and choosers are built as maps from the known data, so they always
+-- match the computation tree (by definition).
 
---
 def treeArbitrationGame {α ℍ : Type}
     [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
     (da : ComputationTree ℍ)
