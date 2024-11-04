@@ -44,6 +44,18 @@ def ABTree.map {α₁ α₂ β₁ β₂ : Type }
 instance : Bifunctor ABTree where
  bimap := ABTree.map
 
+theorem getMapLaw {α β δ γ σ : Type}
+    (f : α -> δ)
+    (g : β -> γ)
+    (f' : δ -> σ)
+    (g' : γ -> σ)
+    (t : ABTree α β)
+    : ABTree.getI' f' g' (ABTree.map f g t)
+    = ABTree.getI' (f' ∘ f) (g' ∘ g) t
+    := by cases t with
+    | leaf v => simp [ABTree.getI', ABTree.map]
+    | node i bl br => simp [ABTree.getI', ABTree.map]
+
 def ABTree.forget {α β : Type} : ABTree α β -> ABTree Unit Unit
  := ABTree.map (fun _ => ()) (fun _ => ())
 

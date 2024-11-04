@@ -322,40 +322,141 @@ namespace FromBTreeToMTree
 -- when the top hash is not what it is supposed to be from /knowledge/.
 --
 theorem goodProposersWin
-  {α ℍ : Type}[BEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
-  -- Assumptions about hashing
-  [CollResistant α ℍ] -- No two elemts share hashes
-  [SLawFulHash ℍ] -- Combining diff hashes returns diff hashes.
+  {α ℍ : Type}[lfulEq : BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+  -- Assumptions about hashing. But we never used them?!
+  -- No, we do not need them here. We model hash functions as functions, so we only need them to be defined
+  -- and returning the same value to the same input.
+  -- [CollResistant α ℍ] -- No two elemts share hashes
+  -- [SLawFulHash ℍ] -- Combining diff hashes returns diff hashes.
   --
   (knowledge : BTree α)
   --
-  : forall (chooser : ChooserStrategy ℍ),
-  have abknowledge := @medTrees _ _ h m knowledge
-  have da : ComputationTree ℍ := ⟨ knowledge.map h.mhash , abknowledge.getI ⟩
-  have goodP : ProposerStrategy α ℍ := simpGoodGen knowledge
+  : forall (chooser : ChooserStrategy ℍ) (proposedH : ℍ),
+  let abknowledge := @medTrees _ _ h m knowledge
+  -- Assumption
+  (abknowledge.getI == proposedH) ->
+  --
+  let da : ComputationTree ℍ := ⟨ knowledge.map h.mhash , proposedH ⟩
+  let goodP : ProposerStrategy α ℍ := simpGoodGen knowledge
   treeArbitrationGame da goodP chooser = Player.Proposer
-  := sorry
+  := by
+  induction knowledge with
+  -- We reached a leaf.
+  | leaf _v =>
+    -- intro chooser
+    simp [treeArbitrationGame, condWProp]
+  | node al ar IndL IndR =>
+    intro chooser
+    simp [treeArbitrationGame]
+    cases chooser with
+    | node cfun cl cr =>
+      simp
+      cases cfun
+        (ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree al),
+          ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree ar)) with
+        | some nextSt =>
+          cases  nextSt with
+          | Now =>
+            simp [condWProp,medTrees,ABTree.map]
+            congr
+          | Continue subTree =>
+            cases subTree with
+            | Left =>
+              simp
+              have indApp := IndL cl (ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree al))
+                   (by simp [medTrees]
+                       unfold ABTree.getI
+                       apply getMapLaw
+                   )
+              assumption
+            | Right =>
+              simp
+              have indApp := IndR cr (ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree ar))
+                   (by simp [medTrees]
+                       unfold ABTree.getI
+                       apply getMapLaw
+                   )
+              assumption
+        | none => simp
+    | leaf => simp
+
 
 -- * [Good] Choosers win when something is wrong.
 -- Something is wrong when top hash differs from what it should be.
 --
+-- What I am missing here is that proposer should be consistent.
+-- In other words, it is something I need to check when playing the game!
+--
 theorem goodChoosersWin
-  {α ℍ : Type}[BEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+  {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
   -- Assumptions about hashing
-  [CollResistant α ℍ] -- No two elemts share hashes
+  [cal : CollResistant α ℍ] -- No two elemts share hashes
   [SLawFulHash ℍ] -- Combining diff hashes returns diff hashes.
   --
   (knowledge : BTree α)
-  (top : ℍ)
   :
-  have abknowledge := @medTrees _ _ h m knowledge
-  have da : ComputationTree ℍ := ⟨ knowledge.map h.mhash , top ⟩
-  -- Hash |top| does not matches our knowledge
-  abknowledge.getI != top
+  forall (proposer : ProposerStrategy α ℍ)(topHash : ℍ),
+  -- Proposer proposed current top hash |topHash|
+  prevHashProp topHash proposer ->
+  -- Top Hash is bad!
+  (medTrees knowledge).getI != topHash ->
   --
-  -> forall (proposer : ProposerStrategy α ℍ),
-     treeArbitrationGame da proposer (simpChooser knowledge)
-     = Player.Chooser
-  := sorry
+  treeArbitrationGame ⟨ knowledge.map h.mhash , topHash⟩ proposer (simpChooser knowledge)
+  = Player.Chooser
+  := by
+  induction knowledge with
+  | leaf _v =>
+    intros proposer topHash hProposer badTop
+    unfold treeArbitrationGame
+    simp [BTree.map ]
+    cases proposer with
+    | leaf kh =>
+      cases kh with
+      | none => simp
+      | some hP =>
+        simp [prevHashProp] at hProposer
+        simp [condWProp]
+        simp [medTrees, propTree, ABTree.map, ABTree.getI, ABTree.getI'] at badTop
+        rw [<- hProposer] at badTop
+        intro f
+        apply badTop
+        rw [f]
+    | node _b _ _ => simp
+  | node bl br IL IR =>
+    intros proposer topHash hProposer badTop
+    unfold treeArbitrationGame
+    simp [BTree.map]
+    cases proposer with
+    | leaf mpH => simp
+    | node mProp proposerLeft proposerRight =>
+      cases mProp with
+      | none => simp
+      | some props =>
+        simp [simpChooser, ABTree.map, ChooserStr]
+        -- ∧ (props.2 == ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree br))
+        -- let pLH := ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m bl)
+        -- let pRH := ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m br)
+        --
+        cases HCL : props.1 == ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m bl) with
+        | true => cases HCR : props.2 == ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m br) with
+                  | true =>
+                         simp at HCL HCR
+                         simp [medTrees, propTree] at badTop
+                         rw [<- HCL] at badTop
+                         rw [<- HCR] at badTop
+                         simp [ABTree.map, ABTree.getI, ABTree.getI'] at badTop
+                         simp [condWProp]
+                         assumption
+                  | _ =>
+                      simp
+                      simp at HCL
+                      rw [HCL]
+                      simp
+                      have indL := IR proposerRight props.2 (by unfold prevHashProp) (by simp [medTrees,ABTree.getI]; rw [getMapLaw _ _ _ _ _]; simp at HCR; intro f;apply HCR;rw [<-f];simp)
+                      unfold simpChooser at indL
+                      assumption
+        | _ => _
+
+
 end FromBTreeToMTree
 ----------------------------------------
