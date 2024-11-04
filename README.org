@@ -211,6 +211,16 @@ DAs are weird computational data.
 
 
 ** Hash Function
+** Chooser Strategy.
+When an invalid hash tree is detected, we can invoke a choosers strategy to
+debunk the block.
+The strategy operates under the assumption the top hash is wrong, otherwise
+there is no way to know if the agent proposing the block is wrong. For example,
+the agent can front-run another and post what it seems to be a valid block
+without knowing the tree.
+
+*** TODO Optimization: We can build players choosing shorters paths when possible.
+We know the whole tree and it is not complete.
 
 
 * To build the whole project

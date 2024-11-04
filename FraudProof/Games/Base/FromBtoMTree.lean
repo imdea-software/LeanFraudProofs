@@ -217,5 +217,6 @@ structure DAIxTrees (ℍ: Type) (s l : Nat) where
 -- * MAP and stuff players.
 --
 
-def mapArbitrationGame _
+-- def mapArbitrationGame _
+--
 ----------------------------------------
