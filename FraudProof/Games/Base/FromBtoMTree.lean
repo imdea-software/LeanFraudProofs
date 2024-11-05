@@ -238,11 +238,11 @@ def treeArbitrationGame {α ℍ : Type}
     -- Reveler plays first
     match da.computation , reveler with
     | .leaf h, .leaf (some a) => -- TODO Should we check choser here?
-      condWProp $ o.mhash a == h
+      condWProp $ o.mhash a == h ∧ h == da.res
     | .node bl br , .node (some proposition) nextProposerLeft nextProposerRight =>
       match chooser with
       | .node cfun nextChooserLeft nextChooserRight =>
-        match cfun proposition with
+        match cfun ⟨ da.res , proposition ⟩ with
         -- challenge hashes now.
         | some .Now => condWProp $ m.comb proposition.1 proposition.2 == da.res
         -- Chooser chooses to go left.
