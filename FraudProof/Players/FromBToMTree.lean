@@ -55,31 +55,30 @@ def GenProposer {α ℍ : Type} (pdef : ProposerDef α ℍ) (comp : ABTreeSkelet
 -- * Chooser
 -- Types
 -- Using parenthesis to split concepts
-abbrev ChooserStrategy (ℍ : Type) := ABTree Unit ((ℍ × ℍ) -> Option ChooserMoves)
+abbrev ChooserStrategy (ℍ : Type) := ABTree Unit ((ℍ × ℍ × ℍ) -> Option ChooserMoves)
 -- Options?
-abbrev OChooserStrategy (ℍ : Type) := ABTree (Option Unit) ((ℍ × ℍ) -> Option ChooserMoves)
+abbrev OChooserStrategy (ℍ : Type) := ABTree (Option Unit) ((ℍ × ℍ × ℍ) -> Option ChooserMoves)
 
 -- Generating Strategies
 -- Chooser operates on the assumtion that the top hash is wrong.
 -- Otherwise it is not invoked at all.
-def GenChooser {ℍ : Type} (cdef : Skeleton -> ((ℍ × ℍ) -> Option ChooserMoves)) (comp : ABTreeSkeleton)
+def GenChooser {ℍ : Type} (cdef : Skeleton -> ((ℍ × ℍ × ℍ) -> Option ChooserMoves)) (comp : ABTreeSkeleton)
   : ChooserStrategy ℍ
   := comp.TSkeleton.map (fun _ => ()) cdef
 
 -- So, we assume that the A.1:|comb offered.1 offered.2 != gen.1|.
 --
-def ChooserStr {ℍ : Type}[BEq ℍ] (gen : ℍ × ℍ × ℍ) (offered : ℍ × ℍ ) : Option ChooserMoves
+def ChooserStr {ℍ : Type}[BEq ℍ][mag : HashMagma ℍ](gen : ℍ × ℍ × ℍ)(offered : ℍ × ℍ × ℍ ) : Option ChooserMoves
  := match gen , offered with
-    | ⟨ _ , gBl , gBr ⟩ , ⟨ ol , or ⟩ =>
-      if ol == gBl ∧ or == gBr then some $ .Now
-      else if ol != gBl then some $ .Continue .Left else some $ .Continue .Right
-
-      -- then some .Now -- Because A.1 and hash properties of |comb|, we should challenge here.
-      -- else if or == gBr
-      --      then some .Now
-      --      else some $ .Continue .Left -- It does not matter from the point of
-      --      -- view of correctness but since we know the tree, we can follow the
-      --      -- shortest path.
+    | ⟨ _ , gBl , gBr ⟩ , ⟨ topH , ol , or ⟩ =>
+      -- Check that offered are /correct/:
+      if mag.comb ol or != topH then some $ .Now
+      else -- Then choose a side, remember we follow whatever path is wrong.
+      if ol != gBl then some $ .Continue .Left
+      else if or != gBr then some $ .Continue .Right
+      -- I don't think this case is necessary, but added it to be more explicit
+      -- about it.
+      else some $ .Now
 
 def simpChooser {α ℍ : Type}[BEq ℍ][Hash α ℍ][HashMagma ℍ] ( t : BTree α ) : ChooserStrategy ℍ
  := (propTree t).map (fun _ => ()) ChooserStr

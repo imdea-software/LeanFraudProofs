@@ -343,8 +343,11 @@ theorem goodProposersWin
   induction knowledge with
   -- We reached a leaf.
   | leaf _v =>
-    -- intro chooser
-    simp [treeArbitrationGame, condWProp]
+    intros chooser proposed
+    simp
+    intro Hproposed
+    simp [medTrees,ABTree.getI,ABTree.map,ABTree.getI'] at Hproposed
+    simpa [treeArbitrationGame, condWProp]
   | node al ar IndL IndR =>
     intro chooser
     simp [treeArbitrationGame]
@@ -352,7 +355,7 @@ theorem goodProposersWin
     | node cfun cl cr =>
       simp
       cases cfun
-        (ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree al),
+        (_ , ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree al),
           ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree ar)) with
         | some nextSt =>
           cases  nextSt with
@@ -390,14 +393,14 @@ theorem goodProposersWin
 theorem goodChoosersWin
   {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
   -- Assumptions about hashing
-  [cal : CollResistant α ℍ] -- No two elemts share hashes
-  [SLawFulHash ℍ] -- Combining diff hashes returns diff hashes.
+  -- [cal : CollResistant α ℍ] -- No two elemts share hashes
+  -- [SLawFulHash ℍ] -- Combining diff hashes returns diff hashes.
   --
   (knowledge : BTree α)
   :
   forall (proposer : ProposerStrategy α ℍ)(topHash : ℍ),
   -- Proposer proposed current top hash |topHash|
-  prevHashProp topHash proposer ->
+  -- prevHashProp topHash proposer ->
   -- Top Hash is bad!
   (medTrees knowledge).getI != topHash ->
   --
@@ -406,7 +409,7 @@ theorem goodChoosersWin
   := by
   induction knowledge with
   | leaf _v =>
-    intros proposer topHash hProposer badTop
+    intros proposer topHash badTop
     unfold treeArbitrationGame
     simp [BTree.map ]
     cases proposer with
@@ -414,16 +417,14 @@ theorem goodChoosersWin
       cases kh with
       | none => simp
       | some hP =>
-        simp [prevHashProp] at hProposer
+        simp
+        simp [medTrees, propTree,ABTree.map,ABTree.getI,ABTree.getI'] at badTop
         simp [condWProp]
-        simp [medTrees, propTree, ABTree.map, ABTree.getI, ABTree.getI'] at badTop
-        rw [<- hProposer] at badTop
-        intro f
-        apply badTop
-        rw [f]
+        intros _same
+        assumption
     | node _b _ _ => simp
   | node bl br IL IR =>
-    intros proposer topHash hProposer badTop
+    intros proposer topHash badTop
     unfold treeArbitrationGame
     simp [BTree.map]
     cases proposer with
@@ -433,30 +434,28 @@ theorem goodChoosersWin
       | none => simp
       | some props =>
         simp [simpChooser, ABTree.map, ChooserStr]
-        -- ∧ (props.2 == ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree br))
-        -- let pLH := ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m bl)
-        -- let pRH := ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m br)
-        --
-        cases HCL : props.1 == ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m bl) with
-        | true => cases HCR : props.2 == ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m br) with
+        cases propBad : m.comb props.1 props.2 != topHash with
+        | true => simp [condWProp]; simp at propBad; assumption
+        | false =>
+            simp
+            cases HCL : props.1 != ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m bl) with
+            | true =>
+              simp
+              have indL := IL proposerLeft props.1 (by simp [medTrees,ABTree.getI]; rw [getMapLaw _ _ _ _ _]; simp; simp at HCL; intro f;apply HCL; rw [<-f])
+              assumption
+            | _ =>
+                simp
+                cases HCR : props.2 != ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m br) with
                   | true =>
-                         simp at HCL HCR
-                         simp [medTrees, propTree] at badTop
-                         rw [<- HCL] at badTop
-                         rw [<- HCR] at badTop
-                         simp [ABTree.map, ABTree.getI, ABTree.getI'] at badTop
-                         simp [condWProp]
-                         assumption
-                  | _ =>
-                      simp
-                      simp at HCL
-                      rw [HCL]
-                      simp
-                      have indL := IR proposerRight props.2 (by unfold prevHashProp) (by simp [medTrees,ABTree.getI]; rw [getMapLaw _ _ _ _ _]; simp at HCR; intro f;apply HCR;rw [<-f];simp)
-                      unfold simpChooser at indL
-                      assumption
-        | _ => _
-
-
+                    simp
+                    have indR := IR proposerRight props.2 (by simp [medTrees,ABTree.getI]; rw [getMapLaw _ _ _ _ _]; simp; simp at HCR; intro f;apply HCR; rw [<-f])
+                    assumption
+                  | _ => -- Impossible case!
+                    simp [condWProp] at *
+                    simp [medTrees,propTree,ABTree.map] at badTop
+                    rw [<- HCL] at badTop
+                    rw [<- HCR] at badTop
+                    simp [ABTree.getI,ABTree.getI'] at badTop
+                    contradiction
 end FromBTreeToMTree
 ----------------------------------------
