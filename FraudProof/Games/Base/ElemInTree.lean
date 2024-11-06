@@ -1,11 +1,17 @@
 import FraudProof.Games.GameDef -- Players, Winner
 
+import Mathlib.Data.Fin.Tuple.Basic
+
 -- DA: element is in Tree
 structure ElemInMTree (α ℍ : Type) where
   elem : α
   path : Skeleton
   mtree : ℍ
   -- Prop: foldl hash_Path (hash elem) path = mtree
+
+-- Here we do not need to know the whole tree.
+-- maybe we need to define some notion of DA promotion.
+-- Whatever game we define over Skeletons we can play over trees?
 
 def arbElem {α ℍ : Type}
     (pos : Skeleton)
@@ -43,3 +49,40 @@ def arbElemInit {α ℍ : Type} [BEq ℍ] [Hash α ℍ][HashMagma ℍ]
     (chooser : Skeleton -> PMoves ℍ -> Option ChooserSmp)
     : Winner
     := arbElem .nil da proposer chooser
+
+-- There is a path of length |n| from the root |mtree| to |elem|
+structure ElemInTreeN (n : Nat)(α ℍ : Type) where
+  elem : α
+  path : ISkeleton n
+  mtree : ℍ
+
+def Fhead {α : Type} {n : Nat}  : (Fin n.succ -> α) -> α
+ := fun seq => seq ⟨ 0 , by simp ⟩
+
+def elemInHGame {α ℍ : Type}
+    [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+    {n : Nat}
+    (da : ElemInTreeN n α ℍ)
+    (proposer : Fin n -> Option (PMoves ℍ))
+    (chooser : Fin n -> ℍ × ℍ -> Option ChooserSmp)
+    : Winner
+    := match n with
+       | 0 =>
+         condWProp $ o.mhash da.elem == da.mtree
+       | .succ _pn =>
+         match Fhead proposer with
+         | .none => Player.Chooser
+         | .some (.Next proposed) =>
+           match Fhead chooser proposed with
+           | .none => Player.Proposer
+           | .some .Now => condWProp $ m.comb proposed.1 proposed.2 == da.mtree
+           | .some (.Continue _) =>
+             match Fhead da.path with
+             | .inl _ =>
+               elemInHGame ⟨da.elem, Fin.tail da.path, proposed.1 ⟩
+                           (Fin.tail proposer)
+                           (Fin.tail chooser)
+             | .inr _ =>
+               elemInHGame ⟨da.elem, Fin.tail da.path, proposed.2 ⟩
+                           (Fin.tail proposer)
+                           (Fin.tail chooser)
