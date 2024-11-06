@@ -25,6 +25,10 @@ import FraudProof.Games.Base.FromBtoMTree
 import FraudProof.Players.FromBToMTree
 import FraudProof.Extras.BToMTree
 
+-- Element in Tree
+import FraudProof.Games.Base.ElemInTree
+import FraudProof.Players.ElemInTree
+
 import Batteries.Data.Fin.Lemmas
 
 namespace LinearGame
@@ -452,4 +456,24 @@ theorem goodChoosersWin
                     simp [ABTree.getI,ABTree.getI'] at badTop
                     contradiction
 end FromBTreeToMTree
+----------------------------------------
+
+----------------------------------------
+-- * Element is in Tree.
+-- This is kinda an auxiliary lemma.
+-- We want to say that an element is an element in a (tree) hash.
+namespace ElemInTree
+
+theorem goodProposerWin
+   {α ℍ : Type}{n : Nat}
+   --
+   (elem : α)
+   (path : ISkeleton n)
+   --
+   : forall (chooser : Fin n -> ℍ × ℍ × ℍ -> Option ChooserSmp ),
+   elemInHGame ⟨ elem , path , _Hash ⟩ _proposer chooser = Player.Proposer
+   := sorry
+
+
+end ElemInTree
 ----------------------------------------
