@@ -60,16 +60,8 @@ def ABTree.TSkeleton' {α β : Type} (t : ABTree α β) : ABTree (Unit × Skelet
 def ABTree.TSkeleton {α β : Type} : ABTree α β -> ABTree Skeleton Skeleton
   := ABTree.map (fun p => p.2) (fun p => p.2) ∘ ABTree.InjPath
 
-----------------------------------------
-section ValHash
-  variable { α ℍ : Type }
-  def hashElem [Hash α ℍ][HashMagma ℍ] : BTree α ⊕ BTree α → PathElem ℍ:=
-    let hashTree := ( MTree.hash ∘ hash_BTree )
-    Sum.map  hashTree hashTree
 
-
-
-  def IndexBTree {α : Type} : Skeleton -> BTree α -> Option (α ⊕ (BTree α × BTree α))
+def IndexBTree {α : Type} : Skeleton -> BTree α -> Option (α ⊕ (BTree α × BTree α))
   -- Element at point path is leading us.
   | .nil , .leaf v => some $ .inl v
   | .nil , .node bl br => some $ .inr ⟨ bl , br ⟩
@@ -79,10 +71,10 @@ section ValHash
   -- Skeleton path is longer than path in tree.
   | .cons _ _ , .leaf _ => none
 
-  theorem sizeIBTree {α : Type}(skl : Skeleton) :
+theorem sizeIBTree {α : Type}(skl : Skeleton) :
   forall ( t cl cr : BTree α ),
-    IndexBTree skl t = some (.inr ⟨ cl , cr⟩)
-    -> sizeOf cl < sizeOf t ∧ sizeOf cr < sizeOf t
+  IndexBTree skl t = some (.inr ⟨ cl , cr⟩)
+  -> sizeOf cl < sizeOf t ∧ sizeOf cr < sizeOf t
   := by induction skl with
    | nil =>
       intros t cl cr a
@@ -111,14 +103,14 @@ section ValHash
           have indI := HI kr cl cr H
           simp; omega
 
+----------------------------------------
+section ValHash
+  variable { α ℍ : Type }
+  def hashElem [Hash α ℍ][HashMagma ℍ] : BTree α ⊕ BTree α → PathElem ℍ:=
+    let hashTree := ( MTree.hash ∘ hash_BTree )
+    Sum.map  hashTree hashTree
 
-  --- Computing intermediary trees.
-  -- def medTrees [m : Hash α ℍ][o : HashMagma ℍ] : BTree α -> ABTree (α × ℍ) ℍ
-  -- | .leaf v => .leaf ⟨  v , (m.mhash v) ⟩
-  -- | .node bl br =>
-  --   let abl := medTrees bl
-  --   let abr := medTrees br
-  --   .node (o.comb abl.getI abr.getI) abl abr
+
 
   def propTree [m : Hash α ℍ][o : HashMagma ℍ] : BTree α  -> ABTree (α × ℍ) (ℍ × ℍ × ℍ)
   | .leaf v => .leaf ⟨ v , m.mhash v ⟩
@@ -131,18 +123,6 @@ section ValHash
 
   def medTrees [m : Hash α ℍ][o : HashMagma ℍ] (t : BTree α) : ABTree (α × ℍ) ℍ
   := (@propTree _ _ m o t).map id (fun p => p.1)
-
-
-  -- def medITrees [m : Hash α ℍ][o : HashMagma ℍ]{n : Nat} : ITree α n -> STree α ℍ n
-  -- | .leaf v _ => .leaf v (m.mhash v)
-  -- | .nodeL _ p bl br =>
-  --   let abl := medITrees bl
-  --   let abr := medITrees br
-  --   .nodeL (o.comb abl.getI abr.getI) p abl abr
-  -- | .nodeR _ p bl br =>
-  --   let abl := medITrees bl
-  --   let abr := medITrees br
-  --   .nodeR (o.comb abl.getI abr.getI) p abl abr
 
   -- Accessing Indexed MMTrees
   structure NData (α β : Type)  where

@@ -52,8 +52,7 @@ def arbElemInit {α ℍ : Type} [BEq ℍ] [Hash α ℍ][HashMagma ℍ]
 
 -- There is a path of length |n| from the root |mtree| to |elem|
 structure ElemInTreeN (n : Nat)(α ℍ : Type) where
-  elem : α
-  path : ISkeleton n
+  data : α × ISkeleton n
   mtree : ℍ
 
 def Fhead {α : Type} {n : Nat}  : (Fin n.succ -> α) -> α
@@ -68,7 +67,7 @@ def elemInHGame {α ℍ : Type}
     : Winner
     := match n with
        | 0 =>
-         condWProp $ o.mhash da.elem == da.mtree
+         condWProp $ o.mhash da.data.1 == da.mtree
        | .succ _pn =>
          match Fhead proposer with
          | .none => Player.Chooser
@@ -77,12 +76,9 @@ def elemInHGame {α ℍ : Type}
            | .none => Player.Proposer
            | .some .Now => condWProp $ m.comb proposed.1 proposed.2 == da.mtree
            | .some (.Continue _) =>
-             match Fhead da.path with
-             | .inl _ =>
-               elemInHGame ⟨da.elem, Fin.tail da.path, proposed.1 ⟩
-                           (Fin.tail proposer)
-                           (Fin.tail chooser)
-             | .inr _ =>
-               elemInHGame ⟨da.elem, Fin.tail da.path, proposed.2 ⟩
+             have nextHash := match Fhead da.data.2 with
+                    | .inl _ => proposed.1
+                    | .inr _ => proposed.2
+             elemInHGame ⟨⟨ da.data.1, Fin.tail da.data.2⟩ , nextHash ⟩
                            (Fin.tail proposer)
                            (Fin.tail chooser)
