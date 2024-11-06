@@ -324,10 +324,9 @@ namespace FromBTreeToMTree
 theorem goodProposersWin
   {α ℍ : Type}[lfulEq : BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
   -- Assumptions about hashing. But we never used them?!
-  -- No, we do not need them here. We model hash functions as functions, so we only need them to be defined
-  -- and returning the same value to the same input.
-  -- [CollResistant α ℍ] -- No two elemts share hashes
-  -- [SLawFulHash ℍ] -- Combining diff hashes returns diff hashes.
+  -- No, we do not need them here. We model hash functions as functions, so we
+  -- only need them to be defined and returning the same value to the same
+  -- input.
   --
   (knowledge : BTree α)
   --
@@ -392,15 +391,10 @@ theorem goodProposersWin
 --
 theorem goodChoosersWin
   {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
-  -- Assumptions about hashing
-  -- [cal : CollResistant α ℍ] -- No two elemts share hashes
-  -- [SLawFulHash ℍ] -- Combining diff hashes returns diff hashes.
   --
   (knowledge : BTree α)
   :
   forall (proposer : ProposerStrategy α ℍ)(topHash : ℍ),
-  -- Proposer proposed current top hash |topHash|
-  -- prevHashProp topHash proposer ->
   -- Top Hash is bad!
   (medTrees knowledge).getI != topHash ->
   --
