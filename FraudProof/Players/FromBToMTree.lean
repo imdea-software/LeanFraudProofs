@@ -43,7 +43,9 @@ def prevHashProp {α ℍ : Type}[BEq ℍ][o : Hash α ℍ]
 
 -- How bad people create their strategies? I dunno :shrug:
 def simpGoodGen {α ℍ : Type}[o : Hash α ℍ][m : HashMagma ℍ] (t : BTree α) : ProposerStrategy α ℍ
- :=  (@propTree _ _ o m t).map (fun a => some $ a.1) (fun n => some $ n.2 )
+ :=  (@propTree _ _ o m t).map
+                (fun a => some $ a.1)
+                (fun n => some $ n.2 )
 
 -- def medTreeProposer {α ℍ : Type}[o : Hash α ℍ][m : HashMagma ℍ] (t : BTree α) : ProposerStrategy α ℍ
 --  := (@medTrees _ _ o m t).map (fun p => some $ p.1) (fun p => _)

@@ -5,6 +5,41 @@ import FraudProof.DataStructures.Hash
 import Mathlib.Data.Sum.Basic
 import Mathlib.Data.Fin.Tuple.Basic -- Fin.tail
 
+def nilSeq {γ : Type} : Fin 0 -> γ
+ := fun x => by have e := x.isLt; simp at e
+
+def OBCollect {α β γ : Type} (inj : (β -> γ))
+  : (p : Skeleton) -> ABTree α β
+  -> Option ( (Fin p.length -> γ)
+            × (α ⊕ (β × ABTree α β × ABTree α β)))
+  -- Element at point path is leading us.
+  | .nil , .leaf v => some $ ⟨ nilSeq , .inl v⟩
+  | .nil , .node i bl br => some $ ⟨ nilSeq ,  .inr ⟨ i , bl , br ⟩ ⟩
+  -- Following the path
+  | .cons (.inl _) sks , .node i bl _ =>
+    (fun ⟨ p , res ⟩ => ⟨ Fin.cons (inj i) p , res ⟩) <$> OBCollect inj sks bl
+  | .cons (.inr _) sks , .node i _ br =>
+    (fun ⟨ p , res ⟩ => ⟨ Fin.cons (inj i) p , res ⟩) <$> OBCollect inj sks br
+  -- Skeleton path is longer than path in tree.
+  | .cons _ _ , .leaf _ => none
+
+-- Helper Function creating path from skeleton in a tree.
+def IdxCollectABTree {α β γ : Type} (inj : (α -> γ) × (β -> γ))
+  : (p : Skeleton) -> ABTree α β
+  -> Option ( (Fin p.length -> (γ × γ))
+            × (α ⊕ (β × ABTree α β × ABTree α β)))
+  -- Element at point path is leading us.
+  | .nil , .leaf v => some $ ⟨ nilSeq , .inl v⟩
+  | .nil , .node i bl br => some $ ⟨ nilSeq ,  .inr ⟨ i , bl , br ⟩ ⟩
+  -- Following the path
+  | .cons (.inl _) sks , .node _i bl br =>
+    (fun ⟨ p , res ⟩ => ⟨ Fin.cons ⟨ bl.getI' inj.1 inj.2 , br.getI' inj.1 inj.2 ⟩ p , res ⟩) <$> IdxCollectABTree inj sks bl
+  | .cons (.inr _) sks , .node _i bl br =>
+    (fun ⟨ p , res ⟩ => ⟨ Fin.cons ⟨ bl.getI' inj.1 inj.2 , br.getI' inj.1 inj.2 ⟩ p , res ⟩) <$> IdxCollectABTree inj sks br
+  -- Skeleton path is longer than path in tree.
+  | .cons _ _ , .leaf _ => none
+
+
 ----------------------------------------
 -- Adding path to node?
 def ABTree.InjPath' {α β : Type} (p : Skeleton) : ABTree α β -> ABTree (α × Skeleton) (β × Skeleton)
@@ -35,8 +70,10 @@ section ValHash
 
 
   def IndexBTree {α : Type} : Skeleton -> BTree α -> Option (α ⊕ (BTree α × BTree α))
+  -- Element at point path is leading us.
   | .nil , .leaf v => some $ .inl v
   | .nil , .node bl br => some $ .inr ⟨ bl , br ⟩
+  -- Following the path
   | .cons (.inl _) sks , .node bl _ => IndexBTree sks bl
   | .cons (.inr _) sks , .node _ br => IndexBTree sks br
   -- Skeleton path is longer than path in tree.
