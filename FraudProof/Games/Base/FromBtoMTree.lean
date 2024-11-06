@@ -237,7 +237,12 @@ def treeArbitrationGame {α ℍ : Type}
     : Winner :=
     -- Reveler plays first
     match da.computation , reveler with
-    | .leaf h, .leaf (some a) => -- TODO Should we check choser here?
+    | .leaf h, .leaf (some a) =>
+      -- TODO Should we check choser here?
+      -- Here we only check that
+      -- + Player |reveler| revels a witness that hashes into the hash.
+      -- + The hash in the tree is the hash in the computation
+      -- We do not know if the element here (|a|) is /the original element/.
       condWProp $ o.mhash a == h ∧ h == da.res
     | .node bl br , .node (some proposition) nextProposerLeft nextProposerRight =>
       match chooser with

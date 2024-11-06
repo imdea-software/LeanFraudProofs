@@ -211,6 +211,10 @@ DAs are weird computational data.
 
 
 ** Hash Function
+Implicit assumptions.
+
+Hash functions are:
+ + Collision resistants (from RDoC)
 ** Chooser Strategy.
 When an invalid hash tree is detected, we can invoke a choosers strategy to
 debunk the block.
