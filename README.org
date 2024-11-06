@@ -208,6 +208,10 @@ DAs are weird computational data.
 **** [X] Skeletons in BTree/Tree computations.
 **** [X] Implementation of winning Defensive strategy and challenging strategies.
 **** [ ] Proving the above?
+***** [X] DA : BTree -> Merkle Tree
+***** [ ] DA : (BTree -> MTree) and Valid
+****** [ ] Elements are f-Valid
+****** [ ] No repeated elements
 
 
 ** Hash Function
@@ -215,6 +219,9 @@ Implicit assumptions.
 
 Hash functions are:
  + Collision resistants (from RDoC)
+
+I did not require it to prove strategies are correct when proving Merkle trees are
+correct.
 ** Chooser Strategy.
 When an invalid hash tree is detected, we can invoke a choosers strategy to
 debunk the block.
