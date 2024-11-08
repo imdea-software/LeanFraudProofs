@@ -54,6 +54,15 @@ def arbElemInit {α ℍ : Type} [BEq ℍ] [Hash α ℍ][HashMagma ℍ]
 structure ElemInTreeN (n : Nat)(α ℍ : Type) where
   data : α × ISkeleton n
   mtree : ℍ
+  -- Let |bt : BTree α| be the implicit data, such that |hash bt = mtree|.
+  -- This da says |bt ! data.2| leads to |data.1|
+
+structure ElemInTreeH (n : Nat)(ℍ : Type) where
+  data : ℍ × ISkeleton n
+  mtree : ℍ
+  -- Same as above but only using hashes
+  -- |dt ! data.2| leads to | data.1| where |data.1| is the hash of the element
+  -- in a tree [see the above DA].
 
 def Fhead {α : Type} {n : Nat}  : (Fin n.succ -> α) -> α
  := fun seq => seq ⟨ 0 , by simp ⟩
@@ -63,7 +72,7 @@ def elemInHGame {α ℍ : Type}
     {n : Nat}
     (da : ElemInTreeN n α ℍ)
     (proposer : Fin n -> Option (PMoves ℍ))
-    (chooser : Fin n -> ℍ × ℍ -> Option ChooserSmp)
+    (chooser : Fin n -> ℍ × ℍ × ℍ -> Option ChooserSmp)
     : Winner
     := match n with
        | 0 =>
@@ -72,7 +81,7 @@ def elemInHGame {α ℍ : Type}
          match Fhead proposer with
          | .none => Player.Chooser
          | .some (.Next proposed) =>
-           match Fhead chooser proposed with
+           match Fhead chooser ⟨ da.mtree , proposed ⟩ with
            | .none => Player.Proposer
            | .some .Now => condWProp $ m.comb proposed.1 proposed.2 == da.mtree
            | .some (.Continue _) =>

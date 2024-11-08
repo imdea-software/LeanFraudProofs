@@ -5,7 +5,7 @@ import FraudProof.Games.OneStepGame
 
 -- Utils and definitions
 import FraudProof.DataStructures.MTree
-  import FraudProof.DataStructures.Hash
+import FraudProof.DataStructures.Hash
 
 -- I am sure there is a Lean way to do this.
 -- Instead of using axioms, I use 'sorry lemmas' so we can prove them later.

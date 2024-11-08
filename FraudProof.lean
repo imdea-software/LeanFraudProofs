@@ -117,7 +117,6 @@ theorem WinningProposer
   intros ch wp
   exact GChalWinsHtoL path.length v _ wp ch
 
-
 end LinearGame
 
 
@@ -202,7 +201,6 @@ def BadProposer [BEq ℍ][HashMagma ℍ]{ gl : Nat } (P : HC ℍ gl) ( hb ht : �
     ∨ notAllGames gl P
     ∨ gl = 0 -- HC 0 is empty
 
-
 -- This depends on the game we are playing.
 -- If we want to have a theorem like the following one, we need to think a bit
 -- better our hypotheses.
@@ -277,7 +275,8 @@ theorem ChooserGLHeadWrongSeq
                     rw [ hkC ]
                     simp
                     match proposer.pathSib 0 with
-                    | Sum.inl x =>
+
+| Sum.inl x =>
                                  simp
                                  apply opHash_neqRight
                                  assumption
@@ -464,16 +463,29 @@ end FromBTreeToMTree
 -- We want to say that an element is an element in a (tree) hash.
 namespace ElemInTree
 
-theorem goodProposerWin
+-- We can built a winning proposer for elements in tree
+-- Good thing is that we can use it for both, logarithmic and linear games.
+def proposerSkeleton
    {α ℍ : Type}{n : Nat}
+   [BEq ℍ]
+   [mhash : Hash α ℍ][mag : HashMagma ℍ]
    --
    (elem : α)
-   (path : ISkeleton n)
-   --
-   : forall (chooser : Fin n -> ℍ × ℍ × ℍ -> Option ChooserSmp ),
-   elemInHGame ⟨ elem , path , _Hash ⟩ _proposer chooser = Player.Proposer
-   := sorry
-
+   (data : BTree α)
+   (path : ISkeleton n.succ)
+   -- Path |path| leads to element |elem| in tree |data|
+   (hInx : IndexBTreeI path data = some (.inl elem))
+   -- There is a restriction, path > 0
+   :
+   have abtree := @propTree _ _ mhash mag data
+   have topHash := abtree.getI' (fun e => e.2) (fun e => e.1)
+   WinningProposer.PropHash n.succ (mhash.mhash elem) topHash
+   := have abtree := @propTree _ _ mhash mag data
+      have hashPath : Fin n.succ.succ -> ℍ := _
+      have hashSibilings : Fin n.succ -> PathElem ℍ := _
+    ⟨ by simp , ⟨ hashPath , hashSibilings ⟩
+     -- Proofs
+    , sorry , sorry , sorry ⟩
 
 end ElemInTree
 ----------------------------------------

@@ -8,6 +8,32 @@ import Mathlib.Data.Fin.Tuple.Basic -- Fin.tail
 def nilSeq {γ : Type} : Fin 0 -> γ
  := fun x => by have e := x.isLt; simp at e
 
+def headSeq {α : Type}{ n : Nat } ( seq : Fin n.succ -> α) : α
+  := seq ⟨ 0 , by simp ⟩
+
+@[simp]
+def seqMap {α β : Type} {n : Nat} (f : α -> β) ( seq : Fin n -> α ) : Fin n -> β
+  := match n with
+     | 0 => nilSeq
+     | .succ _pn => Fin.cons (f $ headSeq seq) (seqMap f (Fin.tail seq))
+
+def OBCollectI {α β γ : Type}{n : Nat}
+    (inj : (β -> γ))
+    (p : ISkeleton n)
+    (t : ABTree α β)
+  : Option ( (Fin n -> γ) × (α ⊕ (β × ABTree α β × ABTree α β)))
+  := match n , t with
+  | 0 , .leaf v => some $ ⟨ nilSeq , .inl v⟩
+  | 0 , .node i bl br => some $ ⟨ nilSeq ,  .inr ⟨ i , bl , br ⟩ ⟩
+  -- Following the path
+  | .succ pn , .node i bl br =>
+    (fun ⟨ p, res ⟩ => ⟨ Fin.cons (inj i) p , res ⟩) <$>
+    match p ⟨ 0 , by simp ⟩ with
+    | .inl _ => OBCollectI inj (Fin.tail p) bl
+    | .inr _ => OBCollectI inj (Fin.tail p) br
+  -- Skeleton path is longer than path in tree.
+  | .succ _ , .leaf _ => none
+
 def OBCollect {α β γ : Type} (inj : (β -> γ))
   : (p : Skeleton) -> ABTree α β
   -> Option ( (Fin p.length -> γ)
@@ -22,6 +48,7 @@ def OBCollect {α β γ : Type} (inj : (β -> γ))
     (fun ⟨ p , res ⟩ => ⟨ Fin.cons (inj i) p , res ⟩) <$> OBCollect inj sks br
   -- Skeleton path is longer than path in tree.
   | .cons _ _ , .leaf _ => none
+
 
 -- Helper Function creating path from skeleton in a tree.
 def IdxCollectABTree {α β γ : Type} (inj : (α -> γ) × (β -> γ))
@@ -59,6 +86,20 @@ def ABTree.TSkeleton' {α β : Type} (t : ABTree α β) : ABTree (Unit × Skelet
 -- Adding Path and Forgetting
 def ABTree.TSkeleton {α β : Type} : ABTree α β -> ABTree Skeleton Skeleton
   := ABTree.map (fun p => p.2) (fun p => p.2) ∘ ABTree.InjPath
+
+
+def IndexBTreeI {α : Type}{n : Nat} (path : ISkeleton n)(t : BTree α) : Option (α ⊕ (BTree α × BTree α))
+ := match n , t with
+  -- Element at point path is leading us.
+  | .zero , .leaf v => some $ .inl v
+  | .zero , .node bl br => some $ .inr ⟨ bl , br ⟩
+  -- Following the path
+  | .succ _pn , .node bl br =>
+    match headSeq path with
+     | .inl _ => IndexBTreeI (Fin.tail path) bl
+     | .inr _ => IndexBTreeI (Fin.tail path) br
+  -- Skeleton path is longer than path in tree.
+  | .succ _ , .leaf _ => none
 
 
 def IndexBTree {α : Type} : Skeleton -> BTree α -> Option (α ⊕ (BTree α × BTree α))
