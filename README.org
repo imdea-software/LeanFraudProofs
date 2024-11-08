@@ -153,7 +153,6 @@ Found a bug here. My bad when defining hash props.
 Fixed, but I made a bug in proof evident.
 **** [ ] Log Games
 **** [ ] Multicut games
-
 *** [X] Model Merkle Tree chain?
 Should we model the idea of posting Merkle Trees and the possibility of challenges.
 

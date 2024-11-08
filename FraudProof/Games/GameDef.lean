@@ -12,6 +12,12 @@ inductive PMoves' (α β : Type)
 
 abbrev PMoves (ℍ : Type) := PMoves' Empty (ℍ × ℍ)
 
+def PMoves'.map {α β γ σ : Type}
+  (f : α -> β)(g : γ -> σ)
+  : PMoves' α γ -> PMoves' β σ
+  | .End a => .End $ f a
+  | .Next p => .Next $ g p
+
 def PMoves.left {ℍ : Type} : PMoves ℍ -> ℍ
  | .Next e => e.1
 def PMoves.right {ℍ : Type} : PMoves ℍ -> ℍ
