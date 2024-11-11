@@ -8,6 +8,7 @@ import Mathlib.Data.Fin.Tuple.Basic -- Fin.tail
 def nilSeq {γ : Type} : Fin 0 -> γ
  := fun x => by have e := x.isLt; simp at e
 
+@[simp]
 def headSeq {α : Type}{ n : Nat } ( seq : Fin n.succ -> α) : α
   := seq ⟨ 0 , by simp ⟩
 
@@ -16,6 +17,154 @@ def seqMap {α β : Type} {n : Nat} (f : α -> β) ( seq : Fin n -> α ) : Fin n
   := match n with
      | 0 => nilSeq
      | .succ _pn => Fin.cons (f $ headSeq seq) (seqMap f (Fin.tail seq))
+
+
+theorem Fin.snoc_head {α : Type}{ n : Nat }
+   ( seq : Fin n.succ -> α )(lt : α)
+   : (@Fin.snoc n.succ (fun _ => α) seq lt) ⟨ 0 , by simp ⟩ = seq 0
+   := by simp [snoc, castLT]
+
+def IndexABTreeI {α β : Type}{n : Nat} (path : ISkeleton n)(t : ABTree α β)
+  : Option (α ⊕ (β × ABTree α β × ABTree α β))
+  := match n , t with
+    --
+    | .zero , .leaf v => some $ .inl v
+    | .zero , .node b bl br => some $ .inr ⟨ b , ⟨ bl , br ⟩ ⟩
+    --
+    | .succ _pn , .node _b bl br =>
+       match headSeq path with
+       | .inl _ => IndexABTreeI (Fin.tail path) bl
+       | .inr _ => IndexABTreeI (Fin.tail path) br
+    --
+    | .succ _pn , .leaf _ => none
+
+theorem skipElem {α β : Type} {n : Nat}(path : ISkeleton n)(nInfo : β)(bl br : ABTree α β)
+   (elem : α)
+   (hIdx : IndexABTreeI (Fin.cons (.inl ()) path) (ABTree.node nInfo bl br) = some (Sum.inl elem))
+   : IndexABTreeI path bl = some (.inl elem)
+   := by simp [IndexABTreeI] at hIdx; assumption
+
+theorem skipElemL {α β : Type} {n : Nat}(path : ISkeleton n.succ) (nInfo : β)(bl br : ABTree α β)
+  (elem : α)
+  (seqP : path 0 = .inl ())
+  (hIdx : IndexABTreeI path (ABTree.node nInfo bl br) = some (Sum.inl elem))
+  : IndexABTreeI (Fin.tail path) bl = some (.inl elem)
+  := by simp [IndexABTreeI] at hIdx; rw [seqP] at hIdx; simp at *; assumption
+
+theorem skipElemR {α β : Type} {n : Nat}(path : ISkeleton n.succ) (nInfo : β)(bl br : ABTree α β)
+  (elem : α)
+  (seqP : path 0 = .inr ())
+  (hIdx : IndexABTreeI path (ABTree.node nInfo bl br) = some (Sum.inl elem))
+  : IndexABTreeI (Fin.tail path) br = some (.inl elem)
+  := by simp [IndexABTreeI] at hIdx; rw [seqP] at hIdx; simp at *; assumption
+
+def BStrategies {α β γ : Type} {n : Nat}
+  (inlA : α -> γ) (inlB : β -> γ)
+  (path : ISkeleton n) (t : ABTree α β)
+  -- Such that path goes to an element
+  (elem : α)
+  (hIdx : IndexABTreeI path t = some (.inl elem))
+  : (Fin n.succ -> γ) × (Fin n -> PathElem γ)
+  := match n , t with
+     | .zero , .leaf _v => ⟨ Fin.cons (inlA elem) nilSeq , nilSeq ⟩
+     | .succ _pn , .node iN bl br =>
+       match H : headSeq path with
+       | .inl _ =>
+          let recCall := BStrategies inlA inlB (Fin.tail path) bl elem (by simp [IndexABTreeI] at *; rw [ H ] at hIdx; simp at hIdx; assumption)
+          ⟨ Fin.snoc recCall.1 (inlB iN) , Fin.snoc recCall.2 (.inl (bl.getI' inlA inlB)) ⟩
+       | .inr _ =>
+          let recCall := BStrategies inlA inlB (Fin.tail path) br elem (by simp [IndexABTreeI] at *; rw [ H ] at hIdx; simp at hIdx; assumption)
+          ⟨ Fin.snoc recCall.1 (inlB iN) , Fin.snoc recCall.2 (.inr (br.getI' inlA inlB)) ⟩
+
+theorem elem0 { α β γ: Type }{n : Nat}
+    {inlA : α -> γ} {inlN : β -> γ}
+    (path : ISkeleton n)(t : ABTree α β)
+    (e : α)( hIdx : IndexABTreeI path t = some (.inl e))
+    --
+    : (BStrategies inlA inlN path t e hIdx).1 0 = inlA e
+    := by revert t e
+          induction n with
+          | zero => intros  t elem hIdx
+                    cases t with
+                      | leaf _v =>
+                        simp [BStrategies]
+                      | node _ _ _ => -- Empty case
+                        simp [IndexABTreeI] at hIdx
+          | succ _pn HInd =>
+            intros t elem hIdx
+            -- simp [BStrategies]
+            cases t with
+            | node b bl br =>
+              simp [BStrategies]
+              simp [IndexABTreeI] at hIdx
+              split
+              { case succ.node.h_1 hyp =>
+                  simp at *
+                  simp [Fin.snoc, Fin.castLT]
+                  rw [hyp] at hIdx; simp at hIdx
+                  have hI := HInd (Fin.tail path) bl elem hIdx
+                  assumption
+              }
+              { case succ.node.h_2 hyp =>
+                simp at *
+                simp [Fin.snoc, Fin.castLT]
+                rw [hyp] at hIdx; simp at hIdx
+                have hI := HInd (Fin.tail path) br elem hIdx
+                assumption
+              }
+            | leaf _v => simp [IndexABTreeI] at hIdx
+
+
+@[simp]
+def MBuildStrategies {α β γ : Type}{n : Nat}
+  (inlA : α -> γ) (inlB : β -> γ)
+  -- (inlN : β × γ × γ -> γ)
+  (path : ISkeleton n) (t : ABTree α β)
+  : Option ((Fin n.succ -> γ) × (Fin n -> PathElem γ))
+ := match n , t with
+  -- Element at point path is leading us.
+  | .zero, pEnd => some ⟨ Fin.cons (pEnd.getI' inlA inlB) nilSeq , nilSeq ⟩
+  -- Following the path
+  | .succ _pn , .node i bl br =>
+    match headSeq path with
+     | .inl _ => (fun ⟨ sp , si ⟩ => ⟨ Fin.snoc sp (inlB i) , Fin.snoc si (.inl (bl.getI' inlA inlB))⟩)
+       <$> MBuildStrategies inlA inlB  (Fin.tail path) bl
+     | .inr _ => (fun ⟨ sp , si ⟩ => ⟨ Fin.snoc sp (inlB i) , Fin.snoc si (.inl (br.getI' inlA inlB))⟩)
+     <$> MBuildStrategies inlA inlB  (Fin.tail path) br
+  -- Skeleton path is longer than path in tree.
+  | .succ _ , .leaf _ => none
+
+
+def SpineCollect {α β γ : Type}{n : Nat}
+   (injL : α -> γ)(injN : β -> γ)
+   (t : ABTree α β)(p : ISkeleton n)
+   : Option (Fin n.succ -> γ)
+  := match n , t with
+  -- Path leads to |pEnd|
+  | 0 , pEnd => some $ Fin.cons (pEnd.getI' injL injN) nilSeq
+  -- Following the path
+  | .succ pn , .node i bl br =>
+    (Fin.cons (injN i)) <$>
+    match p ⟨ 0 , by simp ⟩ with
+    | .inl _ => SpineCollect injL injN bl (Fin.tail p)
+    | .inr _ => SpineCollect injL injN br (Fin.tail p)
+  -- Skeleton path is longer than path in tree.
+  | .succ _ , .leaf _ => none
+
+def SibilingCollect {α β γ : Type}{n : Nat}
+   (injL : α -> γ)(injN : β -> γ)
+   (t : ABTree α β)(p : ISkeleton n)
+   : Option (Fin n -> PathElem γ)
+  := match n , t with
+  -- Path finished
+  | 0 , _ => some nilSeq
+  -- Following the path
+  | .succ pn , .node _i bl br =>
+    match p ⟨ 0 , by simp ⟩ with
+    | .inl _ => Fin.cons (.inl $ bl.getI' injL injN) <$> SibilingCollect injL injN bl (Fin.tail p)
+    | .inr _ => Fin.cons (.inr $ bl.getI' injL injN) <$> SibilingCollect injL injN br (Fin.tail p)
+  -- Skeleton path is longer than path in tree.
+  | .succ _ , .leaf _ => none
 
 def OBCollectI {α β γ : Type}{n : Nat}
     (inj : (β -> γ))
@@ -86,7 +235,6 @@ def ABTree.TSkeleton' {α β : Type} (t : ABTree α β) : ABTree (Unit × Skelet
 -- Adding Path and Forgetting
 def ABTree.TSkeleton {α β : Type} : ABTree α β -> ABTree Skeleton Skeleton
   := ABTree.map (fun p => p.2) (fun p => p.2) ∘ ABTree.InjPath
-
 
 def IndexBTreeI {α : Type}{n : Nat} (path : ISkeleton n)(t : BTree α) : Option (α ⊕ (BTree α × BTree α))
  := match n , t with
