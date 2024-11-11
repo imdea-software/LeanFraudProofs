@@ -470,21 +470,20 @@ def proposerSkeleton
    [BEq ℍ]
    [mhash : Hash α ℍ][mag : HashMagma ℍ]
    --
-   (elem : α)
+   -- (elem : α)
    (data : BTree α)
    (path : ISkeleton n.succ)
    -- Path |path| leads to element |elem| in tree |data|
-   (hInx : IndexBTreeI path data = some (.inl elem))
-   -- There is a restriction, path > 0
+   (spineStr : Fin n.succ.succ -> ℍ)
+   (sibStr : Fin n.succ -> PathElem ℍ )
+   (hInx : BuildStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ mhash mag data)
+         = some ⟨ spineStr , sibStr ⟩)
    :
-   have abtree := @propTree _ _ mhash mag data
-   have topHash := abtree.getI' (fun e => e.2) (fun e => e.1)
-   WinningProposer.PropHash n.succ (mhash.mhash elem) topHash
-   := have abtree := @propTree _ _ mhash mag data
-      have hashPath : Fin n.succ.succ -> ℍ := _
-      have hashSibilings : Fin n.succ -> PathElem ℍ := _
-    ⟨ by simp , ⟨ hashPath , hashSibilings ⟩
+   WinningProposer.PropHash n.succ (spineStr ⟨ 0 , by simp⟩ ) ( spineStr $ Fin.last n.succ)
+   := -- have abtree := @propTree _ _ mhash mag data
+    ⟨ by simp , ⟨ spineStr , sibStr ⟩
      -- Proofs
+     -- Good init
     , sorry , sorry , sorry ⟩
 
 end ElemInTree
