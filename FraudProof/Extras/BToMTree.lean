@@ -5,6 +5,9 @@ import FraudProof.DataStructures.Hash
 import Mathlib.Data.Sum.Basic
 import Mathlib.Data.Fin.Tuple.Basic -- Fin.tail
 
+----------------------------------------
+-- * Sequences
+--
 def nilSeq {γ : Type} : Fin 0 -> γ
  := fun x => by have e := x.isLt; simp at e
 
@@ -23,6 +26,132 @@ theorem Fin.snoc_head {α : Type}{ n : Nat }
    ( seq : Fin n.succ -> α )(lt : α)
    : (@Fin.snoc n.succ (fun _ => α) seq lt) ⟨ 0 , by simp ⟩ = seq 0
    := by simp [snoc, castLT]
+----------------------------------------
+
+----------------------------------------
+section ValHash
+  variable { α ℍ : Type }
+  def hashElem [Hash α ℍ][HashMagma ℍ] : BTree α ⊕ BTree α → PathElem ℍ:=
+    let hashTree := ( MTree.hash ∘ hash_BTree )
+    Sum.map  hashTree hashTree
+
+
+
+  def propTree [m : Hash α ℍ][o : HashMagma ℍ] : BTree α  -> ABTree (α × ℍ) (ℍ × ℍ × ℍ)
+  | .leaf v => .leaf ⟨ v , m.mhash v ⟩
+  | .node bl br =>
+    let abl := propTree bl
+    let h1 := ABTree.getI' (fun e => e.2) (fun e => e.1) abl
+    let abr := propTree br
+    let h2 := ABTree.getI' (fun e => e.2) (fun e => e.1) abr
+    .node ⟨ o.comb h1 h2 , h1 , h2 ⟩  abl abr
+
+  def medTrees [m : Hash α ℍ][o : HashMagma ℍ] (t : BTree α) : ABTree (α × ℍ) ℍ
+  := (@propTree _ _ m o t).map id (fun p => p.1)
+
+  -- Accessing Indexed MMTrees
+  structure NData (α β : Type)  where
+    nodeI : β
+    sL : Nat
+    sR : Nat
+    lL : Nat
+    lR : Nat
+    leftI : MMTree α β sL lL
+    rightI : MMTree α β sR lR
+    -- We also have proofs
+    sbot : Nat
+    sbotP : min sL sR = sbot
+    ltop : Nat
+    ltopP : max lL lR = ltop
+
+
+
+  structure LData (α β : Type) where
+    ldata : α
+    leafI : β
+
+  -- def IdxMMTreeI {α β : Type}{s l c : Nat}
+  --   ( _cLeqs : c ≤ s )
+  --   (d : MMTree α β s l)
+  --   (skl : ISkeleton c)
+  --   : (LData α β) ⊕ (NData α β)
+  -- := match s , d with
+  -- | 0  , .leaf v i => .inl ⟨ v , i ⟩
+  -- | .succ pn , @MMTree.node _ _ sL sR lL lR sB lT i pB pT bl br =>
+  --   match c with
+  --   | 0 => .inr ⟨ i , l.getI , r.getI ⟩
+  --   | .succ pc => match skl ⟨ 0 , by simp ⟩ with
+  --     | .inl _ => IdxMMTreeI (by omega) l $ Fin.tail skl
+  --     | .inr _ => IdxMMTreeI (by omega) r $ Fin.tail skl
+
+
+  ----------------------------------------
+  -- Tree Path to Hash Path
+  @[simp]
+  def treeTohashPath [Hash α ℍ][HashMagma ℍ]: TreePath α → Path ℍ :=
+    List.map hashElem
+
+  @[simp]
+  lemma TreeLenEq [h : Hash α ℍ][o : HashMagma ℍ](path : TreePath α)
+    : (@treeTohashPath _ _ h o path).length = path.length
+    := by exact List.length_map _ _
+
+  lemma RevTreeLenEq [h : Hash α ℍ][o : HashMagma ℍ]( path : TreePath α )
+    : (@treeTohashPath _ _ h o path).reverse.length = path.length
+    := by simp
+
+
+  -- Theorems
+  theorem VinTree
+          [BEq α]
+          [LawfulBEq α]
+          [h : Hash α ℍ]
+          [HashMagma ℍ]
+          (v : α)
+          (btree : BTree α)
+          (path : TreePath α)
+          (vInTree : valueInProof v btree = some path)
+          : List.foldl opHash (h.mhash v) (List.map hashElem path)
+            = (hash_BTree btree).hash :=
+  by
+    revert vInTree path
+    induction btree with
+    | leaf w =>
+      intros path vInTree
+      simp [valueInProof] at vInTree
+      have pathE := vInTree.right
+      rw [ <- pathE ]
+      simp [hash_BTree, MTree.hash]
+      have vwEq := vInTree.left
+      congr
+    | node bL bR HL HR =>
+      intros path vInPath
+      simp [valueInProof] at vInPath
+      -- v is in Left or righ.
+      cases vInL : valueInProof v bL with
+      -- v is in bL
+      | some ps =>
+        simp [vInL] at vInPath
+        have HLV := HL ps vInL
+        simp [hash_BTree, comb_MTree]
+        rw [ <- vInPath ]
+        simp
+        rw [ HLV ]
+        unfold hashElem
+        simp [opHash, MTree.hash]
+      | none => -- v not in bL
+          cases vInR : valueInProof v bR with
+          | some ps =>
+                simp [vInL, vInR] at vInPath
+                have HLR := HR ps vInR
+                rw [ <- vInPath ]
+                simp
+                rw [ HLR ]
+                simp [ hashElem, opHash, MTree.hash, hash_BTree, comb_MTree]
+          | none => -- impossible
+                simp [vInL, vInR] at vInPath
+end ValHash
+----------------------------------------
 
 def IndexABTreeI {α β : Type}{n : Nat} (path : ISkeleton n)(t : ABTree α β)
   : Option (α ⊕ (β × ABTree α β × ABTree α β))
@@ -71,10 +200,113 @@ def BStrategies {α β γ : Type} {n : Nat}
        match H : headSeq path with
        | .inl _ =>
           let recCall := BStrategies inlA inlB (Fin.tail path) bl elem (by simp [IndexABTreeI] at *; rw [ H ] at hIdx; simp at hIdx; assumption)
-          ⟨ Fin.snoc recCall.1 (inlB iN) , Fin.snoc recCall.2 (.inl (bl.getI' inlA inlB)) ⟩
+          ⟨ Fin.snoc recCall.1 (inlB iN) , Fin.snoc recCall.2 (.inr (br.getI' inlA inlB)) ⟩
        | .inr _ =>
           let recCall := BStrategies inlA inlB (Fin.tail path) br elem (by simp [IndexABTreeI] at *; rw [ H ] at hIdx; simp at hIdx; assumption)
-          ⟨ Fin.snoc recCall.1 (inlB iN) , Fin.snoc recCall.2 (.inr (br.getI' inlA inlB)) ⟩
+          ⟨ Fin.snoc recCall.1 (inlB iN) , Fin.snoc recCall.2 (.inl (bl.getI' inlA inlB)) ⟩
+
+
+theorem spineHashProp {α ℍ : Type} {n : Nat}[hash : Hash α ℍ] [mag : HashMagma ℍ]
+   (data : BTree α)(path : ISkeleton n)
+   (elem : α)
+   --
+   (hIdx : IndexABTreeI path (@propTree _ _ hash mag data) = some (.inl ⟨ elem , hash.mhash elem ⟩))
+   --
+   : ABTree.getI' (fun e => e.2) (fun e => e.1) (@propTree _ _ hash mag data) =
+     (BStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ hash mag data) ⟨ elem , hash.mhash elem ⟩ hIdx).1 (Fin.last n)
+   := by
+    induction n with
+    | zero => cases data with
+              | leaf v =>
+                     simp [propTree, IndexABTreeI] at hIdx; simp [propTree,BStrategies, ABTree.getI', nilSeq]
+                     have ⟨ _eqVElem , rest ⟩ := hIdx
+                     simp [Fin.last]
+                     assumption
+              | node bl br => simp [IndexABTreeI] at hIdx
+    | succ pn HInd =>
+      cases data with
+      | leaf v => simp [IndexABTreeI] at hIdx
+      | node bl br =>
+        simp [BStrategies]
+        split
+        { case succ.node.h_1 HEq =>
+          simp [propTree]
+          congr
+        }
+        { case succ.node.h_2 HEq =>
+          simp [propTree]
+          congr
+        }
+
+theorem allGamesStrategies {α ℍ : Type}{n : Nat} [hash : Hash α ℍ] [mag : HashMagma ℍ]
+  -- (inlA : α -> ℍ) (inlB : β -> ℍ)
+  (data : BTree α)
+  (path : ISkeleton n) -- (t : ABTree α β)
+  -- Such that path goes to an element
+  (elem : α)
+  -- IndexTree path data = elem
+  (hIdx : IndexABTreeI path (@propTree _ _ hash mag data) = some (.inl ⟨ elem , hash.mhash elem ⟩))
+  : forall (m : Nat)(mLtn : m < n),
+    have strs := BStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ hash mag data) ⟨ elem , hash.mhash elem ⟩ hIdx
+    strs.1 ⟨ m.succ , by omega ⟩ =
+    opHash ( strs.1 ⟨ m , by omega ⟩ ) ( strs.2 ⟨ m , mLtn ⟩ )
+  := by
+  revert n path elem hIdx
+  induction data with
+  | leaf v =>
+     intros n path elem hInd m mLTn
+     cases n with
+     | zero => simp at mLTn
+     | succ pn => simp [IndexABTreeI] at hInd
+  | node bl br BLInd BRInd =>
+    intros n path elem hInd m mLTn
+    -- simp [BStrategies]
+    cases n with
+    | zero => simp at mLTn
+    | succ pn =>
+      simp [BStrategies]
+      split
+      { case node.succ.h_1 heq =>
+        clear BRInd
+        simp [Fin.snoc]
+        split
+        { case isTrue H =>
+          replace BLInd := @BLInd pn (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption) m H
+          simp at BLInd
+          assumption
+        }
+        { case isFalse H =>
+          have heqn : m = pn := by omega
+          simp [opHash]
+          congr
+          -- current hash is fold path.
+          -- we know that m = pn, that means that this is last.
+          -- ABTree.getI' _ _ (propTree t) = spine (Fin.last m)
+          have sp := @spineHashProp _ _ _ hash mag bl (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption)
+          simp [Fin.last] at sp
+          rw [sp]
+          sorry
+        }
+      }
+      { case node.succ.h_2 heq =>
+        clear BLInd
+        simp [Fin.snoc]
+        split
+        { case isTrue H =>
+          replace BRInd := @BRInd pn (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption) m H
+          simp at BRInd
+          assumption
+        }
+        { case isFalse H =>
+          have heqn : m = pn := by omega
+          simp [opHash]
+          congr
+          -- current hash is fold path.
+          have sp := @spineHashProp _ _ _ hash mag br (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption)
+          rw [sp]
+          sorry
+        }
+      }
 
 theorem elem0 { α β γ: Type }{n : Nat}
     {inlA : α -> γ} {inlN : β -> γ}
@@ -292,129 +524,6 @@ theorem sizeIBTree {α : Type}(skl : Skeleton) :
           have indI := HI kr cl cr H
           simp; omega
 
-----------------------------------------
-section ValHash
-  variable { α ℍ : Type }
-  def hashElem [Hash α ℍ][HashMagma ℍ] : BTree α ⊕ BTree α → PathElem ℍ:=
-    let hashTree := ( MTree.hash ∘ hash_BTree )
-    Sum.map  hashTree hashTree
-
-
-
-  def propTree [m : Hash α ℍ][o : HashMagma ℍ] : BTree α  -> ABTree (α × ℍ) (ℍ × ℍ × ℍ)
-  | .leaf v => .leaf ⟨ v , m.mhash v ⟩
-  | .node bl br =>
-    let abl := propTree bl
-    let h1 := ABTree.getI' (fun e => e.2) (fun e => e.1) abl
-    let abr := propTree br
-    let h2 := ABTree.getI' (fun e => e.2) (fun e => e.1) abr
-    .node ⟨ o.comb h1 h2 , h1 , h2 ⟩  abl abr
-
-  def medTrees [m : Hash α ℍ][o : HashMagma ℍ] (t : BTree α) : ABTree (α × ℍ) ℍ
-  := (@propTree _ _ m o t).map id (fun p => p.1)
-
-  -- Accessing Indexed MMTrees
-  structure NData (α β : Type)  where
-    nodeI : β
-    sL : Nat
-    sR : Nat
-    lL : Nat
-    lR : Nat
-    leftI : MMTree α β sL lL
-    rightI : MMTree α β sR lR
-    -- We also have proofs
-    sbot : Nat
-    sbotP : min sL sR = sbot
-    ltop : Nat
-    ltopP : max lL lR = ltop
-
-
-
-  structure LData (α β : Type) where
-    ldata : α
-    leafI : β
-
-  -- def IdxMMTreeI {α β : Type}{s l c : Nat}
-  --   ( _cLeqs : c ≤ s )
-  --   (d : MMTree α β s l)
-  --   (skl : ISkeleton c)
-  --   : (LData α β) ⊕ (NData α β)
-  -- := match s , d with
-  -- | 0  , .leaf v i => .inl ⟨ v , i ⟩
-  -- | .succ pn , @MMTree.node _ _ sL sR lL lR sB lT i pB pT bl br =>
-  --   match c with
-  --   | 0 => .inr ⟨ i , l.getI , r.getI ⟩
-  --   | .succ pc => match skl ⟨ 0 , by simp ⟩ with
-  --     | .inl _ => IdxMMTreeI (by omega) l $ Fin.tail skl
-  --     | .inr _ => IdxMMTreeI (by omega) r $ Fin.tail skl
-
-
-  ----------------------------------------
-  -- Tree Path to Hash Path
-  @[simp]
-  def treeTohashPath [Hash α ℍ][HashMagma ℍ]: TreePath α → Path ℍ :=
-    List.map hashElem
-
-  @[simp]
-  lemma TreeLenEq [h : Hash α ℍ][o : HashMagma ℍ](path : TreePath α)
-    : (@treeTohashPath _ _ h o path).length = path.length
-    := by exact List.length_map _ _
-
-  lemma RevTreeLenEq [h : Hash α ℍ][o : HashMagma ℍ]( path : TreePath α )
-    : (@treeTohashPath _ _ h o path).reverse.length = path.length
-    := by simp
-
-
-  -- Theorems
-  theorem VinTree
-          [BEq α]
-          [LawfulBEq α]
-          [h : Hash α ℍ]
-          [HashMagma ℍ]
-          (v : α)
-          (btree : BTree α)
-          (path : TreePath α)
-          (vInTree : valueInProof v btree = some path)
-          : List.foldl opHash (h.mhash v) (List.map hashElem path)
-            = (hash_BTree btree).hash :=
-  by
-    revert vInTree path
-    induction btree with
-    | leaf w =>
-      intros path vInTree
-      simp [valueInProof] at vInTree
-      have pathE := vInTree.right
-      rw [ <- pathE ]
-      simp [hash_BTree, MTree.hash]
-      have vwEq := vInTree.left
-      congr
-    | node bL bR HL HR =>
-      intros path vInPath
-      simp [valueInProof] at vInPath
-      -- v is in Left or righ.
-      cases vInL : valueInProof v bL with
-      -- v is in bL
-      | some ps =>
-        simp [vInL] at vInPath
-        have HLV := HL ps vInL
-        simp [hash_BTree, comb_MTree]
-        rw [ <- vInPath ]
-        simp
-        rw [ HLV ]
-        unfold hashElem
-        simp [opHash, MTree.hash]
-      | none => -- v not in bL
-          cases vInR : valueInProof v bR with
-          | some ps =>
-                simp [vInL, vInR] at vInPath
-                have HLR := HR ps vInR
-                rw [ <- vInPath ]
-                simp
-                rw [ HLR ]
-                simp [ hashElem, opHash, MTree.hash, hash_BTree, comb_MTree]
-          | none => -- impossible
-                simp [vInL, vInR] at vInPath
-end ValHash
 ----------------------------------------
 
 ----------------------------------------
