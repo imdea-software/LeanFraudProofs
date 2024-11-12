@@ -279,13 +279,12 @@ theorem allGamesStrategies {α ℍ : Type}{n : Nat} [hash : Hash α ℍ] [mag : 
           have heqn : m = pn := by omega
           simp [opHash]
           congr
-          -- current hash is fold path.
-          -- we know that m = pn, that means that this is last.
-          -- ABTree.getI' _ _ (propTree t) = spine (Fin.last m)
           have sp := @spineHashProp _ _ _ hash mag bl (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption)
           simp [Fin.last] at sp
           rw [sp]
-          sorry
+          apply congr_arg; apply Fin.eq_of_val_eq
+          simp
+          rw [heqn]
         }
       }
       { case node.succ.h_2 heq =>
@@ -304,7 +303,9 @@ theorem allGamesStrategies {α ℍ : Type}{n : Nat} [hash : Hash α ℍ] [mag : 
           -- current hash is fold path.
           have sp := @spineHashProp _ _ _ hash mag br (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption)
           rw [sp]
-          sorry
+          apply congr_arg; apply Fin.eq_of_val_eq
+          simp
+          rw [heqn]
         }
       }
 
