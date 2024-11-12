@@ -8,10 +8,23 @@ import Mathlib.Control.Bifunctor
 
 /-! # Binary Tree -/
 
+inductive ABTree (α β : Type) : Type
+ | leaf (v : α)
+ | node (i : β) ( bL bR : ABTree α β )
+
+abbrev ABTreeSkeleton := ABTree Unit Unit
+
+-- @[simp]
+-- def BTree (α : Type) := ABTree α Unit
+-- def BTree.node {α : Type}(bl br : BTree α) : BTree α := ABTree.node () bl br
+-- def BTree.leaf {α : Type}(v : α) : BTree α := ABTree.leaf v
+
+-- abbrev BTree (α : Type) := ABTree α Unit
+
 -- BTree Basic Definition
 inductive BTree (α : Type ): Type
 | leaf (v : α)
-| node ( bL bR : BTree α )
+| node (bL bR : BTree α )
 deriving instance BEq for BTree
 
 def BTree.map {α β : Type}(f : α -> β) : BTree α -> BTree β
@@ -21,11 +34,16 @@ def BTree.map {α β : Type}(f : α -> β) : BTree α -> BTree β
 instance : Functor BTree where
  map := BTree.map
 
-inductive ABTree (α β : Type) : Type
- | leaf (v : α)
- | node (i : β) ( bL bR : ABTree α β )
+def BTree.toAB {α : Type} : BTree α -> ABTree α Unit
+  | .leaf v => .leaf v
+  | .node bl br => .node () bl.toAB br.toAB
 
-abbrev ABTreeSkeleton := ABTree Unit Unit
+def ABTree.toB {α : Type} : ABTree α Unit -> BTree α
+  | .leaf v => .leaf v
+  | .node _ bl br => .node bl.toB br.toB
+
+-- TODO iso ABTree <-> BTree
+
 
 -- Projector
 def ABTree.getI' {α β γ : Type}(p : α -> γ)(q : β -> γ) : ABTree α β -> γ
@@ -168,8 +186,8 @@ section BTree
     -- Dec value is in a Tree
     def valueIn [BEq α] (v : α) ( bt : BTree α ) : Bool :=
         match bt with
-        | BTree.leaf vb => v == vb
-        | BTree.node l r => valueIn v l ∨ valueIn v r
+        | .leaf vb => v == vb
+        | .node l r => valueIn v l ∨ valueIn v r
 
     -- Value is in tree and proof
     def valueInProof [BEq α](v : α) (bt : BTree α) : Option ( TreePath α ) :=

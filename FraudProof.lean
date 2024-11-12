@@ -470,21 +470,26 @@ def proposerSkeleton
    [BEq ℍ]
    [mhash : Hash α ℍ][mag : HashMagma ℍ]
    --
-   -- (elem : α)
+   (elem : α)
    (data : BTree α)
    (path : ISkeleton n.succ)
    -- Path |path| leads to element |elem| in tree |data|
-   (spineStr : Fin n.succ.succ -> ℍ)
-   (sibStr : Fin n.succ -> PathElem ℍ )
-   (hInx : BuildStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ mhash mag data)
-         = some ⟨ spineStr , sibStr ⟩)
-   :
-   WinningProposer.PropHash n.succ (spineStr ⟨ 0 , by simp⟩ ) ( spineStr $ Fin.last n.succ)
-   := -- have abtree := @propTree _ _ mhash mag data
-    ⟨ by simp , ⟨ spineStr , sibStr ⟩
+   (hyp : IndexABTreeI path (@propTree _ _ mhash mag data)
+        = some (.inl ⟨ elem ,  mhash.mhash elem ⟩ ))
+   : have ⟨ spine, sibs ⟩ := BStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ mhash mag data) ⟨ elem ,  mhash.mhash elem ⟩ hyp
+   WinningProposer.PropHash n.succ (spine ⟨ 0 , by simp⟩ ) ( spine $ Fin.last n.succ)
+   :=
+     -- let abtree := @propTree _ _ mhash mag data
+     --
+    ⟨ by simp , ⟨ (BStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ mhash mag data) ⟨ elem ,  mhash.mhash elem ⟩ hyp).1  , (BStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ mhash mag data) ⟨ elem ,  mhash.mhash elem ⟩ hyp).2⟩
      -- Proofs
      -- Good init
-    , sorry , sorry , sorry ⟩
+    , by simp at *
+    --  Good Root
+    , by simp [Fin.last]
+    -- Good Mid
+    , by apply allGamesStrategies
+    ⟩
 
 end ElemInTree
 ----------------------------------------
