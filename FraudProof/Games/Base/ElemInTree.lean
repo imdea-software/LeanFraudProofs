@@ -1,5 +1,7 @@
 import FraudProof.Games.GameDef -- Players, Winner
 
+import FraudProof.DataStructures.Sequence
+
 import Mathlib.Data.Fin.Tuple.Basic
 
 -- DA: element is in Tree
@@ -57,6 +59,16 @@ structure ElemInTreeN (n : Nat)(α ℍ : Type) where
   -- Let |bt : BTree α| be the implicit data, such that |hash bt = mtree|.
   -- This da says |bt ! data.2| leads to |data.1|
 
+theorem ElemInTreeN0 {α ℍ : Type} (da : ElemInTreeN 0 α ℍ)
+ : da.data.2 = nilSeq
+ := by have ⟨ ⟨ a , sk ⟩ , mtree ⟩ := da
+       simp
+       apply funext
+       intro empty
+       simp [nilSeq]
+       have ⟨ n , e ⟩ := empty
+       simp at e
+
 structure ElemInTreeH (n : Nat)(ℍ : Type) where
   data : ℍ × ISkeleton n
   mtree : ℍ
@@ -64,30 +76,68 @@ structure ElemInTreeH (n : Nat)(ℍ : Type) where
   -- |dt ! data.2| leads to | data.1| where |data.1| is the hash of the element
   -- in a tree [see the above DA].
 
-def Fhead {α : Type} {n : Nat}  : (Fin n.succ -> α) -> α
- := fun seq => seq ⟨ 0 , by simp ⟩
+def SingleLastStep {α ℍ : Type}[BEq ℍ][h : Hash α ℍ] (data : ElemInTreeN 0 α ℍ) : Winner
+  := condWProp $ h.mhash (data.data.1) == data.mtree
+
+def SingleMidStep {ℍ : Type}[BEq ℍ][m : HashMagma ℍ ](data : ℍ × ℍ × ℍ) : Winner
+  := condWProp $ m.comb data.2.1 data.2.2 == data.1
 
 def elemInHGame {α ℍ : Type}
-    [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+    [BEq ℍ][Hash α ℍ][HashMagma ℍ]
     {n : Nat}
     (da : ElemInTreeN n α ℍ)
-    (proposer : Fin n -> Option (PMoves ℍ))
-    (chooser : Fin n -> ℍ × ℍ × ℍ -> Option ChooserSmp)
+    (proposer : Sequence n (Option (PMoves ℍ)))
+    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
     : Winner
     := match n with
-       | 0 =>
-         condWProp $ o.mhash da.data.1 == da.mtree
+       | 0 => SingleLastStep da
        | .succ _pn =>
-         match Fhead proposer with
-         | .none => Player.Chooser
+         match headSeq proposer with
+         | .none => Player.Chooser -- Proposer forfeits the game
          | .some (.Next proposed) =>
-           match Fhead chooser ⟨ da.mtree , proposed ⟩ with
-           | .none => Player.Proposer
-           | .some .Now => condWProp $ m.comb proposed.1 proposed.2 == da.mtree
+           match headSeq chooser ⟨ da.mtree , proposed ⟩ with
+           | .none => Player.Proposer -- Chooser forfeits the game
+           | .some .Now => SingleMidStep ⟨ da.mtree , proposed ⟩
            | .some (.Continue _) =>
-             have nextHash := match Fhead da.data.2 with
+             have nextHash := match headSeq da.data.2 with
                     | .inl _ => proposed.1
                     | .inr _ => proposed.2
-             elemInHGame ⟨⟨ da.data.1, Fin.tail da.data.2⟩ , nextHash ⟩
-                           (Fin.tail proposer)
-                           (Fin.tail chooser)
+             elemInHGame
+               -- Next step DA
+               ⟨⟨ da.data.1, tailSeq da.data.2⟩ , nextHash ⟩
+               -- Next step players
+               (tailSeq proposer)
+               (tailSeq chooser)
+
+
+-- Here we can have some troubles. We do not know if we really are talking about
+-- the same element.
+def SingleLastStepH {ℍ : Type}[BEq ℍ] (data : ElemInTreeH 0 ℍ) : Winner
+  := condWProp $ data.data.1 == data.mtree
+
+def elemInHGameH {ℍ : Type}
+    [BEq ℍ][HashMagma ℍ]
+    {n : Nat}
+    (da : ElemInTreeH n ℍ)
+    (proposer : Sequence n (Option (PMoves ℍ)))
+    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+    : Winner
+    := match n with
+       | 0 => SingleLastStepH da
+       | .succ _pn =>
+         match headSeq proposer with
+         | .none => Player.Chooser -- Proposer forfeits the game
+         | .some (.Next proposed) =>
+           match headSeq chooser ⟨ da.mtree , proposed ⟩ with
+           | .none => Player.Proposer -- Chooser forfeits the game
+           | .some .Now => SingleMidStep ⟨ da.mtree , proposed ⟩
+           | .some (.Continue _) =>
+             have nextHash := match headSeq da.data.2 with
+                    | .inl _ => proposed.1
+                    | .inr _ => proposed.2
+             elemInHGameH
+               -- Next step DA
+               ⟨⟨ da.data.1, tailSeq da.data.2⟩ , nextHash ⟩
+               -- Next step players
+               (tailSeq proposer)
+               (tailSeq chooser)

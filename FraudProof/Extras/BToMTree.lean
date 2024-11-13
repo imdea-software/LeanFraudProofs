@@ -1,32 +1,9 @@
 import FraudProof.DataStructures.Value
 import FraudProof.DataStructures.MTree
 import FraudProof.DataStructures.Hash
+import FraudProof.DataStructures.Sequence
 
 import Mathlib.Data.Sum.Basic
-import Mathlib.Data.Fin.Tuple.Basic -- Fin.tail
-
-----------------------------------------
--- * Sequences
---
-def nilSeq {γ : Type} : Fin 0 -> γ
- := fun x => by have e := x.isLt; simp at e
-
-@[simp]
-def headSeq {α : Type}{ n : Nat } ( seq : Fin n.succ -> α) : α
-  := seq ⟨ 0 , by simp ⟩
-
-@[simp]
-def seqMap {α β : Type} {n : Nat} (f : α -> β) ( seq : Fin n -> α ) : Fin n -> β
-  := match n with
-     | 0 => nilSeq
-     | .succ _pn => Fin.cons (f $ headSeq seq) (seqMap f (Fin.tail seq))
-
-
-theorem Fin.snoc_head {α : Type}{ n : Nat }
-   ( seq : Fin n.succ -> α )(lt : α)
-   : (@Fin.snoc n.succ (fun _ => α) seq lt) ⟨ 0 , by simp ⟩ = seq 0
-   := by simp [snoc, castLT]
-----------------------------------------
 
 ----------------------------------------
 section ValHash
@@ -34,8 +11,6 @@ section ValHash
   def hashElem [Hash α ℍ][HashMagma ℍ] : BTree α ⊕ BTree α → PathElem ℍ:=
     let hashTree := ( MTree.hash ∘ hash_BTree )
     Sum.map  hashTree hashTree
-
-
 
   def propTree [m : Hash α ℍ][o : HashMagma ℍ] : BTree α  -> ABTree (α × ℍ) (ℍ × ℍ × ℍ)
   | .leaf v => .leaf ⟨ v , m.mhash v ⟩
@@ -492,6 +467,9 @@ def IndexBTree {α : Type} : Skeleton -> BTree α -> Option (α ⊕ (BTree α ×
   | .cons (.inr _) sks , .node _ br => IndexBTree sks br
   -- Skeleton path is longer than path in tree.
   | .cons _ _ , .leaf _ => none
+
+def ABTree.getHash {α ℍ : Type} ( t : ABTree (α × ℍ) (ℍ × ℍ × ℍ)) :  ℍ
+  := t.getI' (fun f => f.2) (fun f => f.1)
 
 theorem sizeIBTree {α : Type}(skl : Skeleton) :
   forall ( t cl cr : BTree α ),

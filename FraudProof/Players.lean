@@ -1,6 +1,7 @@
 import FraudProof.DataStructures.Hash
 import FraudProof.DataStructures.Value
 import FraudProof.DataStructures.MTree
+import FraudProof.DataStructures.Sequence
 
 import Init.Data.Nat.Basic
 import Mathlib.Tactic.Ring
@@ -157,6 +158,7 @@ structure IPlayer (cut len : Nat)(hb ht : ℍ) where
 structure LinPlayer (len : Nat) where
   strategy : Fin len -> ℍ → ℍ → Side
 
+-- Operations
 @[simp]
 def LinPlayer.chooseNow {len : Nat} (lNZ : 0 < len) : LinPlayer ℍ len -> ℍ -> ℍ -> Side
  := fun p => p.strategy ⟨ 0 , lNZ ⟩
@@ -166,6 +168,15 @@ def LinPlayer.chooseNow {len : Nat} (lNZ : 0 < len) : LinPlayer ℍ len -> ℍ -
 def LinPlayer.nextChooser {len : Nat} (C : LinPlayer ℍ (len + 1)) : LinPlayer ℍ len
   := { strategy := fun p => match p with
                         | ⟨ val , lt ⟩ => C.strategy ⟨ val + 1 , by simpa ⟩}
+
+-- Latest Chooser from Tree to Hash
+def ChPlayer (gameLen : Nat)
+  -- For each step of the game
+  := Sequence gameLen
+  -- For each three hashes, current node hash, children hashes
+  (ℍ × ℍ × ℍ
+  -- chooses a +side+ an action.
+  -> Side)
 
 end Chooser
 
@@ -212,7 +223,7 @@ namespace Knowing
       unfold inPathSeq
       simp
       rw [ Fin.foldl_succ, Fin.foldl_zero ]
-      simp at *
+      -- simp at *
       assumption
   }
   def DropHCKnowing {l : Nat} { hd ht : ℍ }[HashMagma ℍ]
