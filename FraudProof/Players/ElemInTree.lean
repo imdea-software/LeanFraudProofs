@@ -57,11 +57,9 @@ def chooserNoData {ℍ : Type}
         then .Now
         else .Continue ()
 
-def replicate {α : Type}{n : Nat}(c : α) : Fin n -> α
- := fun _ => c
-
 def hasManyChoosers {ℍ : Type}{n : Nat}
   [BEq ℍ][HashMagma ℍ]
-  : Fin n -> (ℍ × ℍ × ℍ -> Option ChooserSmp)
+  :  Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp)
   := replicate chooserNoData
+
 ----------------------------------------

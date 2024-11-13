@@ -463,8 +463,14 @@ end FromBTreeToMTree
 -- We want to say that an element is an element in a (tree) hash.
 namespace ElemInTree
 
--- We can built a winning proposer for elements in tree
--- Good thing is that we can use it for both, logarithmic and linear games.
+-- ** Retro compability of games
+--  In our first POC, we identified good proposers as those defining two
+--  sequences of hashes: spine and sibilings. Plus some properties.
+--
+-- Here, we show how to build a winning proposer (from previous sections) from
+-- elements in tree.
+-- Good thing is that we can use it for different (equivalent?) games:
+-- logarithmic, linear and multi-cuts.
 def proposerSkeleton
    {α ℍ : Type}{n : Nat}
    [BEq ℍ]
@@ -479,10 +485,9 @@ def proposerSkeleton
    : have ⟨ spine, sibs ⟩ := BStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ mhash mag data) ⟨ elem ,  mhash.mhash elem ⟩ hyp
    WinningProposer.PropHash n.succ (spine ⟨ 0 , by simp⟩ ) ( spine $ Fin.last n.succ)
    :=
-     -- let abtree := @propTree _ _ mhash mag data
-     --
+    -- Strategies definitions
     ⟨ by simp , ⟨ (BStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ mhash mag data) ⟨ elem ,  mhash.mhash elem ⟩ hyp).1  , (BStrategies (fun e => e.2) (fun e => e.1) path (@propTree _ _ mhash mag data) ⟨ elem ,  mhash.mhash elem ⟩ hyp).2⟩
-     -- Proofs
+     -- Props
      -- Good init
     , by simp at *
     --  Good Root
@@ -490,6 +495,106 @@ def proposerSkeleton
     -- Good Mid
     , by apply allGamesStrategies
     ⟩
+
+-- TODO Prove good proposers (from previous definitions) always win the the ElemInTree game.
+-- theorem goodPropWins (gProp : WinningProposer.PropHash n.succ (spine ⟨ 0 , by simp⟩ ) ( spine $ Fin.last n.succ))
+--   : forall (ch : ...) , elemInHGame _da gProp ch = Player.Proposer
+--   := sorry
+
+
+-- ** Good Chooser
+--
+-- In the case DAs are made showing elements, we also need some notion of
+-- equality over elements. Here, there is no collison meta-problems.
+theorem goodChoosersWinA
+  {α ℍ : Type}[BEq α][LawfulBEq α][BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+  -- + DA
+  {n : Nat}
+  (da : ElemInTreeN n α ℍ)
+  -- + Knowledge
+  (knowledge : BTree α)
+  -- knowledge is correct
+  (kCorrect : (@propTree _ _ h m knowledge).getHash = da.mtree)
+  -- + Chooser challenge when there is something wrong.
+  (hyp : IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = none
+       ∨ (exists e : (α × ℍ), IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = some (.inl e)
+                            ∧ e.1 != da.1.1))
+  -- + Proposer
+  (proposer : Sequence n (Option (PMoves ℍ)))
+  :
+  elemInHGame da proposer hasManyChoosers
+  = Player.Chooser
+  := by
+   revert knowledge kCorrect hyp proposer
+   induction n with
+   | zero =>
+     intros knowledge kCorrect hyp proposer
+     have daE := ElemInTreeN0 da
+     simp [elemInHGame, SingleLastStep, condWProp]
+     cases hyp with
+     | inl HToNone =>
+        have daE := ElemInTreeN0 da
+        rw [daE] at HToNone
+        cases knowledge with
+        | leaf v =>
+          simp [propTree, IndexABTreeI] at HToNone
+        | node bl br =>
+          simp [propTree,IndexABTreeI] at HToNone
+     | inr HToAnother =>
+        have ⟨ ⟨ elem , elemHash ⟩ , ⟨ pathProof, hashProof ⟩ ⟩ := HToAnother
+        simp at hashProof
+        rw [daE] at pathProof
+        have todoThm : forall {γ ε θ : Type} (t : ABTree (γ × ε) θ) el elh, IndexABTreeI nilSeq t = some (.inl (el, elh)) ->  t = .leaf (el, elh) := sorry
+        apply todoThm at pathProof
+        rw [pathProof] at kCorrect
+        rw [ <- kCorrect]
+        simp [ABTree.getHash,ABTree.getI']
+        have someSteps : h.mhash elem = elemHash := sorry
+        rw [<- someSteps]
+        -- No Collision Assumptino
+        have noCollisions : ¬ elem = da.data.1 -> ¬ h.mhash da.data.1 = h.mhash elem := sorry
+        apply noCollisions
+        assumption
+   | succ pn HInd =>
+     intros knowledge kCorrect hyp proposer
+     simp [elemInHGame]
+     split
+     { case succ.h_1 _HProp => simp}
+     { case succ.h_2 HPprop x proposed =>
+       simp [hasManyChoosers,chooserNoData]
+       cases H : da.mtree != m.comb x.1 x.2 with
+       | true => simp [SingleMidStep, condWProp]; simp at H; intro FF;apply H; rw [FF]
+       | false =>
+         simp
+         cases da.data.2 0 with
+         | inl _ =>
+           simp
+           have ind := HInd ⟨ ⟨ da.data.1, Fin.tail da.data.2⟩ , x.1⟩ _
+         | inr _ => _
+         -- have ind := HInd ⟨ ⟨ da.data.1, seqTail da.data.2⟩ ,
+     }
+
+theorem goodChooserWin
+  {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+  -- + DA
+  {n : Nat}
+  (da : ElemInTreeH n ℍ) -- There is no α here!
+  -- + Knowledge
+  (knowledge : BTree α)
+  (kCorrect : (@propTree _ _ h m knowledge).getHash = da.mtree)
+  -- + Chooser challenge when there is something wrong.
+  (hyp : IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = none
+       ∨ (exists e : (α × ℍ), IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = some (.inl e)
+                            ∧ e.2 != da.1.1))
+  (proposer : Sequence n (Option (PMoves ℍ)))
+  : -- Then, knowledgeless chooser strategy wins.
+  elemInHGameH da
+    proposer
+    -- Funny thing here, choosers not require to know the
+    -- original data but only to know when to challenge.
+    hasManyChoosers
+  = Player.Chooser
+  := sorry
 
 end ElemInTree
 ----------------------------------------
