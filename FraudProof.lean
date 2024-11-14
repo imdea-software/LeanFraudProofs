@@ -571,6 +571,7 @@ theorem goodChoosersWinA
            simp
            cases knowledge with
            | leaf v =>
+             -- Path proposed is longer than tree brach!
              simp at H
              simp [propTree,ABTree.getHash,ABTree.getI'] at kCorrect
              -- We have that |x1 ⊕ x2 = hash v|, our hash assumptinos should prohibit it? -- Hash Assumption
@@ -635,6 +636,63 @@ theorem goodChooserWin
     hasManyChoosers
   = Player.Chooser
   := sorry
+
+-- Here we need weaker assumptions?
+theorem wiseChooser
+  {α ℍ : Type}[BEq α][LawfulBEq α][BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+  -- + DA
+  {n : Nat}
+  (da : ElemInTreeN n α ℍ)
+  -- + Knowledge
+  (knowledge : BTree α)
+  -- knowledge is correct
+  (kCorrect : (@propTree _ _ h m knowledge).getHash = da.mtree)
+  -- + Chooser challenge when there is something wrong.
+  (hyp : IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = none
+       ∨ (exists e : (α × ℍ), IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = some (.inl e)
+                            ∧ e.1 != da.1.1))
+  -- + Proposer
+  (proposer : Sequence n (Option (PMoves ℍ)))
+  :
+  elemInHGame da proposer (chooserData (@propTree _ _ h m knowledge) da)
+  = Player.Chooser
+  := by revert knowledge proposer da
+        induction n with
+        | zero =>
+          intros da knowledge kCorrect hyp proposer
+          sorry
+        | succ pn HInd =>
+          intros da knowledge kCorrect hyp proposer
+          simp [elemInHGame]
+          split
+          { case succ.h_1 HPProp => simp }
+          { case succ.h_2 HEQ proposed move =>
+            cases knowledge with
+            | leaf v =>
+              simp [propTree]
+              simp [chooserData, SingleMidStep, condWProp]
+              simp [propTree, ABTree.getHash, ABTree.getI'] at kCorrect
+              -- Same as before
+              sorry -- h1 ⊕ h2 != hash(v)
+            | node bl br =>
+              simp [propTree,chooserData]
+              -- Some cases here.
+              cases HL : proposed.1 != (propTree bl).getHash with
+              | true =>
+                simp; simp [SingleMidStep,condWProp]; simp at HL
+                rw [getHashPropNode] at kCorrect
+                rw [<- kCorrect]
+                -- One of the laws of hash
+                -- a != b => comb a c != comb b c
+                sorry
+              | false =>
+                cases HR : proposed.2 != (propTree br).getHash with
+                | true => sorry -- same as before
+                | false =>
+                  simp
+                  -- inductive hipothesis.
+                  sorry
+            }
 
 end ElemInTree
 ----------------------------------------
