@@ -10,6 +10,11 @@ abbrev Sequence (n : Nat) (α : Type) := Fin n -> α
 def nilSeq {γ : Type} : Sequence 0 γ
  := fun x => by have e := x.isLt; simp at e
 
+def singleSeq {α : Type} (a : α) : Sequence 1 α
+ := Fin.cons a nilSeq
+
+
+
 -- Head
 @[simp]
 def headSeq {α : Type}{ n : Nat } ( seq : Sequence n.succ α) : α
