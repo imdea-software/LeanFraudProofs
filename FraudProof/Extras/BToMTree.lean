@@ -471,6 +471,10 @@ def IndexBTree {α : Type} : Skeleton -> BTree α -> Option (α ⊕ (BTree α ×
 def ABTree.getHash {α ℍ : Type} ( t : ABTree (α × ℍ) (ℍ × ℍ × ℍ)) :  ℍ
   := t.getI' (fun f => f.2) (fun f => f.1)
 
+theorem getHashPropNode {α ℍ : Type}[Hash α ℍ][m : HashMagma ℍ](bl br : BTree α)
+  : (propTree (bl.node br)).getHash = m.comb (propTree bl).getHash (propTree br).getHash
+  := by simp [propTree,ABTree.getHash,ABTree.getI']
+
 theorem sizeIBTree {α : Type}(skl : Skeleton) :
   forall ( t cl cr : BTree α ),
   IndexBTree skl t = some (.inr ⟨ cl , cr⟩)

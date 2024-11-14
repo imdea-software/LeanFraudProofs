@@ -566,12 +566,52 @@ theorem goodChoosersWinA
        | true => simp [SingleMidStep, condWProp]; simp at H; intro FF;apply H; rw [FF]
        | false =>
          simp
-         cases da.data.2 0 with
+         cases Side : da.data.2 0 with
          | inl _ =>
            simp
-           have ind := HInd ⟨ ⟨ da.data.1, Fin.tail da.data.2⟩ , x.1⟩ _
-         | inr _ => _
-         -- have ind := HInd ⟨ ⟨ da.data.1, seqTail da.data.2⟩ ,
+           cases knowledge with
+           | leaf v =>
+             simp at H
+             simp [propTree,ABTree.getHash,ABTree.getI'] at kCorrect
+             -- We have that |x1 ⊕ x2 = hash v|, our hash assumptinos should prohibit it? -- Hash Assumption
+             sorry
+           | node bl br =>
+             -- simp [propTree] at kCorrect
+             rw [getHashPropNode] at kCorrect
+             simp at H
+             -- hashes hashing to same hash must be the same. -- Hash Assumption
+             have hashHyp : forall (h1 h2 h3 h4 : ℍ), m.comb h1 h2 = m.comb h3 h4 -> h1 = h3 := sorry
+             rw [ <- kCorrect ] at H
+             apply hashHyp at H
+             -- have hypLeft := _
+             have hypLeft : (IndexABTreeI (Fin.tail da.data.2) (@propTree _ _ h m bl) = none
+                            ∨ ∃ e, IndexABTreeI (Fin.tail da.data.2) (@propTree _ _ h m bl) = some (Sum.inl e) ∧ (e.1 != da.data.1) = true)
+                            := by
+                             simp
+                             cases hyp with
+                             | inl HYP =>
+                               left
+                               simp [IndexABTreeI] at HYP
+                               rw [Side] at HYP
+                               simp at HYP
+                               assumption
+                             | inr HYP =>
+                               right
+                               have ⟨ ⟨ a , xx ⟩ , pr ⟩ := HYP
+                               exists a
+                               have ⟨ pTree , neq ⟩ := pr
+                               simp at neq
+                               apply And.intro
+                               { exists xx
+                                 simp [IndexABTreeI] at pTree
+                                 rw [Side] at pTree
+                                 simp at pTree
+                                 assumption
+                               }
+                               { assumption }
+             have hInd := HInd ⟨ ⟨ da.data.1 , Fin.tail da.data.2⟩ , x.1 ⟩ bl H hypLeft (Fin.tail proposer)
+             assumption
+         | inr _ => _ -- Same but on |br|
      }
 
 theorem goodChooserWin
