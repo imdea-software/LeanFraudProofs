@@ -198,7 +198,7 @@ See 'Hash Classes'
 #+end_src
 *** [ ] IO Interactions
 **** [X] From Opaque to Classes
-**** [ ] Keccak256 is a valid IO Hash?
+**** [X] Keccak256 is a valid IO Hash?
 **** [ ] IO Merkle Tree generation.
 *** [ ] A bit more general games
 **** [X] DAs
@@ -209,10 +209,12 @@ DAs are weird computational data.
 **** [ ] Proving the above?
 ***** [X] DA : BTree -> Merkle Tree
 ***** [ ] DA : (BTree -> MTree) and Valid
+Depending on what the DA is, we may need different stuff.
+1. DA : \(\langle e , path , ha \rangle\) -- Tree is implicit and hashes to \(ha\)
+2. DA : \(\langle h(e) , path , ha \rangle\) -- Tree is implicit and hashes to \(ha\)
+3. DA : \(\langle tree ,  _ , path , ha \rangle\) -- Tree is |tree| and hashes to \(ha\)
 ****** [ ] Elements are f-Valid
 ****** [ ] No repeated elements
-
-
 ** Hash Function
 Implicit assumptions.
 
@@ -232,8 +234,64 @@ without knowing the tree.
 *** TODO Optimization: We can build players choosing shorters paths when possible.
 We know the whole tree and it is not complete.
 
-
 * To build the whole project
 #+begin_src sh :noeval
 lake build
 #+end_src
+* L2Setchain FraudProofs
+Data = batch tag , \(\langle id , h , \sigma \rangle \) implicitly assigned to \(b\)
+where:
++ symbol \(\sigma\) seems to be a structure containing at least \(f + 1\) signatures
++ symbol \( h \) is a hash??
++ symbol \( id\) is an identification tag
++ symbol \( b \) is a batch defined as a list/sequence of transactions?
+
+Batch tags are valid iff they hold 4 props (additional to the above) over the same 'da'?
+
+DA: This is the next valid batch tag corresponding to batch \(b\): \(\langle id, h , \sigma \rangle\)
+** [ ] Data availability Challenge::
+Data is unknown to a part of the network. It is not challenging the validity of
+the DA. This challenge challenges missing data? and it makes sense because of economic rules.
+
+Challenge is over a specific node, notation here is very high level.
+
+It is more on the lines of information retrieval than challenging results.
+The way I was thinking about DAs was \( data_{rep} , res \) with two implicit
+computations \( F(data) = data_{rep} \wedge C(data) = res\).
+Here the first part is the missing one, \(F(data) = data_{rep}\).
+
+After posting the tag, another agent ask for data indicating a node
+#+begin_src Lean :noeval
+pathToN : Skeleton
+#+end_src
+
+The original proposer then provides the information
+#+begin_src Lean :noeval
+data ! pathToN = info
+#+end_src
+
+And then there is a challenge game to play. The DA the proposer just did is the following
+Data hashes to \(h\) (already proposed) and such path goes to \(info\).
+#+begin_src Lean :noeval
+(data ! pathToN = info) \and C(data) = h
+#+end_src
+
+If information provided by the proposer, the challenger can challenge the whole
+subtree. In Lean, we have a game just for that.
+
+** [X] Signature Challenge is just invoking a checker, one shoot game.
+
+** [X] Validity Challenge
+Challenger knows there is an invalid transaction \(e\) in batch \(t\).
+Game consists then on showing that \(e \in t\) assuming \(t\) is the batch
+corresponding to current batch tag \(C(t) = h\).
+One player plays to prove \(e \in t\), the other to prove the opposite.
+
+** [X] Integrity Challenge 1
+Two paths leading to the same element. similar to the above but with one extra
+step, the defender should choose a path (the one that it thinks is wrong) and
+play the ElementInTree game.
+
+** [ ] Integrity Challenge 2
+Element \(e\) appears in two batches. Same as before but involving one paths in
+each batch.
