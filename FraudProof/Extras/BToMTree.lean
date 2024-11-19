@@ -21,6 +21,12 @@ section ValHash
     let h2 := ABTree.getI' (fun e => e.2) (fun e => e.1) abr
     .node ⟨ o.comb h1 h2 , h1 , h2 ⟩  abl abr
 
+  theorem propTreeLeaf [m : Hash α ℍ][HashMagma ℍ]( t : BTree α )(v : α)(h : ℍ)
+     : propTree t = .leaf ( v , h ) -> m.mhash v = h
+     := by cases t with
+           | leaf x => simp [propTree]; intros heq meq; rw [<- meq, heq]
+           | node bl br => simp [propTree]
+
   def medTrees [m : Hash α ℍ][o : HashMagma ℍ] (t : BTree α) : ABTree (α × ℍ) ℍ
   := (@propTree _ _ m o t).map id (fun p => p.1)
 
@@ -141,6 +147,12 @@ def IndexABTreeI {α β : Type}{n : Nat} (path : ISkeleton n)(t : ABTree α β)
        | .inr _ => IndexABTreeI (Fin.tail path) br
     --
     | .succ _pn , .leaf _ => none
+
+theorem indexRoot {α β : Type}(t : ABTree α β)(x : α)
+ : IndexABTreeI nilSeq t = some (.inl x) -> t = .leaf x
+ := by cases t with
+   | leaf v => simp [IndexABTreeI]
+   | node ix bl br => simp [IndexABTreeI]
 
 theorem skipElem {α β : Type} {n : Nat}(path : ISkeleton n)(nInfo : β)(bl br : ABTree α β)
    (elem : α)

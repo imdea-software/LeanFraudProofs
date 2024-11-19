@@ -249,7 +249,7 @@ where:
 Batch tags are valid iff they hold 4 props (additional to the above) over the same 'da'?
 
 DA: This is the next valid batch tag corresponding to batch \(b\): \(\langle id, h , \sigma \rangle\)
-** [ ] Data availability Challenge::
+** [X] Data availability Challenge::
 Data is unknown to a part of the network. It is not challenging the validity of
 the DA. This challenge challenges missing data? and it makes sense because of economic rules.
 
