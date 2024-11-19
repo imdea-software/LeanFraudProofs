@@ -504,10 +504,83 @@ def proposerSkeleton
 
 -- ** Good Chooser
 --
+--
+theorem lemmaStepHypL {α ℍ : Type} {n : Nat}{v : α}
+  [BEq α][h : Hash α ℍ][m : HashMagma ℍ]
+  (sk : ISkeleton n.succ)
+  (Side : sk 0 = Sum.inl ())
+  (bl br : BTree α)
+  (hyp :
+  IndexABTreeI sk (@propTree _ _ h m (bl.node br)) = none ∨
+    ∃ e, IndexABTreeI sk (@propTree _ _ h m (bl.node br)) = some (Sum.inl e) ∧ (e.1 != v))
+  : IndexABTreeI (Fin.tail sk) (@propTree _ _ h m bl) = none ∨
+    ∃ e, IndexABTreeI (Fin.tail sk) (@propTree _ _ h m bl) = some (Sum.inl e) ∧ (e.1 != v)
+  := by
+    simp
+    cases hyp with
+      | inl HYP =>
+        left
+        simp [IndexABTreeI] at HYP
+        rw [Side] at HYP
+        simp at HYP
+        assumption
+      | inr HYP =>
+        right
+        have ⟨ ⟨ a , xx ⟩ , pr ⟩ := HYP
+        exists a
+        have ⟨ pTree , neq ⟩ := pr
+        simp at neq
+        apply And.intro
+        { exists xx
+          simp [IndexABTreeI] at pTree
+          rw [Side] at pTree
+          simp at pTree
+          assumption
+        }
+        { assumption }
+
+theorem lemmaStepHypR {α ℍ : Type} {n : Nat}{v : α}
+  [BEq α][h : Hash α ℍ][m : HashMagma ℍ]
+  (sk : ISkeleton n.succ)
+  (Side : sk 0 = .inr ())
+  (bl br : BTree α)
+  (hyp :
+  IndexABTreeI sk (@propTree _ _ h m (bl.node br)) = none ∨
+    ∃ e, IndexABTreeI sk (@propTree _ _ h m (bl.node br)) = some (Sum.inl e) ∧ (e.1 != v))
+  : IndexABTreeI (Fin.tail sk) (@propTree _ _ h m br) = none ∨
+    ∃ e, IndexABTreeI (Fin.tail sk) (@propTree _ _ h m br) = some (Sum.inl e) ∧ (e.1 != v)
+  := by
+    simp
+    cases hyp with
+      | inl HYP =>
+        left
+        simp [IndexABTreeI] at HYP
+        rw [Side] at HYP
+        simp at HYP
+        assumption
+      | inr HYP =>
+        right
+        have ⟨ ⟨ a , xx ⟩ , pr ⟩ := HYP
+        exists a
+        have ⟨ pTree , neq ⟩ := pr
+        simp at neq
+        apply And.intro
+        { exists xx
+          simp [IndexABTreeI] at pTree
+          rw [Side] at pTree
+          simp at pTree
+          assumption
+        }
+        { assumption }
+
 -- In the case DAs are made showing elements, we also need some notion of
 -- equality over elements. Here, there is no collison meta-problems.
 theorem goodChoosersWinA
   {α ℍ : Type}[BEq α][LawfulBEq α][BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+  -- Hash Assumptions
+  [cFree : CollResistant α ℍ] -- Collision resistant Hashing function
+  [hhash : HomomorphicHash α ℍ] -- Hash and Comb respect tree-data structure.
+  [injM : InjectiveMagma ℍ]
   -- + DA
   {n : Nat}
   (da : ElemInTreeN n α ℍ)
@@ -544,17 +617,15 @@ theorem goodChoosersWinA
         have ⟨ ⟨ elem , elemHash ⟩ , ⟨ pathProof, hashProof ⟩ ⟩ := HToAnother
         simp at hashProof
         rw [daE] at pathProof
-        have todoThm : forall {γ ε θ : Type} (t : ABTree (γ × ε) θ) el elh, IndexABTreeI nilSeq t = some (.inl (el, elh)) ->  t = .leaf (el, elh) := sorry
-        apply todoThm at pathProof
+        apply indexRoot at pathProof
         rw [pathProof] at kCorrect
         rw [ <- kCorrect]
         simp [ABTree.getHash,ABTree.getI']
-        have someSteps : h.mhash elem = elemHash := sorry
-        rw [<- someSteps]
+        apply propTreeLeaf at pathProof
+        rw [<- pathProof]
         -- No Collision Assumptino
-        have noCollisions : ¬ elem = da.data.1 -> ¬ h.mhash da.data.1 = h.mhash elem := sorry
-        apply noCollisions
-        assumption
+        apply cFree.noCollisions
+        intro F; apply hashProof; rw [F]
    | succ pn HInd =>
      intros knowledge kCorrect hyp proposer
      simp [elemInHGame]
@@ -566,53 +637,35 @@ theorem goodChoosersWinA
        | true => simp [SingleMidStep, condWProp]; simp at H; intro FF;apply H; rw [FF]
        | false =>
          simp
-         cases Side : da.data.2 0 with
-         | inl _ =>
-           simp
-           cases knowledge with
-           | leaf v =>
+         cases knowledge with
+         -- Cannot be?
+         | leaf v =>
              -- Path proposed is longer than tree brach!
              simp at H
              simp [propTree,ABTree.getHash,ABTree.getI'] at kCorrect
-             -- We have that |x1 ⊕ x2 = hash v|, our hash assumptinos should prohibit it? -- Hash Assumption
-             sorry
-           | node bl br =>
-             -- simp [propTree] at kCorrect
+             -- We have that |x1 ⊕ x2 = hash v|, our hash assumptions should prohibit it, shounldn't them?
+             have homom := hhash.homHash v x.1 x.2
+             rw [<- kCorrect] at H
+             contradiction
+         --
+         | node bl br =>
              rw [getHashPropNode] at kCorrect
              simp at H
-             -- hashes hashing to same hash must be the same. -- Hash Assumption
-             have hashHyp : forall (h1 h2 h3 h4 : ℍ), m.comb h1 h2 = m.comb h3 h4 -> h1 = h3 := sorry
-             rw [ <- kCorrect ] at H
-             apply hashHyp at H
-             -- have hypLeft := _
-             have hypLeft : (IndexABTreeI (Fin.tail da.data.2) (@propTree _ _ h m bl) = none
-                            ∨ ∃ e, IndexABTreeI (Fin.tail da.data.2) (@propTree _ _ h m bl) = some (Sum.inl e) ∧ (e.1 != da.data.1) = true)
-                            := by
-                             simp
-                             cases hyp with
-                             | inl HYP =>
-                               left
-                               simp [IndexABTreeI] at HYP
-                               rw [Side] at HYP
-                               simp at HYP
-                               assumption
-                             | inr HYP =>
-                               right
-                               have ⟨ ⟨ a , xx ⟩ , pr ⟩ := HYP
-                               exists a
-                               have ⟨ pTree , neq ⟩ := pr
-                               simp at neq
-                               apply And.intro
-                               { exists xx
-                                 simp [IndexABTreeI] at pTree
-                                 rw [Side] at pTree
-                                 simp at pTree
-                                 assumption
-                               }
-                               { assumption }
-             have hInd := HInd ⟨ ⟨ da.data.1 , Fin.tail da.data.2⟩ , x.1 ⟩ bl H hypLeft (Fin.tail proposer)
-             assumption
-         | inr _ => _ -- Same but on |br|
+             cases Side : da.data.2 0 with
+         | inl _ =>
+             -- Comb Hash Injective.
+             rw [ <- kCorrect ] at H; apply injM.injectL at H
+             -- Inductive hyp
+             exact HInd ⟨ ⟨ da.data.1 , Fin.tail da.data.2⟩ , x.1 ⟩ bl H (@lemmaStepHypL α ℍ pn da.data.1 _ h m da.data.2 Side _ _ hyp) (Fin.tail proposer)
+         | inr _ =>
+             simp
+             rw [ <- kCorrect ] at H; apply injM.injectR at H
+             -- have hypRight : (IndexABTreeI (Fin.tail da.data.2) (@propTree _ _ h m br) = none
+             --                 ∨ ∃ e, IndexABTreeI (Fin.tail da.data.2) (@propTree _ _ h m br) = some (Sum.inl e)
+             --                                   ∧ (e.1 != da.data.1))
+             --               := by _
+             -- have hInd := HInd ⟨ ⟨ da.data.1 , Fin.tail da.data.2 ⟩ , x.2 ⟩ br H (by _) (Fin.tail proposer)
+             exact HInd ⟨ ⟨ da.data.1 , Fin.tail da.data.2⟩ , x.2 ⟩ br H (@lemmaStepHypR α ℍ pn da.data.1 _ h m da.data.2 Side _ _ hyp) (Fin.tail proposer)
      }
 
 theorem goodChooserWin

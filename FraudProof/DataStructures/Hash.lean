@@ -62,8 +62,8 @@ def injIsLawful {ℍ : Type}{m : HashMagma ℍ}(inj : InjectiveMagma ℍ) : SLaw
 
 ----------------------------------------
 -- ** Hash and HashComb collision resistant?
-@[class] structure HHCombCollResistant (α ℍ : Type)[h : Hash α ℍ][m : HashMagma ℍ] where
-  noColl : forall (a : α)(b c : ℍ), h.mhash a ≠ m.comb b c
+@[class] structure HomomorphicHash (α ℍ : Type)[h : Hash α ℍ][m : HashMagma ℍ] where
+  homHash : forall (a : α)(b c : ℍ), h.mhash a ≠ m.comb b c
 
 -- This is a bit weird.
 -- Hash combination is define as the hash of the concat of hashes
