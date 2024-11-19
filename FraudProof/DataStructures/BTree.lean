@@ -104,14 +104,10 @@ def STree.getI {α β : Type} {n : Nat} (t : STree α β n) : β
  | .leaf _ i => i
  | .nodeL i _ _ _ => i
  | .nodeR i _ _ _ => i
+----------------------------------------
 
--- BTree with data in nodes. Useful to store markle tree intermedeari
--- information.
--- inductive ITree (α β : Type) : Type
---  | leaf (v : α)
---  | node (n : β) (l r : ITree α β)
-
-
+----------------------------------------
+-- * From list to complete BTrees
 -- Acc
 @[simp]
 def pairUp' {α : Type} (acc : Option (BTree α)) (ls : List (BTree α)) : List (BTree α)
@@ -171,7 +167,8 @@ def List.fromList {α : Type}(ls : List α) : Option (BTree α)
 
 -- Next fromListOne, but need to prove stuff.
 
-abbrev TreePathElem ( α : Type ):=  Sum (BTree α) (BTree α)
+-- Element path?
+-- abbrev TreePathElem ( α : Type ):=  Sum (BTree α) (BTree α)
 abbrev TreePath (α : Type ):= List (Sum (BTree α) (BTree α))
 
 section BTree
