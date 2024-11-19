@@ -234,8 +234,8 @@ variable {ℍ : Type}
 -- that the skeleton path proposed by the proposer leads to another value (from the root.)
 theorem ChooserGLHeadWrongSeq
     [BEq ℍ][LawfulBEq ℍ] [HashMagma ℍ][SLawFulHash ℍ]
-    (gameLength : Nat) (glNZ : 0 < gameLength) :
-    forall
+    (gameLength : Nat)(glNZ : 0 < gameLength)
+    : forall
     (headH lastH : ℍ)
     (hbot : ℍ )
     (proposer : Proposer.HC ℍ gameLength)
