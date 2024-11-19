@@ -504,8 +504,17 @@ def proposerSkeleton
 
 -- ** Good Chooser
 --
+
+----------------------------------------
+-- *** Lemma handling assumption that the DA is wrong.
+-- Assumption says that the given path |sk| in tree |t| leads to no
+-- element or not the element the da says it is.
 --
-theorem lemmaStepHypL {α ℍ : Type} {n : Nat}{v : α}
+-- Now, when traversing the structure, we need to go to subtrees generating
+-- subhypotheses.
+-- If assumption holds in tree |bl.node br|, then also holds for |bl| and |br|
+-- after taking the first step in the path |sk| (|sk 0|)
+lemma lemmaStepHypL {α ℍ : Type} {n : Nat}{v : α}
   [BEq α][h : Hash α ℍ][m : HashMagma ℍ]
   (sk : ISkeleton n.succ)
   (Side : sk 0 = Sum.inl ())
@@ -572,7 +581,11 @@ theorem lemmaStepHypR {α ℍ : Type} {n : Nat}{v : α}
           assumption
         }
         { assumption }
+----------------------------------------
 
+
+----------------------------------------
+-- *** DA as elements.
 -- In the case DAs are made showing elements, we also need some notion of
 -- equality over elements. Here, there is no collison meta-problems.
 theorem goodChoosersWinA
@@ -631,7 +644,7 @@ theorem goodChoosersWinA
      simp [elemInHGame]
      split
      { case succ.h_1 _HProp => simp}
-     { case succ.h_2 HPprop x proposed =>
+     { case succ.h_2 HPprop x _proposed =>
        simp [hasManyChoosers,chooserNoData]
        cases H : da.mtree != m.comb x.1 x.2 with
        | true => simp [SingleMidStep, condWProp]; simp at H; intro FF;apply H; rw [FF]
@@ -660,92 +673,97 @@ theorem goodChoosersWinA
          | inr _ =>
              simp
              rw [ <- kCorrect ] at H; apply injM.injectR at H
-             -- have hypRight : (IndexABTreeI (Fin.tail da.data.2) (@propTree _ _ h m br) = none
-             --                 ∨ ∃ e, IndexABTreeI (Fin.tail da.data.2) (@propTree _ _ h m br) = some (Sum.inl e)
-             --                                   ∧ (e.1 != da.data.1))
-             --               := by _
-             -- have hInd := HInd ⟨ ⟨ da.data.1 , Fin.tail da.data.2 ⟩ , x.2 ⟩ br H (by _) (Fin.tail proposer)
+             -- Inductive hyp
              exact HInd ⟨ ⟨ da.data.1 , Fin.tail da.data.2⟩ , x.2 ⟩ br H (@lemmaStepHypR α ℍ pn da.data.1 _ h m da.data.2 Side _ _ hyp) (Fin.tail proposer)
      }
+----------------------------------------
 
-theorem goodChooserWin
-  {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
-  -- + DA
-  {n : Nat}
-  (da : ElemInTreeH n ℍ) -- There is no α here!
-  -- + Knowledge
-  (knowledge : BTree α)
-  (kCorrect : (@propTree _ _ h m knowledge).getHash = da.mtree)
-  -- + Chooser challenge when there is something wrong.
-  (hyp : IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = none
-       ∨ (exists e : (α × ℍ), IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = some (.inl e)
-                            ∧ e.2 != da.1.1))
-  (proposer : Sequence n (Option (PMoves ℍ)))
-  : -- Then, knowledgeless chooser strategy wins.
-  elemInHGameH da
-    proposer
-    -- Funny thing here, choosers not require to know the
-    -- original data but only to know when to challenge.
-    hasManyChoosers
-  = Player.Chooser
-  := sorry
+-- ----------------------------------------
+-- -- *** DA has only hashes
+-- -- Main diff is DA!
+-- theorem goodChooserWin
+--   {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+--   -- + Only Hashes -- DA
+--   {n : Nat}
+--   (da : ElemInTreeH n ℍ) -- There is no α here!
+--   -- + Knowledge
+--   (knowledge : BTree α)
+--   (kCorrect : (@propTree _ _ h m knowledge).getHash = da.mtree)
+--   -- + Chooser challenge when there is something wrong.
+--   (hyp : IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = none
+--        ∨ (exists e : (α × ℍ), IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = some (.inl e)
+--                             ∧ e.2 != da.1.1))
+--   (proposer : Sequence n (Option (PMoves ℍ)))
+--   : -- Then, knowledgeless chooser strategy wins.
+--   elemInHGameH da
+--     proposer
+--     hasManyChoosers
+--   = Player.Chooser
+--   := by admit
+--   -- Intuition says it should be similar to the other one.
+-- ----------------------------------------
 
--- Here we need weaker assumptions?
-theorem wiseChooser
-  {α ℍ : Type}[BEq α][LawfulBEq α][BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
-  -- + DA
-  {n : Nat}
-  (da : ElemInTreeN n α ℍ)
-  -- + Knowledge
-  (knowledge : BTree α)
-  -- knowledge is correct
-  (kCorrect : (@propTree _ _ h m knowledge).getHash = da.mtree)
-  -- + Chooser challenge when there is something wrong.
-  (hyp : IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = none
-       ∨ (exists e : (α × ℍ), IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = some (.inl e)
-                            ∧ e.1 != da.1.1))
-  -- + Proposer
-  (proposer : Sequence n (Option (PMoves ℍ)))
-  :
-  elemInHGame da proposer (chooserData (@propTree _ _ h m knowledge) da)
-  = Player.Chooser
-  := by revert knowledge proposer da
-        induction n with
-        | zero =>
-          intros da knowledge kCorrect hyp proposer
-          sorry
-        | succ pn HInd =>
-          intros da knowledge kCorrect hyp proposer
-          simp [elemInHGame]
-          split
-          { case succ.h_1 HPProp => simp }
-          { case succ.h_2 HEQ proposed move =>
-            cases knowledge with
-            | leaf v =>
-              simp [propTree]
-              simp [chooserData, SingleMidStep, condWProp]
-              simp [propTree, ABTree.getHash, ABTree.getI'] at kCorrect
-              -- Same as before
-              sorry -- h1 ⊕ h2 != hash(v)
-            | node bl br =>
-              simp [propTree,chooserData]
-              -- Some cases here.
-              cases HL : proposed.1 != (propTree bl).getHash with
-              | true =>
-                simp; simp [SingleMidStep,condWProp]; simp at HL
-                rw [getHashPropNode] at kCorrect
-                rw [<- kCorrect]
-                -- One of the laws of hash
-                -- a != b => comb a c != comb b c
-                sorry
-              | false =>
-                cases HR : proposed.2 != (propTree br).getHash with
-                | true => sorry -- same as before
-                | false =>
-                  simp
-                  -- inductive hipothesis.
-                  sorry
-            }
+-- ----------------------------------------
+-- -- *** Chooser knowing data.
+-- -- Here the question was that: can we have weaker assumptions if the chooser
+-- -- knows the data?
+-- -- I think the anwers is no.
+-- theorem wiseChooser
+--   {α ℍ : Type}[BEq α][LawfulBEq α][BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ][m : HashMagma ℍ]
+--   -- + DA
+--   {n : Nat}
+--   (da : ElemInTreeN n α ℍ)
+--   -- + Knowledge
+--   (knowledge : BTree α)
+--   -- knowledge is correct
+--   (kCorrect : (@propTree _ _ h m knowledge).getHash = da.mtree)
+--   -- + Chooser challenge when there is something wrong.
+--   (hyp : IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = none
+--        ∨ (exists e : (α × ℍ), IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = some (.inl e)
+--                             ∧ e.1 != da.1.1))
+--   -- + Proposer
+--   (proposer : Sequence n (Option (PMoves ℍ)))
+--   :
+--   elemInHGame da proposer (chooserData (@propTree _ _ h m knowledge) da)
+--   = Player.Chooser
+--   := by revert knowledge proposer da
+--         induction n with
+--         | zero =>
+--           intros da knowledge kCorrect hyp proposer
+--           sorry
+--         | succ pn HInd =>
+--           intros da knowledge kCorrect hyp proposer
+--           simp [elemInHGame]
+--           split
+--           { case succ.h_1 HPProp => simp }
+--           { case succ.h_2 HEQ proposed move =>
+--             cases knowledge with
+--             | leaf v =>
+--               simp [propTree]
+--               simp [chooserData, SingleMidStep, condWProp]
+--               simp [propTree, ABTree.getHash, ABTree.getI'] at kCorrect
+--               -- Same as before
+--               admit -- h1 ⊕ h2 != hash(v)
+--             | node bl br =>
+--               simp [propTree,chooserData]
+--               -- Some cases here.
+--               cases HL : proposed.1 != (propTree bl).getHash with
+--               | true =>
+--                 simp; simp [SingleMidStep,condWProp]; simp at HL
+--                 rw [getHashPropNode] at kCorrect
+--                 rw [<- kCorrect]
+--                 -- One of the laws of hash
+--                 -- a != b => comb a c != comb b c
+--                 admit
+--               | false =>
+--                 cases HR : proposed.2 != (propTree br).getHash with
+--                 | true => sorry -- same as before
+--                 | false =>
+--                   simp
+--                   -- inductive hipothesis.
+--                   admit
+--             }
+-- ----------------------------------------
 
 end ElemInTree
 ----------------------------------------

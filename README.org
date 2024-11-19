@@ -196,10 +196,12 @@ See 'Hash Classes'
   neqRight : forall (a1 a2 b1 b2 : ℍ), b1 ≠ b2 -> m.comb a1 b1 ≠ m.comb a2 b2
 
 #+end_src
+*** [X] Hash Injective
+Injective prop is stronger than collision resistant and lawful.
 *** [ ] IO Interactions
 **** [X] From Opaque to Classes
 **** [X] Keccak256 is a valid IO Hash?
-**** [ ] IO Merkle Tree generation.
+**** [X] IO Merkle Tree generation.
 *** [ ] A bit more general games
 **** [X] DAs
 DAs are weird computational data.
