@@ -266,17 +266,15 @@ theorem ChooserGLHeadWrongSeq
         simp [ KnowingLinChooserSkl ] at *
         cases hkC : LinChooser (Knowing.inPathSeq 0 _ K) (Knowing.inPathSeq 1 _ K) headH (proposer.pathNode 1) with
           | Left => simp; simp [LinChooser] at hkC
-                    have hbB
-                    : ¬ headH = Knowing.inPathSeq 0 (by simp) K
-                    := by simpa [ Knowing.inPathSeq ]
+                    have hbB : ¬ headH = Knowing.inPathSeq 0 (by simp) K
+                             := by simpa [ Knowing.inPathSeq ]
                     rw [ ite_cond_eq_true ] at hkC
                     simp at hkC
                     unfold Knowing.inPathSeq at hkC; rw [ Fin.foldl_succ, Fin.foldl_zero ] at hkC
                     rw [ hkC ]
                     simp
                     match proposer.pathSib 0 with
-
-| Sum.inl x =>
+                    | Sum.inl x =>
                                  simp
                                  apply opHash_neqRight
                                  assumption
@@ -288,9 +286,8 @@ theorem ChooserGLHeadWrongSeq
                     { apply eq_true; simpa }
           | Right => simp
                      unfold LinChooser at hkC
-                     have hbB
-                     : ¬ headH = Knowing.inPathSeq 0 (by simp) K
-                     := by simpa [ Knowing.inPathSeq ]
+                     have hbB : ¬ headH = Knowing.inPathSeq 0 (by simp) K
+                              := by simpa [ Knowing.inPathSeq ]
                      rw [ ite_cond_eq_true ] at hkC
                      simp at hkC
                      have hE := HInd (proposer.pathNode 1) lastH (Knowing.inPathSeq 1 (by simp) K)

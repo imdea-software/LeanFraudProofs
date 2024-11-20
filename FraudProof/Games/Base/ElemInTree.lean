@@ -109,6 +109,34 @@ def elemInHGame {α ℍ : Type}
                (tailSeq proposer)
                (tailSeq chooser)
 
+def halfGame {α ℍ : Type}
+    [BEq ℍ][Hash α ℍ][HashMagma ℍ]
+    {n : Nat}
+    (da : ElemInTreeN n α ℍ)
+    (proposer : Sequence n (Option (PMoves ℍ)))
+    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserMoves))
+    : Winner
+    := match n with
+       | 0 => SingleLastStep da
+       | .succ _pn =>
+         match getI proposer (_pn.succ / 2) (by admit) with
+         | .none => Player.Chooser -- Proposer forfeits the game
+         | .some (.Next proposed) =>
+           match headSeq chooser ⟨ da.mtree , proposed ⟩ with
+           | .none => Player.Proposer -- Chooser forfeits the game
+           | .some .Now => SingleMidStep ⟨ da.mtree , proposed ⟩
+           | .some (.Continue (.Left)) => -- Bot to cut
+             halfGame
+               -- Next step DA
+               ⟨⟨ da.data.1, takeN (_pn.succ / 2) (by admit) da.data.2⟩ , proposed.1 ⟩
+               -- Next step players
+               (takeN (_pn.succ / 2) (by admit) proposer) -- (tailSeq proposer)
+               (takeN (_pn.succ / 2) (by admit) chooser) -- (tailSeq chooser)
+           | .some (.Continue (.Right)) =>
+             -- However! This game is different!
+             -- This game is about hashes, not values!
+             _
+
 
 -- Here we can have some troubles. We do not know if we really are talking about
 -- the same element.
