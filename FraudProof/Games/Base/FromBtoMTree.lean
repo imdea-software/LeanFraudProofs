@@ -10,6 +10,7 @@ import FraudProof.DataStructures.Hash -- hash classes
 
 import FraudProof.Extras.BToMTree -- Indexing MMTrees
 
+import FraudProof.Games.Base.GenericTree -- Generic Game
 ----------------------------------------
 -- * Simply structure.
 -- This one is assuming that |α| is known. We can do a little bit better.
@@ -227,7 +228,43 @@ structure DAIxTrees (ℍ: Type) (s l : Nat) where
 -- Proposers and choosers are built as maps from the known data, so they always
 -- match the computation tree (by definition).
 
-def treeArbitrationGame {α ℍ : Type}
+-- def treeArbitrationGame {α ℍ : Type}
+--     [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+--     (da : ComputationTree ℍ)
+--     --
+--     (reveler : ProposerStrategy α ℍ )
+--     (chooser : ChooserStrategy ℍ)
+--     --
+--     : Winner :=
+--     -- Reveler plays first
+--     match da.computation , reveler with
+--     | .leaf h, .leaf (some a) =>
+--       -- TODO Should we check choser here?
+--       -- Here we only check that
+--       -- + Player |reveler| revels a witness that hashes into the hash.
+--       -- + The hash in the tree is the hash in the computation
+--       -- We do not know if the element here (|a|) is /the original element/.
+--       condWProp $ o.mhash a == h ∧ h == da.res
+--     | .node bl br , .node (some proposition) nextProposerLeft nextProposerRight =>
+--       match chooser with
+--       | .node cfun nextChooserLeft nextChooserRight =>
+--         match cfun ⟨ da.res , proposition ⟩ with
+--         -- challenge hashes now.
+--         | some .Now => condWProp $ m.comb proposition.1 proposition.2 == da.res
+--         -- Chooser chooses to go left.
+--         | some (.Continue .Left) =>
+--           treeArbitrationGame ⟨ bl , proposition.1 ⟩ nextProposerLeft nextChooserLeft
+--         -- Chooser chooses to go right.
+--         | some (.Continue .Right) =>
+--           treeArbitrationGame ⟨ br , proposition.2 ⟩ nextProposerRight nextChooserRight
+--         -- No moves
+--         | none => Player.Proposer
+--       -- Chooser does not follows computation tree.
+--       | _ => Player.Proposer
+--     -- If reveler does not follow the compuetation tree, it loses.
+--     | _ , _ => Player.Chooser
+
+def tArbG' {α ℍ : Type}
     [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
     (da : ComputationTree ℍ)
     --
@@ -235,31 +272,17 @@ def treeArbitrationGame {α ℍ : Type}
     (chooser : ChooserStrategy ℍ)
     --
     : Winner :=
-    -- Reveler plays first
-    match da.computation , reveler with
-    | .leaf h, .leaf (some a) =>
-      -- TODO Should we check choser here?
-      -- Here we only check that
-      -- + Player |reveler| revels a witness that hashes into the hash.
-      -- + The hash in the tree is the hash in the computation
-      -- We do not know if the element here (|a|) is /the original element/.
-      condWProp $ o.mhash a == h ∧ h == da.res
-    | .node bl br , .node (some proposition) nextProposerLeft nextProposerRight =>
-      match chooser with
-      | .node cfun nextChooserLeft nextChooserRight =>
-        match cfun ⟨ da.res , proposition ⟩ with
-        -- challenge hashes now.
-        | some .Now => condWProp $ m.comb proposition.1 proposition.2 == da.res
-        -- Chooser chooses to go left.
-        | some (.Continue .Left) =>
-          treeArbitrationGame ⟨ bl , proposition.1 ⟩ nextProposerLeft nextChooserLeft
-        -- Chooser chooses to go right.
-        | some (.Continue .Right) =>
-          treeArbitrationGame ⟨ br , proposition.2 ⟩ nextProposerRight nextChooserRight
-        -- No moves
-        | none => Player.Proposer
-      -- Chooser does not follows computation tree.
-      | _ => Player.Proposer
-    -- If reveler does not follow the compuetation tree, it loses.
-    | _ , _ => Player.Chooser
+    @treeArbitrationGame α ℍ Unit Unit ℍ
+      -- Leaf winning condition
+      (fun h a r => condWProp $ o.mhash a == h ∧ h == r)
+      -- Node winning condition
+      (fun _ _ r hl hr => condWProp $ m.comb hl hr == r)
+      -- DA
+      ⟨ da.computation.toAB , da.res ⟩
+      -- Revelear Strategy
+      (ABTree.map id (Option.map (fun x => ⟨ () , x ⟩)) reveler)
+      -- Chooser Strategy
+      (ABTree.map
+        (fun _ => some ())
+        (fun fhs ⟨hrs , _, hl , hr ⟩ => fhs ⟨ hrs, hl , hr ⟩) chooser)
 ----------------------------------------
