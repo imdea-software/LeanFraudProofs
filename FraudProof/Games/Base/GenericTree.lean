@@ -41,7 +41,7 @@ structure CompTree (α β γ : Type) where
 
 ----------------------------------------
 -- * Game Mechanics
-def treeArbitrationGame {α α' β β' γ : Type}
+def treeCompArbGame {α α' β β' γ : Type}
     -- Game Mechanics
     (leafCondition : α' -> α -> γ -> Winner)
     (midCondition  : β' -> β -> γ -> γ -> γ -> Winner)
@@ -64,10 +64,10 @@ def treeArbitrationGame {α α' β β' γ : Type}
           midCondition ib proposition.1 da.res proposition.2.1 proposition.2.2
         -- Chooser chooses to go left.
         | some (.Continue .Left) =>
-          treeArbitrationGame leafCondition midCondition ⟨ bl , proposition.2.1 ⟩ nextProposerLeft nextChooserLeft
+          treeCompArbGame leafCondition midCondition ⟨ bl , proposition.2.1 ⟩ nextProposerLeft nextChooserLeft
         -- Chooser chooses to go right.
         | some (.Continue .Right) =>
-          treeArbitrationGame leafCondition midCondition ⟨ br , proposition.2.2 ⟩ nextProposerRight nextChooserRight
+          treeCompArbGame leafCondition midCondition ⟨ br , proposition.2.2 ⟩ nextProposerRight nextChooserRight
         -- No moves
         | none => Player.Proposer
       -- Chooser does not follows computation tree.

@@ -34,10 +34,12 @@ def BTree.map {α β : Type}(f : α -> β) : BTree α -> BTree β
 instance : Functor BTree where
  map := BTree.map
 
+@[simp]
 def BTree.toAB {α : Type} : BTree α -> ABTree α Unit
   | .leaf v => .leaf v
   | .node bl br => .node () bl.toAB br.toAB
 
+@[simp]
 def ABTree.toB {α : Type} : ABTree α Unit -> BTree α
   | .leaf v => .leaf v
   | .node _ bl br => .node bl.toB br.toB

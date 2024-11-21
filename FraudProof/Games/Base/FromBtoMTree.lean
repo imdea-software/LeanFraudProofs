@@ -264,7 +264,8 @@ structure DAIxTrees (ℍ: Type) (s l : Nat) where
 --     -- If reveler does not follow the compuetation tree, it loses.
 --     | _ , _ => Player.Chooser
 
-def tArbG' {α ℍ : Type}
+@[simp]
+def treeArbitrationGame {α ℍ : Type}
     [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
     (da : ComputationTree ℍ)
     --
@@ -272,7 +273,7 @@ def tArbG' {α ℍ : Type}
     (chooser : ChooserStrategy ℍ)
     --
     : Winner :=
-    @treeArbitrationGame α ℍ Unit Unit ℍ
+    @treeCompArbGame α ℍ Unit Unit ℍ
       -- Leaf winning condition
       (fun h a r => condWProp $ o.mhash a == h ∧ h == r)
       -- Node winning condition

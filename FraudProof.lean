@@ -346,13 +346,13 @@ theorem goodProposersWin
     simp
     intro Hproposed
     simp [medTrees,ABTree.getI,ABTree.map,ABTree.getI'] at Hproposed
-    simpa [treeArbitrationGame, condWProp]
+    simpa [treeArbitrationGame, treeCompArbGame, condWProp]
   | node al ar IndL IndR =>
     intro chooser
-    simp [treeArbitrationGame]
+    simp [treeArbitrationGame, treeCompArbGame]
     cases chooser with
     | node cfun cl cr =>
-      simp
+      simp [ABTree.map]
       cases cfun
         (_ , ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree al),
           ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (propTree ar)) with
@@ -370,6 +370,7 @@ theorem goodProposersWin
                        unfold ABTree.getI
                        apply getMapLaw
                    )
+              simp [treeArbitrationGame] at indApp
               assumption
             | Right =>
               simp
@@ -378,9 +379,10 @@ theorem goodProposersWin
                        unfold ABTree.getI
                        apply getMapLaw
                    )
+              simp [treeArbitrationGame] at indApp
               assumption
         | none => simp
-    | leaf => simp
+    | leaf => simp [ABTree.map]
 
 
 -- * [Good] Choosers win when something is wrong.
@@ -409,40 +411,41 @@ theorem goodChoosersWin
     cases proposer with
     | leaf kh =>
       cases kh with
-      | none => simp
+      | none => simp [treeCompArbGame]
       | some hP =>
-        simp
         simp [medTrees, propTree,ABTree.map,ABTree.getI,ABTree.getI'] at badTop
-        simp [condWProp]
-        intros _same
+        simp [treeCompArbGame, condWProp]
+        intro _eqHash
         assumption
-    | node _b _ _ => simp
+    | node _b _ _ => simp [treeCompArbGame]
   | node bl br IL IR =>
     intros proposer topHash badTop
     unfold treeArbitrationGame
     simp [BTree.map]
     cases proposer with
-    | leaf mpH => simp
+    | leaf mpH => simp [treeCompArbGame]
     | node mProp proposerLeft proposerRight =>
       cases mProp with
-      | none => simp
+      | none => simp [treeCompArbGame]
       | some props =>
         simp [simpChooser, ABTree.map, ChooserStr]
         cases propBad : m.comb props.1 props.2 != topHash with
-        | true => simp [condWProp]; simp at propBad; assumption
+        | true => simp [treeCompArbGame, condWProp]; rw [propBad]; simp; simp at propBad; assumption
         | false =>
-            simp
+            simp [treeCompArbGame]
             cases HCL : props.1 != ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m bl) with
             | true =>
-              simp
+              rw [propBad]; simp [treeCompArbGame]
               have indL := IL proposerLeft props.1 (by simp [medTrees,ABTree.getI]; rw [getMapLaw _ _ _ _ _]; simp; simp at HCL; intro f;apply HCL; rw [<-f])
+              simp at indL
               assumption
             | _ =>
                 simp
                 cases HCR : props.2 != ABTree.getI' (fun e ↦ e.2) (fun e ↦ e.1) (@propTree _ _ h m br) with
                   | true =>
-                    simp
+                    rw [propBad]; simp [treeCompArbGame]
                     have indR := IR proposerRight props.2 (by simp [medTrees,ABTree.getI]; rw [getMapLaw _ _ _ _ _]; simp; simp at HCR; intro f;apply HCR; rw [<-f])
+                    simp at indR
                     assumption
                   | _ => -- Impossible case!
                     simp [condWProp] at *
