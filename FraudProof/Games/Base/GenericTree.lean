@@ -1,8 +1,9 @@
 import FraudProof.DataStructures.BTree -- Btree
 
+import FraudProof.DataStructures.SeqBTree -- Sequence -> BTree
+
 -- Generalize players too?
 import FraudProof.Players.FromBToMTree -- Complex Strategies
-
 
 ----------------------------------------
 -- * DA
@@ -75,3 +76,68 @@ def treeCompArbGame {α α' β β' γ : Type}
     -- If reveler does not follow the compuetation tree, it loses.
     | _ , _ => Player.Chooser
 ----------------------------------------
+
+----------------------------------------
+-- * DA Path
+-- Folding data into res
+structure ImpTreePath (n : Nat)(α γ : Type) where
+  data : α × ISkeleton n
+  res : γ
+  -- fold (leaf: α -> γ) (node: β -> γ -> γ -> γ) imp_tree = res
+  -- DA : imp_tree ! data.2 = data.1
+
+-- Explicit Tree, {leaf := .leaf, node := .node}
+def ExpTree (n : Nat)(α α' β : Type)
+ := ImpTreePath n α' (ABTree α β)
+
+def pathToElem {α γ : Type}{n : Nat}
+    -- Game Mechanics
+    (leafCondition : ImpTreePath 0 α γ -> Winner)
+    (nodeCondition : γ × γ × γ -> Winner)
+    -- DA
+    (da : ImpTreePath n α γ)
+    -- Players
+    (proposer : Sequence n (Option (PMoves γ)))
+    (chooser : Sequence n (γ × γ × γ -> Option ChooserSmp))
+    --
+    : Winner
+    := match n with
+       | 0 => leafCondition da
+       | .succ _pn =>
+         match headSeq proposer with
+         | .none => Player.Chooser -- Proposer forfeits the game
+         | .some (.Next proposed) =>
+           match headSeq chooser ⟨ da.res , proposed ⟩ with
+           | .none => Player.Proposer -- Chooser forfeits the game
+           | .some .Now => nodeCondition ⟨ da.res , proposed ⟩
+           | .some (.Continue _) =>
+             have nextRes := match headSeq da.data.2 with
+                    | .inl _ => proposed.1
+                    | .inr _ => proposed.2
+             pathToElem leafCondition nodeCondition
+               -- Next step DA
+               ⟨ ⟨ da.data.1 , tailSeq da.data.2⟩ , nextRes ⟩
+               -- Next step players
+               (tailSeq proposer)
+               (tailSeq chooser)
+
+
+def btreePathToElem {α γ : Type} {n : Nat}
+    -- Transformation reqs
+    (leafInt : α -> γ)
+    -- Game Mechanics
+    (leafCondition : ImpTreePath 0 α γ -> Winner)
+    (nodeCondition : γ × γ × γ -> Winner)
+    -- DA
+    (da : ImpTreePath n α γ)
+    -- Players
+    (proposer : Sequence n (Option (PMoves γ)))
+    (chooser : Sequence n (γ × γ × γ -> Option ChooserSmp))
+    --
+    : Winner
+    := match n with
+       | 0 => leafCondition da
+       | .succ _pn =>
+          let treeDA : CompTree Unit Unit γ
+             := ⟨ BTree.toAB $ pairTree da.data.2 , da.res ⟩
+          treeCompArbGame _leaf _node treeDA _rev _cho
