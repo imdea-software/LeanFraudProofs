@@ -22,6 +22,17 @@ def headSeq {α : Type}{ n : Nat } ( seq : Sequence n.succ α) : α
 @[simp]
 def lastSeq {α : Type}{n : Nat} (seq : Sequence n.succ α) : α
   := seq $ Fin.last n
+@[simp]
+def lastSeq' {α : Type}{n m : Nat} (seq : Sequence n α)(ns : n = m + 1) : α
+  := seq ⟨ m , by omega ⟩
+
+@[simp]
+def snocSeq {α : Type}{n : Nat}(a : α)(seq : Sequence n α) : Sequence n.succ α
+  := fun ⟨ x , _xLT ⟩ => if H : x < n then seq ⟨ x , H ⟩ else a
+
+@[simp]
+def eqLength {α : Type}{n m : Nat}(seq : Sequence n α)(eqP : n = m) : Sequence m α
+ := fun ⟨ x , xLT ⟩ => seq ⟨ x , by omega ⟩
 
 -- R Access
 @[simp]
@@ -36,29 +47,38 @@ def tailSeq {α : Type}{n : Nat}: Sequence n.succ α -> Sequence n α
 def desc_Seq {n : Nat}{α : Type} (seq : Sequence n.succ α) : α × Sequence n α
  := ⟨ headSeq seq , tailSeq seq ⟩
 
--- Mapping
+-- Map
 @[simp]
 def seqMap {α β : Type} {n : Nat} (f : α -> β) ( seq : Sequence n α ) : Sequence n β
   := match n with
      | 0 => nilSeq
      | .succ _pn => Fin.cons (f $ headSeq seq) (seqMap f (Fin.tail seq))
 
+-- Replicate
 @[simp]
 def replicate {α : Type}{n : Nat}(c : α) : Sequence n α
  := fun _ => c
-
 
 theorem Fin.snoc_head {α : Type}{ n : Nat }
    ( seq : Sequence n.succ α )(lt : α)
    : (@Fin.snoc n.succ (fun _ => α) seq lt) ⟨ 0 , by simp ⟩ = seq 0
    := by simp [snoc, castLT]
 
+-- Take
 @[simp]
-def takeN {α : Type}{n : Nat}(m : Nat)(mLTn : m < n)(s : Sequence n α) : Sequence m α
+def takeN {α : Type}{n : Nat}(m : Nat)(mLTn : m ≤ n)(s : Sequence n α) : Sequence m α
  := fun ⟨ p , plt ⟩ => s ⟨ p , by omega ⟩
 
+-- Drop
 @[simp]
-def dropN {α : Type}{n : Nat}(m : Nat)(mLTn : m < n)(s : Sequence n α) : Sequence (n - m) α
+def dropN {α : Type}{n : Nat}(m : Nat)(mLTn : m ≤ n)(s : Sequence n α) : Sequence (n - m) α
  := fun ⟨ p , pLT ⟩ => s ⟨ p , by omega ⟩
+
+-- Concat
+@[simp]
+def concatSeq {α : Type}{n m : Nat}(p : Sequence n α)(q : Sequence m α) : Sequence (n + m) α
+ := fun ⟨ x , xLT ⟩ =>
+    if H : x < n then p ⟨ x , H ⟩
+    else q ⟨ x - n , by omega ⟩
 
 ----------------------------------------

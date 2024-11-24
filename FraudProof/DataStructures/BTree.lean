@@ -12,6 +12,16 @@ inductive ABTree (α β : Type) : Type
  | leaf (v : α)
  | node (i : β) ( bL bR : ABTree α β )
 
+@[simp]
+def ABTree.sizeI {α β : Type} (sa : α -> Nat)(sb : β -> Nat) : ABTree α β -> Nat
+  | .leaf a => sa a
+  | .node b bl br => sb b + bl.sizeI sa sb + br.sizeI sa sb
+
+@[simp]
+def ABTree.size {α β : Type} : ABTree α β -> Nat := ABTree.sizeI (fun _ => 1) (fun _ => 1)
+  -- | .leaf _ => 1
+  -- | .node _ bl br => 1 + bl.size + br.size
+
 abbrev ABTreeSkeleton := ABTree Unit Unit
 
 -- @[simp]
