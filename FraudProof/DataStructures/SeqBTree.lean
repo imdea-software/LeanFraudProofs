@@ -63,4 +63,22 @@ def maybeSizeTree {α β : Type} : ABTree (Option α) β -> Nat
 
 -- the problem here is that there may not be enough element in the sequence.
 def seqToABTree {α : Type}{n : Nat} (seq : Sequence n α)(_pos : n > 0) : ABTree (Option α) α
-  := _
+  := by sorry
+
+def seqHABTree {α : Type}{ n : Nat }(seq : Sequence n α) : ABTree (Option α) α
+  := match n with
+     | .zero => .leaf none
+     | .succ .zero => .leaf $ seq ⟨ 0 , by simp ⟩
+     | .succ (.succ ppn) =>
+        -- n == ppn.succ.succ
+        let hn := ppn / 2
+        -- hn + 1 = n / 2
+        let lh := takeN hn.succ (by omega) seq
+        let nd := headSeq' (dropN hn.succ (by omega) seq) (by omega)
+        let rh := dropN hn.succ.succ (by omega) seq
+        --
+        .node nd (seqHABTree lh) (seqHABTree rh)
+
+-- Can we prove that we get the same sequence modulo padding?
+-- theorem isoSeqTree ... : polyLenSeqEq (filter none infixSeq (seqHABTree seq)) seq
+--
