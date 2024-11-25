@@ -6,6 +6,66 @@ import Mathlib.Data.Fin.Tuple.Basic -- Fin.tail
 -- Sequence of |n| elements
 abbrev Sequence (n : Nat) (α : Type) := Fin n -> α
 
+@[simp]
+def polyLenSeqEq {α : Type}[BEq α]{n m : Nat}(p : Sequence n α)(q : Sequence m α) : Bool
+  := match n , m with
+     | .zero , .zero => true
+     | .succ _pn, .succ _mn =>
+       if p 0 == q 0
+       then polyLenSeqEq (Fin.tail p) (Fin.tail q)
+       else false
+     | _ , _ => false
+
+theorem seqEqLawLength {α : Type}[BEq α]{m n : Nat}(p : Sequence n α)(q : Sequence m α)(pEq : polyLenSeqEq p q)
+  : n = m
+  := by revert p q pEq n
+        induction m with
+        | zero =>
+          intros n p q pEQq
+          -- unfold polyLenSeqEq at pEQq
+          cases n with
+          | zero => rfl
+          | succ pn => simp at pEQq
+        | succ pm HInd =>
+          intros n p q pEQq
+          cases n with
+          | zero => simp at pEQq
+          | succ pn =>
+            simp at pEQq
+            simp
+            have rsEq := pEQq.2
+            exact @HInd pn (Fin.tail p) (Fin.tail q) rsEq
+
+theorem seqEqLawRfl {α : Type}[BEq α][LawfulBEq α]{n : Nat}(p : Sequence n α)
+  : polyLenSeqEq p p
+  := by
+   revert p
+   induction n with
+   | zero => intro _p; simp
+   | succ pn HInd =>
+      intro p
+      simp
+      apply HInd
+
+theorem seqEqLawDec {α : Type}[BEq α][LawfulBEq α]{n m : Nat}(p : Sequence n α)(q : Sequence m α)
+   : polyLenSeqEq p q == true -> HEq p q
+   := by revert p q m
+         induction n with
+         | zero =>
+           intros m p q eq
+           cases m with
+           | zero => simp; apply funext; intro x; have l0 := x.2; simp at l0
+           | succ pm => simp at eq
+         | succ pn HInd =>
+           intros m p q eq
+           cases m with
+           | zero => simp at eq
+           | succ pm =>
+             simp at eq
+             have ind := @HInd pm (Fin.tail p) (Fin.tail q)
+             simp at ind
+
+
 -- Nil Sequence
 def nilSeq {γ : Type} : Sequence 0 γ
  := fun x => by have e := x.isLt; simp at e
@@ -17,6 +77,10 @@ def singleSeq {α : Type} (a : α) : Sequence 1 α
 @[simp]
 def headSeq {α : Type}{ n : Nat } ( seq : Sequence n.succ α) : α
   := seq ⟨ 0 , by simp ⟩
+
+@[simp]
+def headSeq' {α : Type}{ n : Nat } ( seq : Sequence n α)(notZ : 0 < n) : α
+ := seq ⟨ 0 , notZ ⟩
 
 -- Last
 @[simp]
@@ -80,5 +144,9 @@ def concatSeq {α : Type}{n m : Nat}(p : Sequence n α)(q : Sequence m α) : Seq
  := fun ⟨ x , xLT ⟩ =>
     if H : x < n then p ⟨ x , H ⟩
     else q ⟨ x - n , by omega ⟩
+
+-- SplitAt
+def splitSeq {α : Type}{n : Nat}(p : Sequence n α)(m : Nat)(mLTn : m ≤ n): Sequence m α × Sequence (n - m) α
+  := ⟨ takeN m mLTn p , dropN m mLTn p ⟩
 
 ----------------------------------------
