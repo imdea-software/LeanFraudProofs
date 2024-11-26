@@ -47,24 +47,13 @@ theorem seqEqLawRfl {α : Type}[BEq α][LawfulBEq α]{n : Nat}(p : Sequence n α
       simp
       apply HInd
 
+theorem seqEqForAll  {α : Type}[BEq α][LawfulBEq α]{n m : Nat}(p : Sequence n α)(q : Sequence m α)
+  : polyLenSeqEq p q -> forall (i : Nat)(ltN : i < n)(ltM : i < m), p ⟨ i , ltN⟩ = q ⟨ i , ltM ⟩
+  := sorry
+
 theorem seqEqLawDec {α : Type}[BEq α][LawfulBEq α]{n m : Nat}(p : Sequence n α)(q : Sequence m α)
    : polyLenSeqEq p q == true -> HEq p q
-   := by revert p q m
-         induction n with
-         | zero =>
-           intros m p q eq
-           cases m with
-           | zero => simp; apply funext; intro x; have l0 := x.2; simp at l0
-           | succ pm => simp at eq
-         | succ pn HInd =>
-           intros m p q eq
-           cases m with
-           | zero => simp at eq
-           | succ pm =>
-             simp at eq
-             have ind := @HInd pm (Fin.tail p) (Fin.tail q)
-             simp at ind
-
+   := sorry
 
 -- Nil Sequence
 def nilSeq {γ : Type} : Sequence 0 γ

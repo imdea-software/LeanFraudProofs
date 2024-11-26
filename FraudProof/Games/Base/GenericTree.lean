@@ -50,7 +50,7 @@ def treeCompArbGame {α α' β β' γ : Type}
     (da : CompTree α' β' γ)
     -- Players
     (reveler : ABTree (Option α) (Option (β × γ × γ)))
-    (chooser : ABTree (Option Unit) ((γ × β × γ × γ) -> Option ChooserMoves))
+    (chooser : ABTree Unit ((γ × β × γ × γ) -> Option ChooserMoves))
     --
     : Winner :=
     -- Reveler plays first
@@ -122,6 +122,9 @@ def pathToElem {α γ : Type}{n : Nat}
                (tailSeq chooser)
 
 
+def optJoin {α : Type} : Option (Option α) -> Option α
+ := fun x => match x with | none => none | some none => none | some (some j) => some j
+
 def btreePathToElem {α γ : Type} {n : Nat}
     -- Transformation reqs
     (leafInt : α -> γ)
@@ -131,13 +134,19 @@ def btreePathToElem {α γ : Type} {n : Nat}
     -- DA
     (da : ImpTreePath n α γ)
     -- Players
-    (proposer : Sequence n (Option (PMoves γ)))
+    (proposer : Sequence n (Option (γ × γ × γ)))
     (chooser : Sequence n (γ × γ × γ -> Option ChooserSmp))
     --
     : Winner
-    := match n with
+    :=
+    -- Transformations
+    let tDA := seqHABTree da.data.2 -- Sequence n of sides
+    let tP := ABTree.map optJoin id $ seqHABTree proposer
+    let tC := ABTree.map (fun _ => some ()) (fun o ⟨ γ1, γ2, γ3, γ4 ⟩ => _) $ seqHABTree chooser
+    -- The transformation |seqHABTree| enables some invalid game states!
+    match n with
        | 0 => leafCondition da
        | .succ _pn =>
-          let treeDA : CompTree Unit Unit γ
-             := ⟨ BTree.toAB $ pairTree da.data.2 , da.res ⟩
-          treeCompArbGame _leaf _node treeDA _rev _cho
+          let treeDA : CompTree (Option SkElem) SkElem γ
+             := ⟨ tDA , da.res ⟩
+          treeCompArbGame _ _ treeDA tP tC
