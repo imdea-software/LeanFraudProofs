@@ -136,3 +136,11 @@ def perfectSeq {α : Type}{n : Nat} (seq : Sequence ((2^n.succ) - 1) α) : ABTre
      | .succ pn =>
        have (seql , ar , seqr) := seqPerfectSplit seq
        .node ar (perfectSeq seql) (perfectSeq seqr)
+
+--
+lemma perfect_tree_size {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
+    (perfectSeq seq).size = (2^n.succ) - 1
+    :=  sorry
+theorem seq_tree_seq {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
+  infixSeq (perfectSeq seq) = sequence_coerce (by rw [perfect_tree_size]) seq
+  := _
