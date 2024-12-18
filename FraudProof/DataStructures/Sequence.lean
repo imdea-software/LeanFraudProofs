@@ -64,6 +64,7 @@ theorem seqEqLawDec {α : Type}[BEq α][LawfulBEq α]{n m : Nat}(p : Sequence n 
              simp at eq
              have ind := @HInd pm (Fin.tail p) (Fin.tail q)
              simp at ind
+             sorry
 
 
 -- Nil Sequence
@@ -136,7 +137,7 @@ def takeN {α : Type}{n : Nat}(m : Nat)(mLTn : m ≤ n)(s : Sequence n α) : Seq
 -- Drop
 @[simp]
 def dropN {α : Type}{n : Nat}(m : Nat)(mLTn : m ≤ n)(s : Sequence n α) : Sequence (n - m) α
- := fun ⟨ p , pLT ⟩ => s ⟨ p , by omega ⟩
+ := fun ⟨ p , pLT ⟩ => s ⟨ m + p , by omega ⟩
 
 -- Concat
 @[simp]
@@ -150,3 +151,87 @@ def splitSeq {α : Type}{n : Nat}(p : Sequence n α)(m : Nat)(mLTn : m ≤ n): S
   := ⟨ takeN m mLTn p , dropN m mLTn p ⟩
 
 ----------------------------------------
+
+def sequence_coerce {α : Type} {n m : Nat}( hEq : n = m )(s : Sequence n α) : Sequence m α
+  := fun ix => match ix with
+               | ⟨ i , iLt ⟩ => s ⟨ i , by omega ⟩
+
+instance beq_sequences {α : Type}[BEq α]{n : Nat} : BEq (Sequence n α) where
+  beq sl sr :=
+    match n with
+   | .zero => true
+   | .succ _pn => headSeq sl == headSeq sr
+                  && beq_sequences.beq (Fin.tail sl) (Fin.tail sr)
+
+-- theorem beq_sequence_head {α : Type}[BEq α]{n : Nat}(l r : Sequence n.succ α)(heq : l == r)
+--         : l ⟨ 0 , by simp ⟩ == r ⟨ 0 , by simp ⟩
+--         := by simp;
+
+-- theorem beq_sequence_ {α : Type}[BEq α]{n : Nat}(l r : Sequence n α)(heq : l == r)
+--         : forall (i : Nat), (iLt : i < n) -> l ⟨ i, iLt ⟩ == r ⟨ i , iLt ⟩
+--         := by
+--         intros i iLt
+--         apply funext at heq
+
+-- instance law_full_beq_seq {α : Type}[BEq α][LawfulBEq α]{n : Nat} : LawfulBEq (Sequence n α) where
+--   eq_of_beq := by
+--     intros a b heq
+--     apply funext
+--     intro x; replace ⟨ x , xLT ⟩ := x
+--     induction x with
+--     | zero => _
+--     | succ px HPx => _
+--   rfl := _
+
+-- structure EqSeq (α : Type)(m n : Nat)(sl : Sequence m α)(sr : Sequence n α) where
+--   sameLen : m = n
+--   sameVals : sequence_coerce sameLen sl = sr
+
+--
+theorem split_seq_eq {α : Type}{n m : Nat}{ mLTn : m ≤ n }( seq : Sequence n α ):
+  have ⟨ seql , seqr ⟩ := splitSeq seq m mLTn
+  seq = sequence_coerce (by omega) (concatSeq seql seqr)
+  -- seq = sequence_coerce (by omega) (concatSeq seql seqr)
+  := by
+  simp
+  apply funext
+  rw [ Fin.forall_iff ]
+  intros i iLT
+  simp [sequence_coerce]
+  split
+  case h.isTrue h => simp [splitSeq]
+  case h.isFalse h =>
+    simp [splitSeq]
+    congr
+    omega
+
+theorem ConsTailSeqCoerce { α : Type }{n m : Nat} { ceq : n = m + 1 }(seq : Sequence n α)
+  : Fin.cons ( seq ⟨ 0 , by omega ⟩ ) ( Fin.tail (sequence_coerce ceq seq )) = sequence_coerce ceq seq
+  := by
+  apply funext
+  rw [ Fin.forall_iff ]
+  intros i iLT
+  repeat simp [sequence_coerce]
+  match i with
+  | .zero => simp
+  | .succ pi => simp [Fin.cons, Fin.tail, sequence_coerce]
+
+theorem ExtraCoerce {α : Type}{n : Nat}(req : n = n)(seq : Sequence n α)
+        : seq = sequence_coerce req seq
+        := by
+        apply funext; rw [ Fin.forall_iff ]
+        intros i iLT
+        simp [sequence_coerce]
+
+theorem ConcatSplitCoerce { α : Type } {n cut m : Nat}{cutLn : cut ≤ n}(ceq : n - cut = m) (seq : Sequence n α):
+  have ⟨ fst, snd ⟩ := (splitSeq seq cut cutLn)
+  concatSeq fst ( sequence_coerce ceq snd )
+  = sequence_coerce (by omega) seq
+  := by simp [splitSeq, concatSeq]
+        apply funext
+        rw [Fin.forall_iff]
+        intros i iLT
+        simp [sequence_coerce]
+        split
+        case h.isTrue h => simp
+        case h.isFalse h => congr; omega
