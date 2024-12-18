@@ -62,10 +62,6 @@ def infixSeq {α : Type} (t : ABTree α α) : Sequence t.size α
 def maybeSizeTree {α β : Type} : ABTree (Option α) β -> Nat
   := ABTree.sizeI  (fun x => match x with | none => 0 | some _ => 1) (fun _ => 1)
 
--- the problem here is that there may not be enough element in the sequence.
-def seqToABTree {α : Type}{n : Nat} (seq : Sequence n α)(_pos : n > 0) : ABTree (Option α) α
-  := by sorry
-
 def seqHABTree {α : Type}{ n : Nat }(seq : Sequence n α) : ABTree (Option α) α
   := match n with
      | .zero => .leaf none
