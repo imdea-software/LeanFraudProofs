@@ -1,6 +1,7 @@
 import FraudProof.DataStructures.BTree
 import FraudProof.DataStructures.Sequence
 
+
 def pairTreesE {α : Type}{n m : Nat}(seq : Sequence m (BTree α))(_eve : m = n + n): Sequence n (BTree α)
   := match n with
      | .zero => nilSeq
@@ -82,3 +83,64 @@ def seqHABTree {α : Type}{ n : Nat }(seq : Sequence n α) : ABTree (Option α) 
 -- Can we prove that we get the same sequence modulo padding?
 -- theorem isoSeqTree ... : polyLenSeqEq (filter none infixSeq (seqHABTree seq)) seq
 --
+
+lemma pp2 { n : Nat } : 2^(n.succ) = 2^n + 2^n
+  := by omega
+
+lemma gt0Add ( m n : Nat)(hm : 0 < m )( hn : 0 ≤ n ) : 0 < m + n
+  := by omega
+
+lemma geq0Add ( m n : Nat)(hm : 0 ≤ m )( hn : 0 ≤ n ) : 0 ≤ m + n
+  := by omega
+
+lemma pow_gt_zero {m : Nat} : 0 < 2^m
+  := match m with
+     | .zero => by simp
+     | .succ pn => by rw [Nat.pow_succ]; simp; apply pow_gt_zero
+
+lemma pow_geq_one {m : Nat} : 1 ≤ 2^m
+ := by induction m with
+    | zero => simp
+    | succ pm HM => omega
+
+lemma ppGT {n : Nat} : 0 < 2 ^ n + 2 ^ n + (2 ^ n + 2 ^ n) - 1 - (2 ^ n + 2 ^ n - 1)
+:= by have ps := @pow_geq_one n; omega
+
+lemma eqPP {n : Nat} : 2 ^ (n + 1) + 2 ^ (n + 1) - 1 - (2 ^ (n + 1) - 1) = 2 ^ (n + 1) - 1 + 1
+  := by have ps := @pow_geq_one n.succ; omega
+
+def seqPerfectSplit {α : Type}{n : Nat}(seq : Sequence ((2^n.succ.succ) - 1) α)
+  : ( Sequence ((2^n.succ) - 1) α × α × Sequence ((2^n.succ) - 1) α)
+  := have ( seql , hdseqr ) := splitSeq seq ((2^n.succ) - 1) (by simp; omega)
+    ( seql
+    , hdseqr ⟨ 0 , by simp; repeat rw [pp2]; repeat rw [pp2]; apply ppGT  ⟩
+    , Fin.tail (sequence_coerce (by rw [pp2]; simp; apply eqPP) hdseqr))
+
+
+def concat_perfect_split {α : Type}[BEq α]{n : Nat}(seq : Sequence ((2^n.succ.succ) - 1) α)
+  : let ⟨ seql, m , seqr ⟩ := seqPerfectSplit seq
+  seq = sequence_coerce
+        (by simp; rw [pp2]; have ps := @pow_geq_one n.succ; omega )
+        (concatSeq seql ( Fin.cons m seqr ))
+  := by simp [seqPerfectSplit]
+        -- Fin.cons ( s⟨0, _ ⟩ ) (Fin.tail seq_coerce s)
+        rw [ConsTailSeqCoerce]
+        -- concatSeq (split seq 1) (seq_coerce seq 2)
+        simp [splitSeq]
+        rw [ConcatSplitCoerce]
+        --
+        apply funext; rw [ Fin.forall_iff ]
+        intros i iLT
+        simp [sequence_coerce]
+
+
+
+
+
+def perfectSeq {α : Type}{n : Nat} (seq : Sequence ((2^n.succ) - 1) α) : ABTree α α
+  := match n with
+     | .zero =>
+       .leaf ( seq ⟨ 0 , by simp ⟩)
+     | .succ pn =>
+       have (seql , ar , seqr) := seqPerfectSplit seq
+       .node ar (perfectSeq seql) (perfectSeq seqr)
