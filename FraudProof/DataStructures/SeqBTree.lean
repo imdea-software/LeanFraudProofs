@@ -105,15 +105,15 @@ lemma ppGT {n : Nat} : 0 < 2 ^ n + 2 ^ n + (2 ^ n + 2 ^ n) - 1 - (2 ^ n + 2 ^ n 
 lemma eqPP {n : Nat} : 2 ^ (n + 1) + 2 ^ (n + 1) - 1 - (2 ^ (n + 1) - 1) = 2 ^ (n + 1) - 1 + 1
   := by have ps := @pow_geq_one n.succ; omega
 
-def seqPerfectSplit {α : Type}{n : Nat}(seq : Sequence ((2^n.succ.succ) - 1) α)
-  : ( Sequence ((2^n.succ) - 1) α × α × Sequence ((2^n.succ) - 1) α)
-  := have ( seql , hdseqr ) := splitSeq seq ((2^n.succ) - 1) (by simp; omega)
+def seqPerfectSplit {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α)
+  : ( Sequence ((2^n) - 1) α × α × Sequence ((2^n) - 1) α)
+  := have ( seql , hdseqr ) := splitSeq seq ((2^n) - 1) (by simp; omega)
     ( seql
-    , hdseqr ⟨ 0 , by simp; repeat rw [pp2]; repeat rw [pp2]; apply ppGT  ⟩
-    , Fin.tail (sequence_coerce (by rw [pp2]; simp; apply eqPP) hdseqr))
+    , hdseqr ⟨ 0 , by simp;have ps :=@pow_geq_one n; omega ⟩
+    , Fin.tail (sequence_coerce (by rw [pp2]; have ps :=@pow_geq_one n; omega) hdseqr))
 
 
-def concat_perfect_split {α : Type}[BEq α]{n : Nat}(seq : Sequence ((2^n.succ.succ) - 1) α)
+def concat_perfect_split {α : Type}[BEq α]{n : Nat}(seq : Sequence ((2^n.succ) - 1) α)
   : let ⟨ seql, m , seqr ⟩ := seqPerfectSplit seq
   seq = sequence_coerce
         (by simp; rw [pp2]; have ps := @pow_geq_one n.succ; omega )
@@ -128,10 +128,6 @@ def concat_perfect_split {α : Type}[BEq α]{n : Nat}(seq : Sequence ((2^n.succ.
         apply funext; rw [ Fin.forall_iff ]
         intros i iLT
         simp [sequence_coerce]
-
-
-
-
 
 def perfectSeq {α : Type}{n : Nat} (seq : Sequence ((2^n.succ) - 1) α) : ABTree α α
   := match n with
