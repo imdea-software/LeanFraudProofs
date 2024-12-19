@@ -232,24 +232,43 @@ theorem TransCoerce {α : Type}{n m l : Nat}{fst : n = m}{snd : m = l}
       (seq : Sequence n α):
       sequence_coerce snd (sequence_coerce fst seq)
       = sequence_coerce (by omega) seq
-      := sorry
-
+      := by apply funext; intro x; simp
 
 theorem ConsCoerce{α : Type}{n m : Nat}{heq : n = m}(a : α) (seq : Sequence n α):
    Fin.cons a (sequence_coerce heq seq)
    = sequence_coerce (by omega) (Fin.cons a seq)
-   := sorry
+   := by
+   apply funext
+   intro x; replace ⟨ x , xLt ⟩ := x
+   match x with
+   | .zero => simp
+   | .succ px => simp [Fin.cons]
 
 theorem TailCoerDrop {α : Type}{n m : Nat}(d : Nat){heq : n - d = m + 1} {dLt : d ≤ n}(seq : Sequence n α):
    Fin.tail (sequence_coerce heq ( dropN d dLt seq ))
    = sequence_coerce (by omega) (dropN d.succ (by omega) seq)
-   := sorry
+   := by
+   apply funext; intro x
+   simp [Fin.tail]
+   replace ⟨ x , xLt ⟩ := x
+   simp
+   apply congr_arg
+   rw [Fin.mk_eq_mk]
+   omega
+
 
 theorem ConsMid {α : Type}{n m : Nat}(d : Nat){dLt : d < n}{dLeq : d ≤ n}{mheq : n - d = m + 1}
     (seq : Sequence n α):
     Fin.cons (seq ⟨ d, dLt ⟩) (Fin.tail ( sequence_coerce mheq (dropN d dLeq seq) ))
     = sequence_coerce mheq (dropN d dLeq seq)
-    := sorry
+    := by
+    apply funext
+    intro x; replace ⟨ x , xLt ⟩ := x
+    simp [Fin.cons]
+    match x with
+    | .zero => simp
+    | .succ px => simp [Fin.tail]
+
 
 theorem ConcatSplitCoerce { α : Type } {n cut m : Nat}{cutLn : cut ≤ n}(ceq : n - cut = m) (seq : Sequence n α):
   have ⟨ fst, snd ⟩ := (splitSeq seq cut cutLn)
@@ -270,9 +289,24 @@ theorem ConcatCoerce {α : Type}{m n p q: Nat}
    (sl : Sequence n α)(sr : Sequence m α):
    concatSeq (sequence_coerce j sl) (sequence_coerce h sr)
    = sequence_coerce (by omega) (concatSeq sl sr)
-   := sorry
+   := by
+      apply funext; intro x; simp
+      split
+      · split
+        · simp
+        · rw [j] at *; contradiction
+      · split
+        · rw [j] at *; contradiction
+        · congr; rw [j]
+
 
 theorem ConcatSplit {α : Type}{n d : Nat}{dLt : d ≤ n}
      (seq : Sequence n α):
      concatSeq (takeN d dLt seq) (dropN d dLt seq) = sequence_coerce (by omega) seq
-     := sorry
+     := by
+     apply funext
+     intro x
+     simp
+     split
+     · simp
+     case h.isFalse h => congr; omega
