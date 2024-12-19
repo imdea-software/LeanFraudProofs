@@ -57,7 +57,13 @@ def single {α : Type}( a : α ) : ABTree (Option α) α := .node a emptyLeaf em
 def infixSeq {α : Type} (t : ABTree α α) : Sequence t.size α
   := match t with
         | .leaf v => singleSeq v
-        | .node a bl br => concatSeq (eqLength (Fin.snoc (infixSeq bl) a) (by simp; omega ) ) (infixSeq br)
+        | .node a bl br =>
+          -- concatSeq (sequence_coerce (by simp; omega ) (Fin.snoc (infixSeq bl) a)  ) (infixSeq br)
+          -- Editted to follow other lemmas (proved in the future hehe)
+          sequence_coerce (by simp; omega) <|
+          concatSeq (infixSeq bl)
+                    (Fin.cons a (infixSeq br) )
+
 
 def maybeSizeTree {α β : Type} : ABTree (Option α) β -> Nat
   := ABTree.sizeI  (fun x => match x with | none => 0 | some _ => 1) (fun _ => 1)
@@ -140,7 +146,44 @@ def perfectSeq {α : Type}{n : Nat} (seq : Sequence ((2^n.succ) - 1) α) : ABTre
 --
 lemma perfect_tree_size {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
     (perfectSeq seq).size = (2^n.succ) - 1
-    :=  sorry
+    :=  by induction n
+           case zero => simp
+           case succ pn HInd =>
+             simp
+             have hl := HInd (takeN (2^ pn.succ -1) (by omega) seq)
+             simp at hl
+             rw [hl]
+             have hr := HInd (Fin.tail (sequence_coerce (by simp; have ps := @pow_geq_one pn; omega) (dropN (2 ^ (pn + 1) - 1) (by omega) seq)))
+             simp at hr; rw [hr]
+             have ps := @pow_geq_one pn
+             omega
+
 theorem seq_tree_seq {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
   infixSeq (perfectSeq seq) = sequence_coerce (by rw [perfect_tree_size]) seq
-  := _
+  := by induction n
+        case zero =>
+          simp [perfectSeq, infixSeq, singleSeq]
+          apply funext
+          simp
+          intro x
+          -- simp [sequence_coerce]
+          replace ⟨ x , xLt ⟩ := x
+          match x with
+          | .zero => simp
+          | .succ px => simp at xLt
+
+        case succ pn HInd =>
+          simp [perfectSeq, infixSeq]
+          have hL := HInd (takeN (2 ^ (pn + 1) - 1) (by omega) seq)
+          rw [hL]
+          have hR := HInd (Fin.tail (sequence_coerce (by simp; have ps := @pow_geq_one pn; omega) (dropN (2 ^ (pn + 1) - 1) (by omega) seq)))
+          rw [hR]
+          simp
+          rw [ConsCoerce]
+          rw [ConsMid]
+          rw [TransCoerce]
+          rw [ConcatCoerce]
+          rw [TransCoerce]
+          rw [ConcatSplit]
+          rw [TransCoerce]
+          simp

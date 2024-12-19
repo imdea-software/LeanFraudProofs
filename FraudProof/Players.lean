@@ -137,7 +137,7 @@ end IProposer
 -- So we define the two possible moves as
 namespace Chooser
 
-inductive Side : Type :=
+inductive Side : Type where
     | Left
     | Right
 

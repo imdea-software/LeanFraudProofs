@@ -292,9 +292,10 @@ lemma hashChainF [HashMagma ℍ] ps ( n : Fin ps.length ) :
       { simp at nLt; assumption }
     rw  [ Fin.forall_iff ] at HInd
     have appN := HInd pnVal pnLt (opHash hV pe)
-    unfold SibsF' at appN
+    -- unfold SibsF' at appN
     simp at *
-    assumption
+    sorry -- Broke after update
+    -- assumption
 
 
 lemma hashChain [HashMagma ℍ]  ps :

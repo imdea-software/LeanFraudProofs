@@ -101,7 +101,7 @@ section ValHash
       intros path vInTree
       simp [valueInProof] at vInTree
       have pathE := vInTree.right
-      rw [ <- pathE ]
+      rw [ pathE ]
       simp [hash_BTree, MTree.hash]
       have vwEq := vInTree.left
       congr
@@ -207,7 +207,6 @@ theorem spineHashProp {α ℍ : Type} {n : Nat}[hash : Hash α ℍ] [mag : HashM
               | leaf v =>
                      simp [propTree, IndexABTreeI] at hIdx; simp [propTree,BStrategies, ABTree.getI', nilSeq]
                      have ⟨ _eqVElem , rest ⟩ := hIdx
-                     simp [Fin.last]
                      assumption
               | node bl br => simp [IndexABTreeI] at hIdx
     | succ pn HInd =>

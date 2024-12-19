@@ -25,7 +25,7 @@ lemma ScanlGet0 { α β : Type } ( op : α -> β -> α) ( b : α ) ( l : List β
 
 lemma lemmaTakeAppend { α : Type } ( ls : List α ) (m : Nat) mLt :
   (List.take m ls) ++ [ ls[m]'mLt ] = List.take m.succ ls
-  := by {rw [ <- List.take_concat_get ]; simp; assumption}
+  := by simp
 
 lemma ScanlGetN  { α β : Type } { op : α -> β -> α} { l : List β }:
   forall { n : Nat } {nLt : n < l.length + 1} { b : α } ,
