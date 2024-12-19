@@ -22,23 +22,24 @@ import Mathlib.Tactic.Ring
 
 -- Given two hashes, the player provides the sibling hash.
 -- One Step Def
+#print Proposer.HC
 @[simp]
-def MembershipGame_OneStep
+def MembershipGame_OneStep {ℍ : Type}[HashMagma ℍ][BEq ℍ]
      ( n : Nat )
-     ( P : Proposer.HC n)
+     ( P : Proposer.HC ℍ n)
      ( p_bot : Fin n )
-     ( h_bot h_top : Hash )
+     ( h_bot h_top : ℍ)
     : Winner
 :=
   if opHash h_bot (P.pathSib p_bot) == h_top
-  then Winner.Proposer
-  else Winner.Chooser
+  then Player.Proposer
+  else Player.Chooser
 
 @[simp]
-def GameOneStep
-  (P : Proposer.HC 1)
-  (hL hT : Hash) : Winner
-  := if opHash hL (P.pathSib ⟨ 0 , by simp ⟩) == hT then Winner.Proposer else Winner.Chooser
+def GameOneStep {ℍ : Type}[HashMagma ℍ][BEq ℍ]
+  (P : Proposer.HC ℍ 1)
+  (hL hT : ℍ ) : Winner
+  := if opHash hL (P.pathSib ⟨ 0 , by simp ⟩) == hT then Player.Proposer else Player.Chooser
 
 
 ----------------------------------------
@@ -46,19 +47,20 @@ def GameOneStep
 ----------------------------------------
 -- Winning along a path
 -- This is a chain!
-def AllwaysWinnig (p p' : _ ) ( path' : List Hash ) :=
+def AllwaysWinnig {ℍ : Type}[BEq ℍ][HashMagma ℍ](p p' : ℍ ) ( path' : List ℍ ) :=
   let path := p :: p' :: path'
-  forall (A : Proposer.HC path.length)
+  forall (A : Proposer.HC ℍ path.length)
          ( n : Nat ) ( nLt : n <  path.length - 2),
-         MembershipGame_OneStep path.length A ⟨ n , by trans path.length - 2; assumption; simp ; rw [ List.length ]; simp ⟩
-                                              path[n] path[n+1] = Winner.Proposer
+         MembershipGame_OneStep path.length A
+                                ⟨ n , by trans path.length - 2; assumption; simp ; rw [ List.length ]; simp ⟩
+                                path[n] path[n+1] = Player.Proposer
 ----------------------------------------
 
 ----------------------------------------
 -- Good Challenger always win.
 --
-def rootHash ( v : Value ) ( path' : TreePath Value ) : Hash :=
-  listPathHashes (H v) (treeTohashPath path')
+def rootHash {α ℍ : Type}[h : Hash α ℍ][HashMagma ℍ]( v : α ) ( path' : TreePath α ) : ℍ :=
+  listPathHashes (h.mhash v) (treeTohashPath path')
 
 theorem irootHash ( v : Value ) ( e : BTree Value ⊕ BTree Value) ( path : TreePath Value ):
         rootHash v (e :: path) = listPathHashes ( opHash (H v) (hashElem e) ) (treeTohashPath path)

@@ -1,7 +1,10 @@
 import FraudProof.DataStructures.Hash
 import FraudProof.Players
 
-inductive Player : Type := | Proposer | Chooser
+inductive Player : Type where
+  | Proposer
+  | Chooser
+
 abbrev Winner := Player
 
 def condWProp (b : Bool) := if b then Player.Proposer else Player.Chooser

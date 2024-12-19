@@ -142,7 +142,8 @@ def btreePathToElem {α γ : Type} {n : Nat}
     -- Transformations
     let tDA := seqHABTree da.data.2 -- Sequence n of sides
     let tP := ABTree.map optJoin id $ seqHABTree proposer
-    let tC := ABTree.map (fun _ => some ()) (fun o ⟨ γ1, γ2, γ3, γ4 ⟩ => _) $ seqHABTree chooser
+    let tC := ABTree.map
+         (fun _ => some ()) (fun _ => sorry ) $ seqHABTree chooser
     -- The transformation |seqHABTree| enables some invalid game states!
     match n with
        | 0 => leafCondition da
