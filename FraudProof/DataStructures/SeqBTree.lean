@@ -186,4 +186,3 @@ theorem seq_tree_seq {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
           rw [TransCoerce]
           rw [ConcatSplit]
           rw [TransCoerce]
-          simp
