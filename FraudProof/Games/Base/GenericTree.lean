@@ -75,6 +75,44 @@ def treeCompArbGame {α α' β β' γ : Type}
       | _ => Player.Proposer
     -- If reveler does not follow the compuetation tree, it loses.
     | _ , _ => Player.Chooser
+
+
+-- * Game Mechanics
+def homogeneous_tree_game {pinfo γ : Type}
+    -- {α : Type}
+    -- (leaf_condition : pinfo -> γ -> Winner)
+    (midCondition  : pinfo -> γ -> γ -> γ -> Winner)
+    -- Public Information
+    (da : ABTree pinfo pinfo)
+    -- Players
+    (reveler : ABTree
+               -- Leaves do not give information, it comes from the previous level.
+               Unit -- γ (to be checked by leaf_condition)
+               --
+               (Option (γ × γ × γ)))
+    (chooser : ABTree Unit ((pinfo × γ × γ × γ) -> Option ChooserMoves))
+    --
+    : Winner :=
+    match da , reveler, chooser with
+    | .node pub_now pub_l pub_r
+      , .node (some ⟨ γ_root, γ_left, γ_right ⟩) re_left re_right
+      , .node ch_fun  cho_left cho_right =>
+      match ch_fun ⟨ pub_now , γ_root, γ_left, γ_right ⟩ with
+      | some .Now =>
+        midCondition pub_now  γ_root γ_left γ_right
+      | some (.Continue .Left) =>
+        homogeneous_tree_game midCondition pub_l re_left cho_left
+      | some (.Continue .Right) =>
+        homogeneous_tree_game midCondition pub_r re_right cho_right
+      | none => Player.Proposer
+    -- Bad Revealer player? -- Revelear plays first.
+    | .node _ _ _ , .node none _ _, _ => Player.Chooser
+    | .node _ _ _ , .leaf _ , _ => Player.Chooser
+    -- Bad Chooser player?
+    -- Revealear reveals something but chooser doesn't have any move.
+    | .node _ _ _ , .node (some _) _ _ , .leaf _  => Player.Proposer
+    -- Proposer made it to the end?
+    | .leaf _ ,  _ , _ => Player.Proposer
 ----------------------------------------
 
 ----------------------------------------
@@ -124,6 +162,38 @@ def pathToElem {α γ : Type}{n : Nat}
 
 def optJoin {α : Type} : Option (Option α) -> Option α
  := fun x => match x with | none => none | some none => none | some (some j) => some j
+
+-- This is exactly a DA. Skeleton DA.
+-- When proving stuff, we went to play the same game forgetting that there is a
+-- value, this game can be played just using hashes.
+def skeleton_da_to_tree {lgn : Nat}{γ : Type}
+    -- Path Skeleton
+    (skeleton : ISkeleton (2^lgn.succ - 1))
+    -- Res
+    (res : γ)
+    : (CompTree SkElem SkElem γ)
+    := { data := perfectSeq skeleton , res := res }
+
+-- Homogeneous game.
+def perfect_seq_to_tree {γ : Type} {lgn : Nat}
+    -- Is this just hash eq?
+    (leafCondition : γ × γ -> Winner)
+    -- Hash compose eq?
+    (nodeCondition : γ × γ × γ -> Winner)
+    -- DA
+    (path : ISkeleton (2^lgn.succ - 1))
+    -- Players
+    (proposer : Sequence (2^lgn.succ - 1) (Option (γ × γ × γ)))
+    (chooser : Sequence (2^lgn.succ - 1) (SkElem × γ × γ × γ -> Option ChooserSmp))
+    --
+    : Winner
+    :=
+    -- Build trees out of sequences.
+    have tree_da := perfectSeq path
+    have tree_proposer := perfectSeq proposer
+    have tree_chooser := perfectSeq chooser
+    --
+    _
 
 def btreePathToElem {α γ : Type} {n : Nat}
     -- Transformation reqs
