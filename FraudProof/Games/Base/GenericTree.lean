@@ -42,6 +42,7 @@ structure CompTree (α β γ : Type) where
 
 ----------------------------------------
 -- * Game Mechanics
+-- Generic game focusing on |da : CompTree|
 def treeCompArbGame {α α' β β' γ : Type}
     -- Game Mechanics
     (leafCondition : α' -> α -> γ -> Winner)
@@ -76,35 +77,35 @@ def treeCompArbGame {α α' β β' γ : Type}
     -- If reveler does not follow the compuetation tree, it loses.
     | _ , _ => Player.Chooser
 
-
--- * Game Mechanics
+-- Another generid tree, more focused on logarithmic games.
+-- We may want to prove that the previous generic games and these ones are
+-- equivalent?
 def homogeneous_tree_game {pinfo γ : Type}
-    -- {α : Type}
-    -- (leaf_condition : pinfo -> γ -> Winner)
     (midCondition  : pinfo -> γ -> γ -> γ -> Winner)
-    -- Public Information
+    -- Public Information -- Board and ranges.
     (da : ABTree pinfo pinfo)
+    (rn : γ × γ)
     -- Players
-    (reveler : ABTree
-               -- Leaves do not give information, it comes from the previous level.
-               Unit -- γ (to be checked by leaf_condition)
-               --
-               (Option (γ × γ × γ)))
+    (reveler : ABTree (Option γ) (Option γ))
+    -- chooser does not play at leaves.
     (chooser : ABTree Unit ((pinfo × γ × γ × γ) -> Option ChooserMoves))
-    --
     : Winner :=
     match da , reveler, chooser with
+    -- Mid games
     | .node pub_now pub_l pub_r
-      , .node (some ⟨ γ_root, γ_left, γ_right ⟩) re_left re_right
+      , .node (some γ_mid) re_left re_right
       , .node ch_fun  cho_left cho_right =>
-      match ch_fun ⟨ pub_now , γ_root, γ_left, γ_right ⟩ with
+      match ch_fun ⟨ pub_now , rn.1 , γ_mid , rn.2 ⟩ with
       | some .Now =>
-        midCondition pub_now  γ_root γ_left γ_right
+        midCondition pub_now rn.1 γ_mid rn.2
       | some (.Continue .Left) =>
-        homogeneous_tree_game midCondition pub_l re_left cho_left
+        homogeneous_tree_game midCondition pub_l ⟨ rn.1 , γ_mid ⟩ re_left cho_left
       | some (.Continue .Right) =>
-        homogeneous_tree_game midCondition pub_r re_right cho_right
+        homogeneous_tree_game midCondition pub_r ⟨ γ_mid , rn.2 ⟩ re_right cho_right
       | none => Player.Proposer
+    -- Last single-shot game
+    | .leaf pub_now , .leaf (some h) , _ =>
+        midCondition pub_now rn.1 h rn.2
     -- Bad Revealer player? -- Revelear plays first.
     | .node _ _ _ , .node none _ _, _ => Player.Chooser
     | .node _ _ _ , .leaf _ , _ => Player.Chooser
@@ -174,50 +175,57 @@ def skeleton_da_to_tree {lgn : Nat}{γ : Type}
     : (CompTree SkElem SkElem γ)
     := { data := perfectSeq skeleton , res := res }
 
--- Homogeneous game.
-def perfect_seq_to_tree {γ : Type} {lgn : Nat}
-    -- Is this just hash eq?
-    (leafCondition : γ × γ -> Winner)
-    -- Hash compose eq?
-    (nodeCondition : γ × γ × γ -> Winner)
-    -- DA
-    (path : ISkeleton (2^lgn.succ - 1))
-    -- Players
-    (proposer : Sequence (2^lgn.succ - 1) (Option (γ × γ × γ)))
-    (chooser : Sequence (2^lgn.succ - 1) (SkElem × γ × γ × γ -> Option ChooserSmp))
-    --
-    : Winner
-    :=
-    -- Build trees out of sequences.
-    have tree_da := perfectSeq path
-    have tree_proposer := perfectSeq proposer
-    have tree_chooser := perfectSeq chooser
-    --
-    _
+-- Building up arena.
+def tree_da {γ : Type} { lgn : Nat }
+   (seq_da : ImpTreePath (2^lgn.succ - 1) γ γ)
+   : CompTree Unit Unit (γ × γ)-- ABTree Unit Unit × (γ × γ)
+   := { data := _ -- Data does not matter here.
+      ; res := ⟨ seq_da.1.1 , seq_da.2 ⟩  }
 
-def btreePathToElem {α γ : Type} {n : Nat}
-    -- Transformation reqs
-    (leafInt : α -> γ)
-    -- Game Mechanics
-    (leafCondition : ImpTreePath 0 α γ -> Winner)
-    (nodeCondition : γ × γ × γ -> Winner)
-    -- DA
-    (da : ImpTreePath n α γ)
-    -- Players
-    (proposer : Sequence n (Option (γ × γ × γ)))
-    (chooser : Sequence n (γ × γ × γ -> Option ChooserSmp))
-    --
-    : Winner
-    :=
-    -- Transformations
-    let tDA := seqHABTree da.data.2 -- Sequence n of sides
-    let tP := ABTree.map optJoin id $ seqHABTree proposer
-    let tC := ABTree.map
-         (fun _ => some ()) (fun _ => sorry ) $ seqHABTree chooser
-    -- The transformation |seqHABTree| enables some invalid game states!
-    match n with
-       | 0 => leafCondition da
-       | .succ _pn =>
-          let treeDA : CompTree (Option SkElem) SkElem γ
-             := ⟨ tDA , da.res ⟩
-          treeCompArbGame _ _ treeDA tP tC
+-- Homogeneous game.
+-- def perfect_seq_to_tree {γ : Type} {lgn : Nat}
+--     -- Is this just hash eq?
+--     (leafCondition : γ × γ -> Winner)
+--     -- Hash compose eq?
+--     (nodeCondition : γ × γ × γ -> Winner)
+--     -- DA
+--     (path : ISkeleton (2^lgn.succ - 1))
+--     -- Players
+--     (proposer : Sequence (2^lgn.succ - 1) (Option (γ × γ × γ)))
+--     (chooser : Sequence (2^lgn.succ - 1) (SkElem × γ × γ × γ -> Option ChooserSmp))
+--     --
+--     : Winner
+--     :=
+--     -- Build trees out of sequences.
+--     have tree_da := perfectSeq path
+--     have tree_proposer := perfectSeq proposer
+--     have tree_chooser := perfectSeq chooser
+--     --
+--     _
+
+-- def btreePathToElem {α γ : Type} {n : Nat}
+--     -- Transformation reqs
+--     (leafInt : α -> γ)
+--     -- Game Mechanics
+--     (leafCondition : ImpTreePath 0 α γ -> Winner)
+--     (nodeCondition : γ × γ × γ -> Winner)
+--     -- DA
+--     (da : ImpTreePath n α γ)
+--     -- Players
+--     (proposer : Sequence n (Option (γ × γ × γ)))
+--     (chooser : Sequence n (γ × γ × γ -> Option ChooserSmp))
+--     --
+--     : Winner
+--     :=
+--     -- Transformations
+--     let tDA := seqHABTree da.data.2 -- Sequence n of sides
+--     let tP := ABTree.map optJoin id $ seqHABTree proposer
+--     let tC := ABTree.map
+--          (fun _ => some ()) (fun _ => sorry ) $ seqHABTree chooser
+--     -- The transformation |seqHABTree| enables some invalid game states!
+--     match n with
+--        | 0 => leafCondition da
+--        | .succ _pn =>
+--           let treeDA : CompTree (Option SkElem) SkElem γ
+--              := ⟨ tDA , da.res ⟩
+--           treeCompArbGame _ _ treeDA tP tC

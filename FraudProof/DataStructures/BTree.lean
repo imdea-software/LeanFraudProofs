@@ -24,6 +24,14 @@ def ABTree.size {α β : Type} : ABTree α β -> Nat := ABTree.sizeI (fun _ => 1
 
 abbrev ABTreeSkeleton := ABTree Unit Unit
 
+@[simp]
+def complete_tree_skeleton ( lvl : Nat ) : ABTreeSkeleton
+  := match lvl with
+     | .zero => .leaf _
+     | .succ plvl =>
+        -- I don't about using |have|.
+        .node () (complete_tree_skeleton plvl) (complete_tree_skeleton plvl)
+
 -- @[simp]
 -- def BTree (α : Type) := ABTree α Unit
 -- def BTree.node {α : Type}(bl br : BTree α) : BTree α := ABTree.node () bl br
