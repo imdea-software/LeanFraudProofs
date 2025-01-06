@@ -16,7 +16,7 @@ import FraudProof.Games.GameDef
 import FraudProof.Games.LinearGame
 import FraudProof.Games.LogGame
 import FraudProof.Games.OneStepGame
-import FraudProof.OneStepGame
+-- import FraudProof.OneStepGame
 import FraudProof.Players
 import FraudProof.Players.ElemInTree
 import FraudProof.Players.FromBToMTree

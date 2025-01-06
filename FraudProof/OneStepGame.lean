@@ -22,7 +22,7 @@ import Mathlib.Tactic.Ring
 
 -- Given two hashes, the player provides the sibling hash.
 -- One Step Def
-#print Proposer.HC
+-- #print Proposer.HC
 @[simp]
 def MembershipGame_OneStep {ℍ : Type}[HashMagma ℍ][BEq ℍ]
      ( n : Nat )
@@ -62,14 +62,16 @@ def AllwaysWinnig {ℍ : Type}[BEq ℍ][HashMagma ℍ](p p' : ℍ ) ( path' : Li
 def rootHash {α ℍ : Type}[h : Hash α ℍ][HashMagma ℍ]( v : α ) ( path' : TreePath α ) : ℍ :=
   listPathHashes (h.mhash v) (treeTohashPath path')
 
-theorem irootHash ( v : Value ) ( e : BTree Value ⊕ BTree Value) ( path : TreePath Value ):
-        rootHash v (e :: path) = listPathHashes ( opHash (H v) (hashElem e) ) (treeTohashPath path)
-        := by {
-          match path with
-          | List.nil =>
-                     rw [ treeTohashPath , rootHash ]
-                     simp
-          | List.cons q qs  =>
-                rw [ rootHash ]
-                simp
-        }
+theorem irootHash {α ℍ : Type}[h : Hash α ℍ][HashMagma ℍ]
+        ( v : α ) ( e : BTree α ⊕ BTree α)
+        ( path : TreePath α ):
+        rootHash v (e :: path)
+        = listPathHashes ( opHash (h.mhash v) (hashElem e) ) (treeTohashPath path)
+:= by
+  match path with
+  | List.nil =>
+    rw [ treeTohashPath , rootHash ]
+    simp
+  | List.cons q qs  =>
+    rw [ rootHash ]
+    simp

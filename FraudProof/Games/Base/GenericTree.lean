@@ -179,8 +179,8 @@ def skeleton_da_to_tree {lgn : Nat}{γ : Type}
 def tree_da {γ : Type} { lgn : Nat }
    (seq_da : ImpTreePath (2^lgn.succ - 1) γ γ)
    : CompTree Unit Unit (γ × γ)-- ABTree Unit Unit × (γ × γ)
-   := { data := _ -- Data does not matter here.
-      ; res := ⟨ seq_da.1.1 , seq_da.2 ⟩  }
+   := { data := sorry -- Data does not matter here.
+      , res := ⟨ seq_da.1.1 , seq_da.2 ⟩  }
 
 -- Homogeneous game.
 -- def perfect_seq_to_tree {γ : Type} {lgn : Nat}

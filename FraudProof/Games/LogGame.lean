@@ -36,7 +36,7 @@ def MembershipGame_2STG {ℍ : Type}
       let right_Proposer := Proposer.dropHC ℍ mid (by omega) A
         match D.strategy h_bot h_mid h_top with
             | Chooser.Side.Left =>
-                MembershipGame_2STG mid left_Proposer D (by simp) h_bot h_mid
+                MembershipGame_2STG mid left_Proposer D (by omega) h_bot h_mid
             | Chooser.Side.Right =>
                 MembershipGame_2STG (g.succ.succ - mid) right_Proposer D (by simp; assumption) h_mid h_top
      -- if hC : (p_bot + 1 < p_top)

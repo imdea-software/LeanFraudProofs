@@ -284,6 +284,6 @@ def treeArbitrationGame {α ℍ : Type}
       (ABTree.map id (Option.map (fun x => ⟨ () , x ⟩)) reveler)
       -- Chooser Strategy
       (ABTree.map
-        (fun _ => some ())
+        (fun _ => ())
         (fun fhs ⟨hrs , _, hl , hr ⟩ => fhs ⟨ hrs, hl , hr ⟩) chooser)
 ----------------------------------------
