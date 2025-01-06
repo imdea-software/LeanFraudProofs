@@ -208,12 +208,12 @@ theorem spineHashProp {α ℍ : Type} {n : Nat}[hash : Hash α ℍ] [mag : HashM
                      simp [propTree, IndexABTreeI] at hIdx; simp [propTree,BStrategies, ABTree.getI', nilSeq]
                      have ⟨ _eqVElem , rest ⟩ := hIdx
                      assumption
-              | node bl br => simp [IndexABTreeI] at hIdx
+              | node bl br => simp [propTree, IndexABTreeI] at hIdx
     | succ pn HInd =>
       cases data with
-      | leaf v => simp [IndexABTreeI] at hIdx
+      | leaf v => simp [propTree, IndexABTreeI] at hIdx
       | node bl br =>
-        simp [BStrategies]
+        simp [propTree, BStrategies]
         split
         { case succ.node.h_1 HEq =>
           simp [propTree]
@@ -243,34 +243,32 @@ theorem allGamesStrategies {α ℍ : Type}{n : Nat} [hash : Hash α ℍ] [mag : 
      intros n path elem hInd m mLTn
      cases n with
      | zero => simp at mLTn
-     | succ pn => simp [IndexABTreeI] at hInd
+     | succ pn => simp [propTree, IndexABTreeI] at hInd
   | node bl br BLInd BRInd =>
     intros n path elem hInd m mLTn
     -- simp [BStrategies]
     cases n with
     | zero => simp at mLTn
     | succ pn =>
-      simp [BStrategies]
+      simp [propTree,BStrategies]
       split
       { case node.succ.h_1 heq =>
         clear BRInd
         simp [Fin.snoc]
         split
         { case isTrue H =>
-          replace BLInd := @BLInd pn (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption) m H
+          replace BLInd := @BLInd pn (Fin.tail path) elem (by simp [propTree, IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption) m H
           simp at BLInd
           assumption
         }
         { case isFalse H =>
           have heqn : m = pn := by omega
+          subst heqn
           simp [opHash]
           congr
-          have sp := @spineHashProp _ _ _ hash mag bl (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption)
+          have sp := @spineHashProp _ _ _ hash mag bl (Fin.tail path) elem (by simp [propTree, IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption)
           simp [Fin.last] at sp
-          rw [sp]
-          apply congr_arg; apply Fin.eq_of_val_eq
-          simp
-          rw [heqn]
+          exact sp
         }
       }
       { case node.succ.h_2 heq =>
@@ -278,20 +276,18 @@ theorem allGamesStrategies {α ℍ : Type}{n : Nat} [hash : Hash α ℍ] [mag : 
         simp [Fin.snoc]
         split
         { case isTrue H =>
-          replace BRInd := @BRInd pn (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption) m H
+          replace BRInd := @BRInd pn (Fin.tail path) elem (by simp [propTree, IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption) m H
           simp at BRInd
           assumption
         }
         { case isFalse H =>
           have heqn : m = pn := by omega
+          subst heqn
           simp [opHash]
           congr
           -- current hash is fold path.
-          have sp := @spineHashProp _ _ _ hash mag br (Fin.tail path) elem (by simp [IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption)
-          rw [sp]
-          apply congr_arg; apply Fin.eq_of_val_eq
-          simp
-          rw [heqn]
+          have sp := @spineHashProp _ _ _ hash mag br (Fin.tail path) elem (by simp [propTree, IndexABTreeI] at hInd; rw [heq] at hInd;simp at hInd;assumption)
+          exact sp
         }
       }
 
