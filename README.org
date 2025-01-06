@@ -198,7 +198,7 @@ See 'Hash Classes'
 #+end_src
 *** [X] Hash Injective
 Injective prop is stronger than collision resistant and lawful.
-*** [ ] IO Interactions
+*** [X] IO Interactions
 **** [X] From Opaque to Classes
 **** [X] Keccak256 is a valid IO Hash?
 **** [X] IO Merkle Tree generation.
@@ -217,6 +217,11 @@ Depending on what the DA is, we may need different stuff.
 3. DA : \(\langle tree ,  _ , path , ha \rangle\) -- Tree is |tree| and hashes to \(ha\)
 ****** [ ] Elements are f-Valid
 ****** [ ] No repeated elements
+** TODO Sequences to Vectors: Move on from Fin to Finite list
+Good things, we will not need \(funext\).
+#+begin_src lean4
+def Sequence (n : Nat) (a : Type) := { ls : [ a ] // ls.length = n } -- Vector n a
+#+end_src
 ** Hash Function
 Implicit assumptions.
 

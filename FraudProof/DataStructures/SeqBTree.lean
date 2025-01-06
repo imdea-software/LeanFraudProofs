@@ -119,7 +119,7 @@ def seqPerfectSplit {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α)
     , Fin.tail (sequence_coerce (by rw [pp2]; have ps :=@pow_geq_one n; omega) hdseqr))
 
 
-def concat_perfect_split {α : Type}[BEq α]{n : Nat}(seq : Sequence ((2^n.succ) - 1) α)
+def concat_perfect_split {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α)
   : let ⟨ seql, m , seqr ⟩ := seqPerfectSplit seq
   seq = sequence_coerce
         (by simp; rw [pp2]; have ps := @pow_geq_one n.succ; omega )
@@ -143,18 +143,17 @@ def perfectSeq {α : Type}{n : Nat} (seq : Sequence ((2^n.succ) - 1) α) : ABTre
        have (seql , ar , seqr) := seqPerfectSplit seq
        .node ar (perfectSeq seql) (perfectSeq seqr)
 
---
+-- Size computing. Size of a perfect |seq| is the length of the seq.
 lemma perfect_tree_size {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
     (perfectSeq seq).size = (2^n.succ) - 1
     :=  by induction n
-           case zero => simp
+           case zero => simp [perfectSeq]
            case succ pn HInd =>
-             simp
-             have hl := HInd (takeN (2^ pn.succ -1) (by omega) seq)
-             simp at hl
-             rw [hl]
-             have hr := HInd (Fin.tail (sequence_coerce (by simp; have ps := @pow_geq_one pn; omega) (dropN (2 ^ (pn + 1) - 1) (by omega) seq)))
-             simp at hr; rw [hr]
+             simp [perfectSeq]
+             have ihL := HInd (seqPerfectSplit seq).1
+             have ihR := HInd (seqPerfectSplit seq).2.2
+             simp at ihL; simp at ihR
+             rw [ihL,ihR]
              have ps := @pow_geq_one pn
              omega
 
@@ -174,15 +173,17 @@ theorem seq_tree_seq {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
 
         case succ pn HInd =>
           simp [perfectSeq, infixSeq]
-          have hL := HInd (takeN (2 ^ (pn + 1) - 1) (by omega) seq)
+          have hL := HInd (seqPerfectSplit seq).1
           rw [hL]
-          have hR := HInd (Fin.tail (sequence_coerce (by simp; have ps := @pow_geq_one pn; omega) (dropN (2 ^ (pn + 1) - 1) (by omega) seq)))
+          have hR := HInd (seqPerfectSplit seq).2.2
           rw [hR]
           simp
-          rw [ConsCoerce]
-          rw [ConsMid]
+          rw [ConsCoerce,ConcatCoerce, TransCoerce]
+          apply coerce_eq_comm
           rw [TransCoerce]
-          rw [ConcatCoerce]
-          rw [TransCoerce]
-          rw [ConcatSplit]
-          rw [TransCoerce]
+          have seq_split := concat_perfect_split seq; simp at seq_split
+          rw [Eq.comm]
+          assumption
+          -- Proof Obligations
+          have psize := perfect_tree_size seq; simp [perfectSeq] at psize
+          assumption
