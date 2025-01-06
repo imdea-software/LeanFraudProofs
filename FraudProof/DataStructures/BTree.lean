@@ -73,6 +73,7 @@ def ABTree.getI' {α β γ : Type}(p : α -> γ)(q : β -> γ) : ABTree α β ->
 def ABTree.getI {α β : Type} : ABTree (α × β) β -> β
  := ABTree.getI' (fun p => p.2) id
 
+@[simp]
 def ABTree.map {α₁ α₂ β₁ β₂ : Type }
    (f : α₁ -> α₂) (g : β₁ -> β₂)
    : ABTree α₁ β₁ -> ABTree α₂ β₂
