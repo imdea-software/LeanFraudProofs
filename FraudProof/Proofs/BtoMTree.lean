@@ -23,7 +23,8 @@ theorem defenseW {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ] [Hash α ℍ][ε : Hash
 := by
   revert pos
   induction data with
-  | leaf v => simp [arbitrationInit , arbitrage, medTrees, ABTree.getI, condWProp]
+  | leaf v =>
+    simp [arbitrationInit , arbitrage, medTrees, ABTree.getI, condWProp, propTree,ABTree.getI', ABTree.map]
   | node bl pr IL IR =>
     intros pos posInTree chooser
     unfold arbitrage
@@ -41,7 +42,7 @@ theorem defenseWins {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ] [Hash α ℍ][HashMa
         arbitrationInit da (SemiGoodProposer itree) chooser = Player.Proposer :=
  by intro chooser
     induction data with
-    | leaf v =>  simp [arbitrationInit , arbitrage, medTrees, ABTree.getI, condWProp]
+    | leaf v =>  simp [arbitrationInit , arbitrage, medTrees, ABTree.getI, condWProp, propTree,ABTree.map, ABTree.getI']
     | node bl br blH brH =>
       simp at *
       unfold arbitrationInit; unfold arbitrage; unfold SemiGoodProposer
