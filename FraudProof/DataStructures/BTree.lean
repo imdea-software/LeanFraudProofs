@@ -27,7 +27,7 @@ abbrev ABTreeSkeleton := ABTree Unit Unit
 @[simp]
 def complete_tree_skeleton ( lvl : Nat ) : ABTreeSkeleton
   := match lvl with
-     | .zero => .leaf _
+     | .zero => .leaf ()
      | .succ plvl =>
         -- I don't about using |have|.
         .node () (complete_tree_skeleton plvl) (complete_tree_skeleton plvl)

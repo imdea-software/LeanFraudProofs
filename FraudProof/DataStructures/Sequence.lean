@@ -228,6 +228,30 @@ theorem ExtraCoerce {α : Type}{n : Nat}(req : n = n)(seq : Sequence n α)
         intros i iLT
         simp [sequence_coerce]
 
+theorem coerce_eq_comm {α : Type}{n m : Nat}
+        {heq : n = m}
+        (seql : Sequence n α)(seqr : Sequence m α)
+        : sequence_coerce heq seql = seqr
+        -> seql = sequence_coerce (by rw [Eq.comm] at heq; assumption ) seqr
+        := by intro H; rw [ <- H]; apply ExtraCoerce; simp
+
+theorem coerce_eq_comm' {α : Type}{n m : Nat}
+        {heq : m = n}
+        (seql : Sequence n α)(seqr : Sequence m α)
+        : seql = sequence_coerce heq seqr
+        -> sequence_coerce (by omega) seql = seqr
+        := by intro H; rw [H]; apply ExtraCoerce; simp
+
+theorem coerce_eq_coerce { α : Type }{n m l : Nat}
+        {reql : n = l}{reqr : m = l}
+        (seql : Sequence n α)(seqr : Sequence m α)
+        : sequence_coerce reql seql = sequence_coerce reqr seqr
+        -> sequence_coerce (by omega) seql = seqr
+        := by intro H; apply coerce_eq_comm' at H
+              rw [<- H]
+              apply funext; rw [Fin.forall_iff]; intros i iLt
+              simp
+
 theorem TransCoerce {α : Type}{n m l : Nat}{fst : n = m}{snd : m = l}
       (seq : Sequence n α):
       sequence_coerce snd (sequence_coerce fst seq)
