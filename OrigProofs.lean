@@ -551,7 +551,7 @@ lemma lemmaStepHypL {α ℍ : Type} {n : Nat}{v : α}
     cases hyp with
       | inl HYP =>
         left
-        simp [IndexABTreeI] at HYP
+        simp [propTree, IndexABTreeI] at HYP
         rw [Side] at HYP
         simp at HYP
         assumption
@@ -563,7 +563,7 @@ lemma lemmaStepHypL {α ℍ : Type} {n : Nat}{v : α}
         simp at neq
         apply And.intro
         { exists xx
-          simp [IndexABTreeI] at pTree
+          simp [propTree, IndexABTreeI] at pTree
           rw [Side] at pTree
           simp at pTree
           assumption
@@ -585,7 +585,7 @@ theorem lemmaStepHypR {α ℍ : Type} {n : Nat}{v : α}
     cases hyp with
       | inl HYP =>
         left
-        simp [IndexABTreeI] at HYP
+        simp [propTree, IndexABTreeI] at HYP
         rw [Side] at HYP
         simp at HYP
         assumption
@@ -597,7 +597,7 @@ theorem lemmaStepHypR {α ℍ : Type} {n : Nat}{v : α}
         simp at neq
         apply And.intro
         { exists xx
-          simp [IndexABTreeI] at pTree
+          simp [propTree, IndexABTreeI] at pTree
           rw [Side] at pTree
           simp at pTree
           assumption
