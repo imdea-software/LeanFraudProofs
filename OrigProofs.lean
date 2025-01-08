@@ -624,8 +624,11 @@ theorem goodChoosersWinA
   -- knowledge is correct
   (kCorrect : (@propTree _ _ h m knowledge).getHash = da.mtree)
   -- + Chooser challenge when there is something wrong.
-  (hyp : IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = none
-       ∨ (exists e : (α × ℍ), IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = some (.inl e)
+  (hyp :
+       -- There is no element in that position.
+        IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = none
+       ∨ -- There is a different element.
+       (exists e : (α × ℍ), IndexABTreeI da.1.2 (@propTree _ _ h m knowledge) = some (.inl e)
                             ∧ e.1 != da.1.1))
   -- + Proposer
   (proposer : Sequence n (Option (PMoves ℍ)))

@@ -1,4 +1,5 @@
 import FraudProof.Games.GameDef -- Players, Winner
+import FraudProof.Games.Base.GenericTree -- Generic Game trees
 
 import FraudProof.DataStructures.Sequence
 
@@ -140,3 +141,98 @@ def elemInHGameH {ℍ : Type}
                -- Next step players
                (tailSeq proposer)
                (tailSeq chooser)
+
+-- Building a Tree out of skelentons.
+-- This function keeps size.
+-- ABTree.size is height
+def skeleton_to_tree {n : Nat} (sk : ISkeleton n) : ABTree Unit Unit
+ := match n with
+   | .zero => .leaf ()
+   | .succ _pn => match headSeq sk with
+                 | .inl _ =>
+                        .node () (skeleton_to_tree (Fin.tail sk)) (.leaf ())
+                 | .inr _ =>
+                        .node ()  (.leaf ()) (skeleton_to_tree (Fin.tail sk))
+
+def skl_to_maybe_elem {α : Type} {n : Nat}
+  (a : α) (sk : ISkeleton n) : ABTree (Option α) Unit
+    := match n with
+    | .zero => .leaf a
+    | .succ _pn => match headSeq sk with
+                    | .inl _ =>
+                            .node () (skl_to_maybe_elem a (Fin.tail sk)) (.leaf none)
+                    | .inr _ =>
+                            .node () (.leaf none) (skl_to_maybe_elem a (Fin.tail sk))
+
+def build_proposer {ℍ : Type}{n : Nat}
+  (data : ℍ × ISkeleton n) (rev : Sequence n (Option (PMoves ℍ)))
+  : ABTree (Option ℍ) (Option (Unit × ℍ × ℍ))
+  := match n with
+  | .zero => .leaf <| .some data.1
+  | .succ _pn => let rest_tree := build_proposer ⟨ data.1 , Fin.tail data.2⟩ (Fin.tail rev)
+     match headSeq rev with
+       | .none => .node .none rest_tree (.leaf .none)
+       | .some (.Next ⟨ hl , hr⟩)=>
+         match headSeq data.2 with
+         | .inl _ =>
+           .node (.some ⟨ (), hl, hr ⟩)
+                 rest_tree
+                 (.leaf (.some hr))
+         | .inr _ =>
+           .node (.some ⟨ (), hl, hr ⟩)
+                 (.leaf (.some hl))
+                 rest_tree
+
+def build_chooser {ℍ : Type}{n : Nat}
+  (data : ℍ × ISkeleton n)
+  (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+  : ABTree Unit (ℍ × Unit × ℍ × ℍ -> Option ChooserMoves)
+  := match n with
+    | .zero => .leaf ()
+    | .succ _pn =>
+      let side_choose (s : Chooser.Side) (arg : ℍ × Unit × ℍ × ℍ) : Option ChooserMoves :=
+          have ⟨ ht , _ , hl , hr ⟩ := arg
+          (headSeq chooser ⟨ ht, hl , hr ⟩).map
+            (fun ch => match ch with
+                       | .Now => .Now
+                       | .Continue _ => .Continue s)
+      match headSeq data.2 with
+      | .inl _ =>
+        .node
+          (side_choose .Left)
+          (build_chooser ⟨data.1 , Fin.tail data.2⟩ (Fin.tail chooser))
+          (.leaf ())
+      | .inr _ =>
+        .node
+          (side_choose .Right)
+          (.leaf ())
+          (build_chooser ⟨data.1 , Fin.tail data.2⟩ (Fin.tail chooser))
+
+def elem_in_tree_gen_tree {ℍ : Type}
+    [BEq ℍ][mag : HashMagma ℍ]
+    -- DA
+    {n : Nat}
+    (da : ElemInTreeH n ℍ)
+    --
+    (proposer : Sequence n (Option (PMoves ℍ)))
+    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+    --
+    : Winner
+    :=
+    let da_tree : CompTree (Option ℍ) Unit ℍ := {data := skl_to_maybe_elem da.data.1 da.data.2 , res := da.mtree}
+    let tree_revealer : ABTree (Option ℍ) (Option (Unit × ℍ × ℍ))
+      := build_proposer da.data proposer
+    let tree_chooser : ABTree Unit (ℍ × Unit × ℍ × ℍ -> Option ChooserMoves)
+      := build_chooser da.data chooser
+    treeCompArbGame
+      (fun opth _h1 h2 =>
+        match opth with
+        | .none => -- this case is a bit artificial
+        -- chooser should challenge previous step.
+          Player.Proposer
+        | .some hp => condWProp <| (hp == h2)
+      )
+      (fun _ _ hres pl pr =>
+        -- _nodeh and hres should be the same.
+           condWProp <| mag.comb pl pr == hres)
+      da_tree tree_revealer tree_chooser
