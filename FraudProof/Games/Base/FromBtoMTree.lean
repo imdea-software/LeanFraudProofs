@@ -275,7 +275,7 @@ def treeArbitrationGame {α ℍ : Type}
     : Winner :=
     @treeCompArbGame α ℍ Unit Unit ℍ
       -- Leaf winning condition
-      (fun h a r => condWProp $ o.mhash a == h ∧ h == r)
+      (fun h data revealed => condWProp <| (o.mhash data == h) ∧ (h == revealed))
       -- Node winning condition
       (fun _ _ r hl hr => condWProp $ m.comb hl hr == r)
       -- DA

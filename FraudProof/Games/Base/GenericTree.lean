@@ -43,6 +43,7 @@ structure CompTree (α β γ : Type) where
 ----------------------------------------
 -- * Game Mechanics
 -- Generic game focusing on |da : CompTree|
+-- Here the arena is |ABTree|
 def treeCompArbGame {α α' β β' γ : Type}
     -- Game Mechanics
     (leafCondition : α' -> α -> γ -> Winner)
@@ -81,7 +82,7 @@ def treeCompArbGame {α α' β β' γ : Type}
 -- We may want to prove that the previous generic games and these ones are
 -- equivalent?
 def homogeneous_tree_game {pinfo γ : Type}
-    (midCondition  : pinfo -> γ -> γ -> γ -> Winner)
+    (winning_condition  : pinfo -> γ -> γ -> γ -> Winner)
     -- Public Information -- Board and ranges.
     (da : ABTree pinfo pinfo)
     (rn : γ × γ)
@@ -97,20 +98,20 @@ def homogeneous_tree_game {pinfo γ : Type}
       , .node ch_fun  cho_left cho_right =>
       match ch_fun ⟨ pub_now , rn.1 , γ_mid , rn.2 ⟩ with
       | some .Now =>
-        midCondition pub_now rn.1 γ_mid rn.2
+        winning_condition pub_now rn.1 γ_mid rn.2
       | some (.Continue .Left) =>
-        homogeneous_tree_game midCondition pub_l ⟨ rn.1 , γ_mid ⟩ re_left cho_left
+        homogeneous_tree_game winning_condition pub_l ⟨ rn.1 , γ_mid ⟩ re_left cho_left
       | some (.Continue .Right) =>
-        homogeneous_tree_game midCondition pub_r ⟨ γ_mid , rn.2 ⟩ re_right cho_right
+        homogeneous_tree_game winning_condition pub_r ⟨ γ_mid , rn.2 ⟩ re_right cho_right
       | none => Player.Proposer
     -- Last single-shot game
     | .leaf pub_now , .leaf (some h) , _ =>
-        midCondition pub_now rn.1 h rn.2
-    -- Bad Revealer player? -- Revelear plays first.
+        winning_condition pub_now rn.1 h rn.2
+    -- Bad Revealer player -- Revelear plays first.
     | .node _ _ _ , .node none _ _, _ => Player.Chooser
     | .node _ _ _ , .leaf _ , _ => Player.Chooser
-    -- Bad Chooser player?
-    -- Revealear reveals something but chooser doesn't have any move.
+    -- Bad Chooser player
+    -- Revealear reveals something but chooser doesn't move.
     | .node _ _ _ , .node (some _) _ _ , .leaf _  => Player.Proposer
     -- Proposer made it to the end?
     | .leaf _ ,  _ , _ => Player.Proposer
@@ -229,3 +230,11 @@ def tree_da {γ : Type} { lgn : Nat }
 --           let treeDA : CompTree (Option SkElem) SkElem γ
 --              := ⟨ tDA , da.res ⟩
 --           treeCompArbGame _ _ treeDA tP tC
+
+
+-- * Data plus Arena
+-- This comes from the transformation of path
+-- h_top ~~~> h_bot , arena is just a template of hash giving elements
+structure gen_da_tree (δ α β γ : Type) where
+  data  : δ × ABTree α β
+  res   : γ
