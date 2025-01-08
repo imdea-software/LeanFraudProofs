@@ -142,6 +142,10 @@ def elemInHGameH {ℍ : Type}
                (tailSeq proposer)
                (tailSeq chooser)
 
+--------------------------------------------------------------------------------
+-- Transformation from a Sequence to the /same/ game played over Trees arenas.
+--------------------------------------------------------------------------------
+
 -- Building a Tree out of skelentons.
 -- This function keeps size.
 -- ABTree.size is height
@@ -154,6 +158,7 @@ def skeleton_to_tree {n : Nat} (sk : ISkeleton n) : ABTree Unit Unit
                  | .inr _ =>
                         .node ()  (.leaf ()) (skeleton_to_tree (Fin.tail sk))
 
+@[simp]
 def skl_to_maybe_elem {α : Type} {n : Nat}
   (a : α) (sk : ISkeleton n) : ABTree (Option α) Unit
     := match n with
@@ -164,6 +169,7 @@ def skl_to_maybe_elem {α : Type} {n : Nat}
                     | .inr _ =>
                             .node () (.leaf none) (skl_to_maybe_elem a (Fin.tail sk))
 
+@[simp]
 def build_proposer {ℍ : Type}{n : Nat}
   (data : ℍ × ISkeleton n) (rev : Sequence n (Option (PMoves ℍ)))
   : ABTree (Option ℍ) (Option (Unit × ℍ × ℍ))
@@ -182,7 +188,7 @@ def build_proposer {ℍ : Type}{n : Nat}
            .node (.some ⟨ (), hl, hr ⟩)
                  (.leaf (.some hl))
                  rest_tree
-
+@[simp]
 def build_chooser {ℍ : Type}{n : Nat}
   (data : ℍ × ISkeleton n)
   (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
@@ -236,3 +242,62 @@ def elem_in_tree_gen_tree {ℍ : Type}
         -- _nodeh and hres should be the same.
            condWProp <| mag.comb pl pr == hres)
       da_tree tree_revealer tree_chooser
+
+----------------------------------------
+-- Are both games equivs?
+--
+--Two games (in this case) are equivalente if they have the same outcome to the
+--same players.
+
+
+theorem seq_equiv_tree {ℍ : Type}[BEq ℍ][HashMagma ℍ]
+  -- DA
+  {n : Nat}(da : ElemInTreeH n ℍ)
+  -- Players
+  (proposer : Sequence n (Option (PMoves ℍ)))
+  (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+  : elemInHGameH da proposer chooser = elem_in_tree_gen_tree da proposer chooser
+  := by revert n
+        intro n
+        induction n with
+        | zero =>
+          intros da prop cho
+          simp [elemInHGameH , elem_in_tree_gen_tree, SingleLastStepH, treeCompArbGame]
+        | succ pn HInd =>
+          intros da prop cho
+          simp [elemInHGameH, elem_in_tree_gen_tree ]
+          cases prop 0 with
+          | none =>
+            simp [treeCompArbGame]
+          | some proposed =>
+            cases proposed with
+            | End v => contradiction
+            | Next e =>
+              simp
+              match HCho : cho 0 (da.mtree, e) with
+              | none =>
+                simp [treeCompArbGame]
+                match da.data.2 0 with
+                | .inl _ => simp [treeCompArbGame]; rw [HCho]; simp
+                | .inr _ => simp [treeCompArbGame]; rw [HCho]; simp
+              | some choosed =>
+                match choosed with
+                | .Now =>
+                  simp [SingleMidStep]
+                  cases da.data.2 0 with
+                    | inl _ => simp [treeCompArbGame]; rw [HCho]; simp
+                    | inr _ => simp [treeCompArbGame]; rw [HCho]; simp
+                | .Continue _ =>
+                  simp
+                  cases da.data.2 0 with
+                    | inl _ =>
+                      simp [treeCompArbGame]
+                      rw [HCho]; simp
+                      apply HInd
+                    | inr _ =>
+                      simp [treeCompArbGame]
+                      rw [HCho]; simp
+                      apply HInd
+
+
+----------------------------------------
