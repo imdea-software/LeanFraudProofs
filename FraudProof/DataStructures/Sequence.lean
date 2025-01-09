@@ -103,6 +103,18 @@ def seqMap {α β : Type} {n : Nat} (f : α -> β) ( seq : Sequence n α ) : Seq
      | 0 => nilSeq
      | .succ _pn => Fin.cons (f $ headSeq seq) (seqMap f (Fin.tail seq))
 
+@[simp]
+def seq_zip_with {α β ε : Type}{n : Nat}
+    (f : α -> β -> ε)
+    (sl : Sequence n α)
+    (sr : Sequence n β)
+    : Sequence n ε
+    := match n with
+    | .zero => nilSeq
+    | .succ _pn => Fin.cons
+                   (f (headSeq sl) (headSeq sr))
+                   (seq_zip_with f (Fin.tail sl) (Fin.tail sr))
+
 -- Replicate
 @[simp]
 def replicate {α : Type}{n : Nat}(c : α) : Sequence n α
