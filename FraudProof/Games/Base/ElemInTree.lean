@@ -249,7 +249,6 @@ def elem_in_tree_gen_tree {ℍ : Type}
 --Two games (in this case) are equivalente if they have the same outcome to the
 --same players.
 
-
 theorem seq_equiv_tree {ℍ : Type}[BEq ℍ][HashMagma ℍ]
   -- DA
   {n : Nat}(da : ElemInTreeH n ℍ)
@@ -298,6 +297,139 @@ theorem seq_equiv_tree {ℍ : Type}[BEq ℍ][HashMagma ℍ]
                       simp [treeCompArbGame]
                       rw [HCho]; simp
                       apply HInd
+----------------------------------------
 
+----------------------------------------
+-- Logarithmic Search
+
+-- It should be vector, but I wanna keep the other.
+
+def iskehash {ℍ : Type} {n : Nat}
+  (side_skeleton : ISkeleton n)
+  (rev : Sequence n (Option (PMoves ℍ)))
+  : Sequence n (Option (Sum ℍ ℍ))
+  := seq_zip_with
+     (fun sk opt_moves =>
+     match sk with
+     | .inl _ => opt_moves.map ( .inl ∘ fun x => match x with | .Next p => p.1)
+     | .inr _ => opt_moves.map ( .inr ∘ fun x => match x with | .Next p => p.2)
+     )
+     side_skeleton rev
+
+abbrev Side (ℍ : Type) := Sum ℍ ℍ
+def build_log_proposer {ℍ : Type}{lgn : Nat}
+  (rev : Sequence (2^lgn.succ - 1) (Option (Side ℍ)))
+  : ABTree (Option (Side ℍ)) (Option (Side ℍ))
+  := perfectSeq  rev
+
+def from_side {α : Type} (sa : Side α) : α :=
+  match sa with
+  | .inl a => a
+  | .inr a => a
+
+-- Same as opHash??
+-- I use SkElem to signal where the path is going.
+def op_side {α : Type}[mag : HashMagma α] (o : SkElem) (a b : α) : α
+ := match o with
+   | .inl _ => mag.comb a b
+   | .inr _ => mag.comb b a
+
+abbrev Range (α : Type) := α × α
+
+@[simp]
+def all_true (ls : List Bool) : Bool := ls.all id
+
+def element_in_tree_transform {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
+    --
+    {lgn : Nat}(da : ElemInTreeH (2^lgn.succ - 1) ℍ)
+    --
+    (proposer : ABTree (Option ℍ) (Option (Unit × (Range ℍ) × (Range ℍ))))
+    (chooser : ABTree Unit (Range ℍ × Unit × (Range ℍ) × (Range ℍ) -> Option ChooserMoves))
+    --
+    :=
+    -- + |data| is a balance sequence of hashing data from one hash to another
+    -- hash.
+    -- + |res| are the extremes of the chain mentioned above.
+    let balanced_da : CompTree SkElem SkElem (Range ℍ)
+        := { data := perfectSeq da.data.2
+           , res  := ⟨ da.data.1 , da.mtree ⟩}
+    treeCompArbGame
+      -- Leaf condition. In this case, if proposer reaches leaf, it wins.
+      (fun side top ⟨ hl, hr ⟩ => condWProp $ op_side side hl hr == top)
+      -- Mid condtion is where the fun is.
+      (fun (_side : SkElem) (_t : Unit)
+           hres hl hr =>
+        let ⟨ h_bot , h_top ⟩ := hres
+        let ⟨ h_botP , h_midP ⟩ := hl
+        let ⟨ h_midP' , h_topP ⟩ := hr
+        -- Mid condition is the expected one
+        condWProp $
+        -- Unit range, wins proposer
+        -- or (h_bot == h_top) $
+        --
+        all_true
+        -- Range consistency
+        [ h_bot == h_botP
+        , h_top == h_topP
+        , h_midP == h_midP'
+        -- If trigger at the rigth moment and using |side|, we should be able to
+        -- compute hashes.
+        -- This condition makes sense when |mid| hash is the one proposed as
+        -- intermediary.
+        -- , op_side side h_bot h_midP == h_top (No intermediary condition here.)
+        -- I am not super sure about this condition. I need to check it.
+        ]
+      )
+      balanced_da
+      proposer chooser
+
+def get_total_range_tree {ℍ : Type}
+  (tree : ABTree (Option ℍ) (Option (Unit × (Range ℍ) × (Range ℍ))))
+  : Option (Range ℍ)
+  := match tree with
+  | .leaf (.some h) => .some ⟨ h , h ⟩
+  | .node (.some ⟨_, left_range , right_range ⟩) _ _ =>
+    .some $ ⟨ left_range.1 , right_range.2 ⟩
+  | _ => .none
+
+-- Proposer transformatino
+def logarithmic_proposer {ℍ : Type}{mag : HashMagma ℍ}{lgn : Nat}
+  (sides : ISkeleton (2^lgn.succ - 1))
+  (proposer : Sequence (2^lgn.succ - 1) (Option (PMoves ℍ)))
+  : ABTree (Option ℍ) (Option (Unit × (Range ℍ) × (Range ℍ)))
+  := match lgn with
+     | .zero =>
+       .leaf $
+         (headSeq proposer).map
+            (fun (.Next ⟨h_bot, h_extra⟩)
+              => @op_side ℍ mag (headSeq sides) h_bot h_extra)
+            -- TODO add Unit range -> true
+            -- let h_top := @op_side ℍ mag (headSeq sides) h_bot h_extra
+            -- .node (.some ⟨ (), ⟨ h_bot , h_bot⟩ , ⟨ h_top , h_top ⟩ ⟩)
+            --       -- Leafs are winning positions for the proposer.
+            --       (.leaf $ .some h_bot)
+            --       (.leaf $ .some h_top)
+     | .succ _pn =>
+       let ⟨ sides_left, sides_mid , sides_right ⟩ := seqPerfectSplit sides
+       let ⟨ prop_left, prop_mid, prop_right ⟩ := seqPerfectSplit proposer
+       let left_tree := @logarithmic_proposer _ mag _ sides_left prop_left
+       let right_tree := @logarithmic_proposer _ mag _ sides_right prop_right
+       match prop_mid
+             , get_total_range_tree left_tree
+             , get_total_range_tree right_tree
+       with
+       | .some (.Next p) , .some left_range, .some right_range =>
+         -- This is the mid condition that hashes meet here.
+         let h_mid := op_side sides_mid p.1 p.2
+         -- But I need to get bounds from recursive calls.
+         let h_bot : ℍ := left_range.1
+         let h_top : ℍ := right_range.2
+         .node (.some ⟨(), ⟨ h_bot , h_mid ⟩, ⟨ h_mid , h_top ⟩⟩)
+               left_tree right_tree
+       | _ ,_ ,_ => .node .none left_tree right_tree
+
+-- Thm Winning proposer to winning proposer.
+-- We have revealer/proposer winning conditions. I think we can prove through
+-- that.
 
 ----------------------------------------
