@@ -78,6 +78,48 @@ def treeCompArbGame {α α' β β' γ : Type}
     -- If reveler does not follow the compuetation tree, it loses.
     | _ , _ => Player.Chooser
 
+-- Reveler  winning condition
+def reveler_winning_condition
+  {α α' β β' γ : Type}
+    -- Game Mechanics
+    (leafCondition : α' -> α -> γ -> Winner)
+    (midCondition  : β' -> β -> γ -> γ -> γ -> Winner)
+    -- Public Information
+    (da : CompTree α' β' γ)
+    -- Players
+    (reveler : ABTree (Option α) (Option (β × γ × γ)))
+  : Prop :=
+  match da.data , reveler with
+  | .node b bl br , .node (.some proposed) left_reveler right_reveler =>
+    -- If challenged, proposer wins
+    midCondition b proposed.1 da.res proposed.2.1 proposed.2.2 = Player.Proposer
+    -- Same for each branch
+    ∧ reveler_winning_condition leafCondition midCondition
+                                               {data := bl, res:=proposed.2.1}
+                                               left_reveler
+    ∧ reveler_winning_condition leafCondition midCondition
+                                               {data := br, res:=proposed.2.2}
+                                               right_reveler
+   | .leaf a, .leaf (.some a') =>
+     leafCondition a a' da.res = Player.Proposer
+   | _ , _ => False
+
+-- TODO Prove that this is correct
+theorem winning_proposer_wins {α α' β β' γ : Type}
+    -- Game Mechanics
+    (leafCondition : α' -> α -> γ -> Winner)
+    (midCondition  : β' -> β -> γ -> γ -> γ -> Winner)
+    -- Public Information
+    (da : CompTree α' β' γ)
+    -- Players
+    (reveler : ABTree (Option α) (Option (β × γ × γ)))
+    (good_reveler : reveler_winning_condition leafCondition midCondition da reveler)
+    : forall (chooser : ABTree Unit ((γ × β × γ × γ) -> Option ChooserMoves)),
+      treeCompArbGame leafCondition midCondition da reveler chooser = Player.Proposer
+    := sorry
+
+
+
 -- Another generid tree, more focused on logarithmic games.
 -- We may want to prove that the previous generic games and these ones are
 -- equivalent?

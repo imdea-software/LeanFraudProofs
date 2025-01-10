@@ -80,6 +80,17 @@ def ABTree.map {α₁ α₂ β₁ β₂ : Type }
    | .leaf v => .leaf $ f v
    | .node i bl br => .node (g i) (bl.map f g) (br.map f g)
 
+@[simp]
+def abtree_zip_with {α β δ ε ρ η : Type}
+  (f : α -> δ -> ρ)
+  (g : β -> ε -> η)
+  (l : ABTree α β)(r : ABTree δ ε) : Option (ABTree ρ η)
+  := match l , r with
+    | .leaf a , .leaf d => .some $ .leaf $ f a d
+    | .node b bl br , .node e el er =>
+      .node (g b e) <$> (abtree_zip_with f g bl el) <*> (abtree_zip_with f g br er)
+    | _ , _ => .none
+
 instance : Bifunctor ABTree where
  bimap := ABTree.map
 
