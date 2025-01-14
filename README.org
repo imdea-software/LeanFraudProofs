@@ -222,6 +222,24 @@ Good things, we will not need \(funext\).
 #+begin_src lean4
 def Sequence (n : Nat) (a : Type) := { ls : [ a ] // ls.length = n } -- Vector n a
 #+end_src
+** TODO Linear to Log using Generic Trees
+*** DONE Define Game transformations
+*** DONE Sequence Linear to Tree Linear
+*** TODO Sequence Linear to /Log/ Tree Linear
+I have been fighting with this one. I fall into the first model I actually
+proved correct. Tried to define some wierd transformations, nothing worked but I
+have an idea.
+
+Same as before, I have two ways of seeing the sequence of hashes I have, as a
+sequence of siblings plus side or just computing each hash.
+I tried the sibling path, but it gets a bit fuzzy and it is not exactly what I
+need when going though the logarithmic game. The logarithmic game is played only
+observing the resulting intermediary hashes. Next step is to try to program that.
+I took the first path because it was an easy transformation, forming a tree game
+arena with exactly what I had while computing intermediary hashes along the way.
+But it turned out to be a bit complex, maybe I can come back to this idea after
+gaining some intuition about this.
+
 ** Hash Function
 Implicit assumptions.
 
