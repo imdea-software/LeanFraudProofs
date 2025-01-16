@@ -135,7 +135,8 @@ def concat_perfect_split {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α
         intros i iLT
         simp [sequence_coerce]
 
-def perfectSeq {α : Type}{n : Nat} (seq : Sequence ((2^n.succ) - 1) α) : ABTree α α
+def perfectSeq {α : Type}{n : Nat} (seq : Sequence ((2^n.succ) - 1) α)
+  : ABTree α α
   := match n with
      | .zero =>
        .leaf ( seq ⟨ 0 , by simp ⟩)
@@ -187,3 +188,19 @@ theorem seq_tree_seq {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
           -- Proof Obligations
           have psize := perfect_tree_size seq; simp [perfectSeq] at psize
           assumption
+
+def gen_empty_perfect_tree : Nat -> ABTree Unit Unit
+  | .zero => .leaf ()
+  | .succ pn => .node () (gen_empty_perfect_tree pn) (gen_empty_perfect_tree pn)
+
+lemma gen_empty_size {n : Nat}
+  : (gen_empty_perfect_tree n).size = 2^n.succ - 1
+  := by
+        induction n with
+        | zero => simp [gen_empty_perfect_tree]
+        | succ pn HInd =>
+          simp [gen_empty_perfect_tree]
+          simp at HInd
+          rw [HInd]
+          have pw_prop := @pow_gt_zero pn
+          omega
