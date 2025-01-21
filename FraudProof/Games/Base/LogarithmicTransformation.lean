@@ -3,7 +3,63 @@ import FraudProof.Games.Base.GenericTree -- Generic Game trees
 import FraudProof.Games.Base.ElemInTree -- Linear basic game definition
 
 import FraudProof.DataStructures.Sequence
-import FraudProof.Games.Base.RangeDAConditions.lean
+import FraudProof.Games.Base.RangeDAConditions
+
+----------------------------------------
+-- * Tree Search
+-- Here is a simple game template, groing through range splitting.
+-- DA is 'I know the info such that this computation-tree-scheme is proof that
+-- hash |a| reaches hash |b|'. [a,b]
+-- At each step at nodes, the reveler provides two segments and the chooser can
+-- choose to challenge now if segments do not combine or continues challenging
+-- one of the segments.
+-- At the last step, the reveler provides a sibiling hash. Taking the side from
+-- the computation tree, we can check if the information matches.
+--
+-- Leaves are path of lenght 1. After that, continuining the game makes no
+-- sense. At this point, the proposer need to revel the sibling hash (and side)
+-- completing the triplet.
+-- [a,b] -> side, c such that |op_side| side a c == b
+def leaf_condition_length_one {ℍ : Type}[BEq ℍ][HashMagma ℍ]
+  : SkElem -> ℍ -> Range ℍ -> Winner
+  := (fun side prop ⟨ src , dst ⟩
+  => condWProp $ op_side side src prop == dst)
+
+def mid_condition_da_checking {ℍ : Type}[BEq ℍ]
+  -- Arena conditions
+  : Unit -> Unit
+  -> Range ℍ -> Range ℍ -> Range ℍ
+  -> Winner
+  := (fun _ _
+        hres hl hr =>
+        let ⟨ parent_from , parent_to⟩ := hres
+        let ⟨ left_from , left_to⟩ := hl
+        let ⟨ right_from , right_to⟩ := hr
+          -- Mid condition is the expected one
+        condWProp $
+          all_true
+          -- Path consistency
+          -- [a, b] <=> [a,c] and [c,b]
+          [ parent_from == left_from
+          , parent_to == right_to
+          , left_to == right_from
+          ]
+      )
+
+def tree_computation {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
+    (da : CompTree SkElem Unit (Range ℍ))
+    --
+    (proposer : ABTree (Option ℍ)
+                       (Option (Unit × Range ℍ × Range ℍ)))
+    (chooser : ABTree Unit
+                      ((Range ℍ × Unit × Range ℍ × Range ℍ)
+                      -> Option ChooserMoves))
+    --
+    :=
+    treeCompArbGame
+      leaf_condition_length_one
+      mid_condition_da_checking
+      da proposer chooser
 
 ----------------------------------------
 -- Logarithmic Search Definitions
@@ -36,9 +92,25 @@ import FraudProof.Games.Base.RangeDAConditions.lean
 -- @[simp]
 -- def Range (α : Type) := α × α
 
+--------------------------------------------------------------------------------
+-- * Range plus length
+-- Here I follow a dfferente approach, but I think it is problematic.
+-- We do not only have ranges but also the length of the path.
+-- The thing is that the computation-tree-scheme should be enough.
+-- We are constantly checking that numbers match-up. Length-0 when we reach
+-- leaves and add-up conditions at mid steps.
+-- Why did I add it in the first place? Because now I can add conditional checks
+-- to mid steps. In a way, I have more context to work on than just ranges. I
+-- know where in the path we are.
+----------------------------------------
+-- * Da Definition
+-- Path definition
 structure DA_Statement (ℍ : Type) where
+  -- From
   src : ℍ
+  -- To
   dst : ℍ
+  -- Path length
   len : Nat
 
 --
@@ -58,8 +130,11 @@ def Tree_Reveler.top {ℍ : Type} : Tree_Reveler ℍ -> Option ℍ
 @[simp]
 def Tree_DA (ℍ : Type) :=
   CompTree
-    Unit -- No info at leaves
-    Unit -- No info at nodes
+    -- No info at leave s
+    Unit
+    -- No info, but we can add something like (nat, nat) noting length on each
+    -- child
+    Unit
     (DA_Statement ℍ) -- [a, b] and length ...
 
 def leaf_condition_transformation {ℍ : Type}[BEq ℍ]
@@ -194,43 +269,22 @@ def element_in_tree_transform {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
 -- proposer.
 ----------------------------------------
 
--- Proposer wins all possible games.
--- leaf and mid winning conditions
--- @[simp]
-def elem_in_reveler_winning_condition {ℍ : Type}
-    [BEq ℍ][HashMagma ℍ]
-    {n : Nat}
-    (da : ElemInTreeH n ℍ)
-    (proposer : Sequence n (PMoves ℍ))
-    : Prop
-    := match n with
-       | .zero => SingleLastStepH da = Player.Proposer
-       | .succ _pn =>
-         match headSeq proposer with
-         | .Next proposed =>
-           SingleMidStep  ⟨ da.mtree , proposed ⟩ = Player.Proposer
-           ∧ elem_in_reveler_winning_condition
-              (match headSeq da.data.2 with
-                | .inl _ =>
-                       ⟨ ⟨ da.data.1 , tailSeq da.data.2⟩ , proposed.1⟩
-                | .inr _ =>
-                       ⟨ ⟨ da.data.1 , tailSeq da.data.2⟩ , proposed.2⟩
-                )
-               (tailSeq proposer)
-
 ----------------------------------------
 -- DA + Proposer Algebra?
 
-def da_coerce {α : Type}{n m : Nat}(eqN : n = m) (a : ElemInTreeH n α) : ElemInTreeH m α
-  := {data := ⟨a.data.1 , sequence_coerce eqN a.data.2 ⟩ , mtree := a.mtree}
+def da_coerce {α : Type}{n m : Nat}
+  (eqN : n = m) (a : ElemInTreeH n α) : ElemInTreeH m α
+  := { data := sequence_coerce eqN a.data
+     , mtree := a.mtree}
 
 def da_sum {ℍ : Type}{n m : Nat}
   (da_l : ElemInTreeH n ℍ)
   (da_r : ElemInTreeH m ℍ)
   -- (_eq_bounds : da_l.mtree = da_r.data.1)
   : ElemInTreeH (n + m) ℍ
-  := { data := ⟨ da_l.data.1 , concatSeq da_l.data.2 da_r.data.2 ⟩
-     , mtree := da_r.mtree}
+  := { data := concatSeq da_l.data da_r.data
+     , mtree := ⟨ da_l.mtree.1 , da_r.mtree.2⟩
+     }
 
 def da_split {ℍ : Type}{n : Nat}
   -- Cut
@@ -238,9 +292,9 @@ def da_split {ℍ : Type}{n : Nat}
   ( da : ElemInTreeH n ℍ )
   ( mid : ℍ )
   : ElemInTreeH m ℍ × ElemInTreeH (n - m) ℍ
-  := have ⟨ left , right ⟩ := splitSeq da.data.2 m mLtn
-  ⟨ {data := ⟨ da.data.1 , left ⟩ , mtree := mid }
-  , {data := ⟨ mid , right ⟩ , mtree := da.mtree } ⟩
+  := have ⟨ left , right ⟩ := splitSeq da.data m mLtn
+  ⟨ {data := left , mtree := ⟨ da.mtree.1 , mid ⟩}
+  , {data := right, mtree := ⟨ mid , da.mtree.2 ⟩ } ⟩
 
 def da_take {ℍ : Type}{n : Nat}
   -- Cut
@@ -266,7 +320,7 @@ lemma da_split_paste {ℍ : Type}{n : Nat}
     = da
   := by
   simp [da_split, da_coerce, da_sum]
-  have split_lemma := @split_seq_eq _ _ m mLtn da.data.2
+  have split_lemma := @split_seq_eq _ _ m mLtn da.data
   simp at split_lemma
   rw [<- split_lemma]
 ----------------------------------------
@@ -276,18 +330,20 @@ lemma da_split_paste {ℍ : Type}{n : Nat}
 -- Intermediary hashes with bounds
 -- to_mid_step [0] = mtree
 -- to_mid_step [last] = hash_botom
---
-def node_hashes { ℍ : Type }{n : Nat}
-    (da : ElemInTreeH n ℍ)
+-- This is the spine. We followed this approach the first time.
+-- In this case, we are not checking anything. Good Proposers may have their
+-- properties.
+def node_hashes_backward { ℍ : Type }{n : Nat}[HashMagma ℍ]
+    (bot_hash : ℍ)
+    (skl : Sequence n SkElem)
     (proposer : Sequence n (PMoves ℍ))
     : Sequence n.succ ℍ
-    := fun ⟨ m , mLt ⟩ =>
-    match HM : m with
-    | .zero => da.mtree -- good da when |n = 0|, da.data.1 = da.mtree
-    | .succ pm =>
-      match da.data.2 ⟨ pm , by omega⟩ , proposer ⟨ pm , by omega ⟩ with
-         | .inl _ , .Next proposed => proposed.1
-         | .inr _ , .Next proposed => proposed.2
+    := Fin.snoc
+      (seq_zip_with
+        (fun side pm => op_side side pm.left pm.right)
+        skl
+        proposer)
+      bot_hash
 
 def logarithmic_proposer_hashes {ℍ}{lgn : Nat}
     (da : ElemInTreeH (2^lgn.succ - 1 - 1) ℍ)
