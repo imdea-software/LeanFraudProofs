@@ -120,6 +120,11 @@ def seq_zip_with {α β ε : Type}{n : Nat}
 def replicate {α : Type}{n : Nat}(c : α) : Sequence n α
  := fun _ => c
 
+-- Reverse
+@[simp]
+def sequence_reverse {α : Type} {n : Nat} (seq : Sequence n α) : Sequence n α
+  := seq ∘ Fin.rev
+
 theorem Fin.snoc_head {α : Type}{ n : Nat }
    ( seq : Sequence n.succ α )(lt : α)
    : (@Fin.snoc n.succ (fun _ => α) seq lt) ⟨ 0 , by simp ⟩ = seq 0

@@ -73,6 +73,14 @@ def opHash {ℍ : Type}[m : HashMagma ℍ] (h : ℍ) (e : PathElem ℍ) : ℍ :=
 match e with
 | Sum.inl hl => m.comb hl h
 | Sum.inr hr => m.comb h hr
+--
+@[simp]
+def op_side {ℍ : Type}[mag : HashMagma ℍ](side : SkElem) (a b : ℍ) : ℍ
+  := match side with
+    | .inl _ => mag.comb a b
+    | .inr _ => mag.comb b a
+
+
 
 theorem opHash_neqRight {ℍ : Type}[ HashMagma ℍ][lHStr : SLawFulHash ℍ] {hl hr : ℍ} {pl pr : ℍ}
 : ¬ (hl = hr) -> ¬ opHash hl (Sum.inl pl) = opHash hr (Sum.inl pr)
