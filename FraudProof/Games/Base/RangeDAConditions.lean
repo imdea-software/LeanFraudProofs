@@ -14,7 +14,7 @@ def leaf_condition_range {ℍ : Type}[BEq ℍ]
 -- That means
 -- [a -> b]!n.succ ->
 --  P-> (c,d), [a -> c]!n and (c (+) d = b)
-def mid_condition_range_one_step_forward {ℍ : Type}[BEq ℍ][mag : HashMagma ℍ]
+def mid_condition_range_one_step_forward {ℍ : Type}[BEq ℍ][HashMagma ℍ]
   : Unit -- Arena conditions
   -> SkElem -- Extra proposed
   -> Range ℍ -- Current Data

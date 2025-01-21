@@ -8,10 +8,12 @@ import FraudProof.DataStructures.Value
 import FraudProof.Extras.BToMTree
 import FraudProof.Extras.List
 import FraudProof.Extras.Nat
+-- import FraudProof.Games.Base.RangeDAConditions
 import FraudProof.Games.Base.ElemInTree
 import FraudProof.Games.Base.FromBtoMTree
 import FraudProof.Games.Base.GenericTree
 import FraudProof.Games.Base.ValidBtoMTree
+import FraudProof.Games.Base.LogarithmicTransformation
 import FraudProof.Games.GameDef
 import FraudProof.Games.LinearGame
 import FraudProof.Games.LogGame

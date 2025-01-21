@@ -115,6 +115,13 @@ def seq_zip_with {α β ε : Type}{n : Nat}
                    (f (headSeq sl) (headSeq sr))
                    (seq_zip_with f (Fin.tail sl) (Fin.tail sr))
 
+@[simp]
+def seq_scanl {α β : Type}{n : Nat}
+  (f : α -> β -> α)
+  (b : α)
+  (seq : Sequence n β) : Sequence n.succ α
+  := sorry -- To be defined
+
 -- Replicate
 @[simp]
 def replicate {α : Type}{n : Nat}(c : α) : Sequence n α

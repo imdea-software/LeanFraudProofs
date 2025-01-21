@@ -181,3 +181,31 @@ def elem_in_tree_forward {ℍ : Type}[BEq ℍ][HashMagma ℍ]
                 {data := Fin.init da.data, mtree := ⟨ proposed.1 , da.mtree.2⟩}
                 (Fin.init proposer)
                 (Fin.init chooser)
+
+----
+-- * Winning conditions
+-- We did this on first poc.
+--
+-- Proposer wins all possible games.
+-- leaf and mid winning conditions
+-- @[simp]
+def elem_in_reveler_winning_condition_backward {ℍ : Type}
+    [BEq ℍ][HashMagma ℍ]
+    {n : Nat}
+    (da : ElemInTreeH n ℍ)
+    (proposer : Sequence n (PMoves ℍ))
+    : Prop
+    := match n with
+       | .zero => SingleLastStepH da = Player.Proposer
+       | .succ _pn =>
+         match headSeq proposer with
+         | .Next proposed =>
+           SingleMidStep  ⟨ da.mtree.2 , proposed ⟩ = Player.Proposer
+           ∧ elem_in_reveler_winning_condition_backward
+               { data := tailSeq da.data
+                , mtree := ⟨ da.mtree.1 , (match headSeq da.data with
+                                            | .inl _ => proposed.1
+                                            | .inr _ => proposed.2
+                                            )⟩
+               }
+               (tailSeq proposer)
