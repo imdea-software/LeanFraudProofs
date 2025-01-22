@@ -111,6 +111,24 @@ lemma ppGT {n : Nat} : 0 < 2 ^ n + 2 ^ n + (2 ^ n + 2 ^ n) - 1 - (2 ^ n + 2 ^ n 
 lemma eqPP {n : Nat} : 2 ^ (n + 1) + 2 ^ (n + 1) - 1 - (2 ^ (n + 1) - 1) = 2 ^ (n + 1) - 1 + 1
   := by have ps := @pow_geq_one n.succ; omega
 
+
+def half_split {α : Type}{n : Nat}(seq : Sequence (2*n) α)
+  : Sequence n α × Sequence n α
+  := (takeN n (by omega) seq
+  , sequence_coerce (by omega) $ dropN n (by omega) seq)
+
+def join_seq_tree {α : Type}{n : Nat}
+  (f : α -> α -> α)
+  (seq : Sequence (2*n) α)
+  : Sequence n α
+  := match n with
+    | .zero => nilSeq
+    | .succ n =>
+      Fin.cons (f (seq ⟨ 0 , by simp ⟩) (seq ⟨ 1 , by omega⟩))
+      $ join_seq_tree f (Fin.tail $ Fin.tail seq)
+
+
+
 def seqPerfectSplit {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α)
   : ( Sequence ((2^n) - 1) α × α × Sequence ((2^n) - 1) α)
   := have ( seql , hdseqr ) := splitSeq seq ((2^n) - 1) (by simp; omega)

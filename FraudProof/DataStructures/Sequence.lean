@@ -74,6 +74,21 @@ def lastSeq {α : Type}{n : Nat} (seq : Sequence n.succ α) : α
 @[simp]
 def lastSeq' {α : Type}{n m : Nat} (seq : Sequence n α)(ns : n = m + 1) : α
   := seq ⟨ m , by omega ⟩
+def lastSeq'' {α : Type}{n : Nat} (seq : Sequence n α)(notZ : 0 < n) : α
+  := seq ⟨ n - 1, by omega ⟩
+
+
+def zip_succ_int {α : Type}{n : Nat}
+  (h : α) (seq : Sequence n.succ α) : Sequence n.succ (α × α)
+  := match n with
+    | .zero => singleSeq $ ( h, headSeq seq )
+    | .succ _ =>
+      have hd := headSeq seq
+      Fin.cons (h, hd) $ zip_succ_int hd (Fin.tail seq)
+
+def zip_succ {α : Type}{n : Nat}
+  (seq : Sequence n.succ.succ α) : Sequence n.succ (α × α)
+  := zip_succ_int (headSeq seq) (Fin.tail seq)
 
 @[simp]
 def snocSeq {α : Type}{n : Nat}(a : α)(seq : Sequence n α) : Sequence n.succ α
@@ -91,6 +106,11 @@ def getI {α : Type}{n: Nat}(seq : Sequence n α)(i : Nat)(iLTn : i < n) : α
 @[simp]
 def tailSeq {α : Type}{n : Nat}: Sequence n.succ α -> Sequence n α
   := Fin.tail
+
+def tailSeq' {α : Type}{n : Nat}(s : Sequence n α) : Sequence n.pred α
+ := fun z => match z with
+             | .mk i iLT =>
+             s ⟨ i.succ , by simp; apply Nat.succ_lt_of_lt_pred; assumption ⟩
 
 @[simp]
 def desc_Seq {n : Nat}{α : Type} (seq : Sequence n.succ α) : α × Sequence n α
