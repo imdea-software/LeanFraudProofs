@@ -25,6 +25,21 @@ def leaf_condition_length_one {ℍ : Type}[BEq ℍ][HashMagma ℍ]
   := (fun side prop ⟨ src , dst ⟩
   => condWProp $ op_side side src prop == dst)
 
+-- Leaf Triangle approach
+-- When checking the triangle
+--     h_mid
+--   /      \
+--   a       b.
+--   We need two sides and hashes.
+--   + h_mid = op_side side1 a h1
+--   + b = op_sid side2 hmid h2
+def leaf_triangle {ℍ : Type}[BEq ℍ][HashMagma ℍ]
+  : (SkElem × SkElem) -> (ℍ × ℍ) -> Range ℍ -> Winner
+  := (fun sides hashes ⟨ src , dst ⟩
+  => have h_mid := op_side sides.1 src hashes.1
+    condWProp $ op_side sides.2 h_mid hashes.2 == dst
+    )
+
 def mid_condition_da_checking {ℍ : Type}[BEq ℍ]
   -- Arena conditions
   : Unit -> Unit
@@ -47,6 +62,7 @@ def mid_condition_da_checking {ℍ : Type}[BEq ℍ]
       )
 
 def tree_computation {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
+    -- DA provides last two sides.
     (da : CompTree SkElem Unit (Range ℍ))
     --
     (proposer : ABTree (Option ℍ)
@@ -60,6 +76,57 @@ def tree_computation {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
       leaf_condition_length_one
       mid_condition_da_checking
       da proposer chooser
+
+def tree_computation_triangle {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
+    -- DA provides last two sides.
+    (da : CompTree (SkElem × SkElem) Unit (Range ℍ))
+    --
+    (proposer : ABTree (Option (ℍ × ℍ))
+                       (Option (Unit × Range ℍ × Range ℍ)))
+    (chooser : ABTree Unit
+                      ((Range ℍ × Unit × Range ℍ × Range ℍ)
+                      -> Option ChooserMoves))
+    --
+    :=
+    treeCompArbGame
+      leaf_triangle
+      mid_condition_da_checking
+      da proposer chooser
+----------------------------------------
+--
+-- We want to stop at the last level. And we need an arena prepared for that.
+-- A la Haskell
+def merge_last_level {α β : Type}
+  (tree : ABTree α β)
+  : Option (ABTree (α × β × α) β)
+  := match tree with
+     | .leaf _ => .none
+     | .node b (.leaf a1) (.leaf a2) => .some $ .leaf ⟨ a1 , b , a2 ⟩
+     | .node b bl br =>
+       .node b <$> merge_last_level bl <*> merge_last_level br
+
+def sequence_to_merged_tree {α : Type}{lgn : Nat}
+    (seq : Sequence (2^lgn.succ.succ - 1) α)
+    : ABTree (α × α × α) α
+    := match lgn with
+      | .zero => .leaf ⟨ seq ⟨ 0 , by simp ⟩ , seq ⟨ 1 , by simp ⟩ , seq ⟨ 2 , by simp ⟩ ⟩
+      | .succ _plgn =>
+        have ⟨left, mid, right ⟩ := seqPerfectSplit seq
+        .node mid
+              (sequence_to_merged_tree left)
+              (sequence_to_merged_tree right)
+
+@[simp]
+def skeleton_to_merged_tree {lgn : Nat}
+  (skl : Sequence (2^lgn.succ.succ - 1) SkElem)
+  : ABTree (SkElem × SkElem × SkElem) SkElem
+  := sequence_to_merged_tree skl
+@[simp]
+def triangle_arena {lgn : Nat}
+  (skl : Sequence (2^lgn.succ.succ - 1) SkElem)
+  : ABTree (SkElem × SkElem) Unit
+  := ABTree.map (fun t => ⟨ t.1 , t.2.2 ⟩) (fun _ => ())
+  $ sequence_to_merged_tree skl
 
 ----------------------------------------
 -- Logarithmic Search Definitions
@@ -327,12 +394,13 @@ lemma da_split_paste {ℍ : Type}{n : Nat}
 
 ----------------------------------------
 -- * Alternative definition
--- Intermediary hashes with bounds
+-- Intermediary hashes with bounds (coming down from top)
 -- to_mid_step [0] = mtree
 -- to_mid_step [last] = hash_botom
 -- This is the spine. We followed this approach the first time.
 -- In this case, we are not checking anything. Good Proposers may have their
 -- properties.
+-- THIS IS WRONG! We are computing it!
 def node_hashes_backward { ℍ : Type }{n : Nat}[HashMagma ℍ]
     (bot_hash : ℍ)
     (skl : Sequence n SkElem)
@@ -345,21 +413,26 @@ def node_hashes_backward { ℍ : Type }{n : Nat}[HashMagma ℍ]
         proposer)
       bot_hash
 
-def logarithmic_proposer_hashes {ℍ}{lgn : Nat}
+def logarithmic_proposer_hashes {ℍ}{lgn : Nat}[HashMagma ℍ]
     (da : ElemInTreeH (2^lgn.succ - 1 - 1) ℍ)
     (proposer : Sequence (2^lgn.succ - 1 - 1) (PMoves ℍ))
     : Sequence (2^lgn.succ - 1) ℍ
-    := sequence_coerce (by simp; have pZ := @pow_gt_zero lgn; omega )
-    $ node_hashes da proposer
+    := sequence_coerce (by simp; have pZ := @pow_gt_zero lgn; omega)
+    $ sequence_reverse -- We need hash[0] = mtree.1, ... , hash[n] = mtree.2
+    $ node_hashes_backward da.mtree.1 da.data proposer
 
-
-def complete_tree_proposer {ℍ : Type}{lgn : Nat}
+-- Complete Tree Proposer
+-- + leftest leaf has da.mtree.1
+-- + rightest leaf has da.mtree.2 (computed)
+-- There are two lemmas down the file explictly saying this (using sequences).
+def complete_tree_proposer
+    {ℍ : Type}{lgn : Nat}[HashMagma ℍ]
     (da : ElemInTreeH (2^lgn.succ - 1 - 1) ℍ)
     (proposer : Sequence (2^lgn.succ - 1 - 1) (PMoves ℍ))
     : ABTree ℍ ℍ
     := perfectSeq $ logarithmic_proposer_hashes da proposer
 
-lemma complete_tree_decomp {ℍ : Type}{lgn : Nat}
+lemma complete_tree_decomp {ℍ : Type}{lgn : Nat}[HashMagma ℍ]
     -- At least two levels. One to use perfectSeq and another to put in mid.
     (da : ElemInTreeH (2^lgn.succ.succ - 1 - 1 ) ℍ)
     (proposer : Sequence (2^lgn.succ.succ -1 -1 ) (PMoves ℍ))
@@ -375,7 +448,7 @@ lemma complete_tree_decomp {ℍ : Type}{lgn : Nat}
       | zero =>
         intros da proposer
         simp at *
-        simp [complete_tree_proposer,logarithmic_proposer_hashes, node_hashes, perfectSeq]
+        simp [complete_tree_proposer,logarithmic_proposer_hashes, node_hashes_backward, perfectSeq]
       | succ pn HInd =>
         intros da proposer
         cases HSeqLeft : seqPerfectSplit (logarithmic_proposer_hashes da proposer) with
@@ -394,28 +467,20 @@ lemma complete_tree_decomp {ℍ : Type}{lgn : Nat}
 -- getters
 
 @[simp]
-def get_tree_distance {ℍ : Type} : ABTree (ℍ × Nat) (ℍ × Nat × ℍ × Nat × ℍ ) -> Nat
+def get_tree_distance {ℍ : Type}
+  : ABTree (ℍ × Nat) (ℍ × Nat × ℍ × Nat × ℍ ) -> Nat
   := ABTree.getI' (fun p => p.2) (fun p=> p.2.1 + p.2.2.2.1)
 
-def get_bot_hash {ℍ : Type} : ABTree (ℍ × Nat) (ℍ × Nat × ℍ × Nat × ℍ ) -> ℍ
- := ABTree.getI' (fun p => p.1) (fun p => p.1)
-def get_top_hash {ℍ : Type} : ABTree (ℍ × Nat) (ℍ × Nat × ℍ × Nat × ℍ ) -> ℍ
- := ABTree.getI' (fun p => p.1) (fun p => p.2.2.2.2)
+def get_bot_hash {ℍ : Type}
+  : ABTree (ℍ × Nat) (ℍ × Nat × ℍ × Nat × ℍ ) -> ℍ
+  := ABTree.getI' (fun p => p.1) (fun p => p.1)
+def get_top_hash {ℍ : Type}
+  : ABTree (ℍ × Nat) (ℍ × Nat × ℍ × Nat × ℍ ) -> ℍ
+  := ABTree.getI' (fun p => p.1) (fun p => p.2.2.2.2)
 
-def tree_distance {ℍ : Type} : ABTree ℍ ℍ -> ABTree (ℍ × Nat) (ℍ × Nat × ℍ × Nat × ℍ )
+def tree_distance {ℍ : Type}
+  : ABTree ℍ ℍ -> ABTree (ℍ × Nat) (ℍ × Nat × ℍ × Nat × ℍ )
   | .leaf b => .leaf ⟨ b, 0 ⟩
-  -- | .node h bl br =>
-  -- | .node h (.leaf l) (.leaf r) =>
-  --   .node ⟨ l , 1 , h , 1, r ⟩
-  --         (.leaf ⟨ l, 0 ⟩) (.leaf ⟨r , 0 ⟩)
-  -- | .node h (.leaf l) b =>
-  --   let b' := tree_distance b
-  --   .node ⟨ l , 1 , h , get_tree_distance b' , get_top_hash b'⟩
-  --         (.leaf ⟨ l , 0 ⟩) b'
-  -- | .node h b (.leaf r) =>
-  --   let b' := tree_distance b
-  --   .node ⟨ get_bot_hash b', get_tree_distance b' , h , 1, r ⟩
-  --         b' (.leaf ⟨ r , 0 ⟩)
   | .node h bl br =>
       let bl' := tree_distance bl
       let br' := tree_distance br
@@ -423,7 +488,7 @@ def tree_distance {ℍ : Type} : ABTree ℍ ℍ -> ABTree (ℍ × Nat) (ℍ × N
             , if get_tree_distance bl' = 0 then 1 else get_tree_distance bl'
             , h
             , if get_tree_distance br' = 0 then 1 else get_tree_distance br'
-            , get_bot_hash br'
+            , get_top_hash br'
             ⟩
         bl' br'
 
@@ -438,14 +503,20 @@ lemma get_bot_from_sequence {ℍ : Type}{lgn : Nat}
         | zero => simp [perfectSeq, tree_distance,get_bot_hash]
                   simp [ABTree.getI']
         | succ pnlgn HInd =>
-          -- have split_seq := concat_perfect_split seq_hashes
-          -- simp at split_seq
           simp [perfectSeq, get_bot_hash]
           simp [ABTree.getI']
           have seq_left_ind := HInd (seqPerfectSplit seq_hashes).1
           simp [tree_distance]
           rw [<- seq_left_ind]
           simp [seqPerfectSplit, splitSeq]
+
+lemma get_top_from_sequence {ℍ : Type}{lgn : Nat}
+  (seq_hashes : Sequence (2^lgn.succ - 1) ℍ)
+  : lastSeq'' seq_hashes (by have pZ := @pow_gt_zero lgn; omega)
+    = get_top_hash
+            (tree_distance
+              (perfectSeq seq_hashes))
+  := by sorry -- should be similar to the other one.
 
 def da_generator {ℍ : Type}
   (info : ℍ × Nat × ℍ × Nat × ℍ )
@@ -466,10 +537,10 @@ theorem forall_mid_step {ℍ : Type}
     [BEq ℍ][HashMagma ℍ] {n : Nat}
     (da : ElemInTreeH n ℍ)
     (proposer : Sequence n (PMoves ℍ))
-    (winning_cond : elem_in_reveler_winning_condition da proposer)
+    (winning_cond : elem_in_reveler_winning_condition_backward da proposer)
     :
     forall (i : Nat)(iNZ : 0 < i)(iLtn : i < n),
-        SingleMidStep ⟨ node_hashes da proposer ⟨ i , by omega ⟩
+        SingleMidStep ⟨ node_hashes_backward da.mtree.1 da.data proposer ⟨ i , by omega ⟩
                       , (proposer ⟨ i , iLtn ⟩).destruct
                       ⟩ = Player.Proposer
     := sorry
@@ -478,16 +549,19 @@ theorem last_hash_node_hashes {ℍ : Type}
     [BEq ℍ][HashMagma ℍ] {n : Nat}
     (da : ElemInTreeH n ℍ)
     (proposer : Sequence n (PMoves ℍ))
-    (winning_cond : elem_in_reveler_winning_condition da proposer)
-    : da.data.1 =  lastSeq (node_hashes da proposer)
+    -- We do not need winning_cond here
+    (winning_cond : elem_in_reveler_winning_condition_backward da proposer)
+    : da.mtree.1 =  lastSeq (node_hashes_backward da.mtree.1 da.data proposer)
     := sorry
 
 theorem first_hash_node_hashes {ℍ : Type}
     [BEq ℍ][HashMagma ℍ] {n : Nat}
     (da : ElemInTreeH n ℍ)
     (proposer : Sequence n (PMoves ℍ))
-    (winning_cond : elem_in_reveler_winning_condition da proposer)
-    : da.mtree = headSeq (node_hashes da proposer)
+    -- Here we need winning_cond that provides
+    -- |da.mtree.2| = |op_side side proposer 0.left proposer 0.right|
+    (winning_cond : elem_in_reveler_winning_condition_backward da proposer)
+    : da.mtree.2 = headSeq (node_hashes_backward da.mtree.1 da.data proposer)
     := sorry
 
 -- This are the winning conditions, I first proposed long time ago.
@@ -498,67 +572,45 @@ theorem winning_reveler_sum {ℍ : Type}
     [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ]
     {n m : Nat}
     -- Revelers
+    -- Left
     (da_l : ElemInTreeH n ℍ)(proposer_l : Sequence n (PMoves ℍ))
-    (good_left : elem_in_reveler_winning_condition da_l proposer_l)
+    (good_left : elem_in_reveler_winning_condition_backward da_l proposer_l)
+    -- Right
     (da_r : ElemInTreeH m ℍ)(proposer_r : Sequence m (PMoves ℍ))
-    (good_right : elem_in_reveler_winning_condition da_r proposer_r)
+    (good_right : elem_in_reveler_winning_condition_backward da_r proposer_r)
     -- Such that share a meeting point
-    (eq_mid : da_l.mtree = da_r.data.1)
-    : elem_in_reveler_winning_condition (da_sum da_l da_r)
-                                        (concatSeq proposer_l proposer_r)
-    := by unfold elem_in_reveler_winning_condition
-          revert m
-          intro m
-          induction m with
-          | zero =>
-            intros da_r proposer_r good_right eq_mid
-            simp
-            cases n with
-            | zero =>
-              simp [SingleLastStepH, condWProp,da_sum];
-              unfold elem_in_reveler_winning_condition at good_right
-              simp [SingleLastStepH, condWProp] at good_right
-              unfold elem_in_reveler_winning_condition at good_left
-              simp [SingleLastStepH, condWProp] at good_left;
-              rwa [good_left,eq_mid]
-            | succ pn =>
-              simp [da_sum]
-              unfold elem_in_reveler_winning_condition at good_left
-              cases H : headSeq proposer_l with
-              -- | none => rw [H] at good_left; simp at good_left
-              | Next proposed =>
-                rw [H] at good_left; simp at good_left
-                -- replace (.Next proposed) := proposed
-                simp at H; rw [H]; simp
-                sorry
-              | End a => contradiction
-          | succ pm HInd =>
-                 sorry
+    (eq_mid : da_l.mtree.2 = da_r.mtree.1)
+    : elem_in_reveler_winning_condition_backward
+          (da_sum da_l da_r)
+          (concatSeq proposer_l proposer_r)
+    := by sorry
+-- This one should be easy if we move to the forall realm. We did this already.
 
--- We can split das, but we need a ℍ to split it.
-def split_da {ℍ}{n : Nat}
-    (da : ElemInTreeH n ℍ)
-    (cut_h : ℍ)
-    (m : Nat)( mLtn : m ≤ n) -- 0 < n
-    : (ElemInTreeH m ℍ × ElemInTreeH (n - m) ℍ)
-    := let ⟨ left_skl , right_skl ⟩ := splitSeq da.data.2 m mLtn
-      ⟨ {data := ⟨ da.data.1 , left_skl⟩ , mtree := cut_h}
-      , {data := ⟨ cut_h , right_skl⟩ , mtree := da.mtree} ⟩
+-- -- We can split das, but we need a ℍ to split it.
+-- def split_da {ℍ}{n : Nat}
+--     (da : ElemInTreeH n ℍ)
+--     (cut_h : ℍ)
+--     (m : Nat)( mLtn : m ≤ n) -- 0 < n
+--     : (ElemInTreeH m ℍ × ElemInTreeH (n - m) ℍ)
+--     := let ⟨ left_skl , right_skl ⟩ := splitSeq da.data.2 m mLtn
+--       ⟨ {data := ⟨ da.data.1 , left_skl⟩ , mtree := cut_h}
+--       , {data := ⟨ cut_h , right_skl⟩ , mtree := da.mtree} ⟩
 
 -- General cuttings
-theorem split_da_concatSeq {ℍ}[BEq ℍ][HashMagma ℍ]{n : Nat}
+theorem split_da_concatSeq_left {ℍ}[BEq ℍ][HashMagma ℍ]{n : Nat}
   (da : ElemInTreeH n ℍ)
   (rev : Sequence n (PMoves ℍ))
   --
-  (lin_rev : elem_in_reveler_winning_condition da rev)
+  (lin_rev : elem_in_reveler_winning_condition_backward da rev)
   --
-  (cut : Nat)(cutLtn : cut < n)
-  : let .Next p := (rev ⟨ cut , by omega ⟩)
+  (cut : Nat)(cutLtn : cut ≤ n)
+  : let .Next p := (rev ⟨ cut , by sorry ⟩)
     let ⟨ da_left, _ ⟩ :=
-      split_da da (match da.data.2 ⟨ cut , by omega ⟩ with
+      da_split cut cutLtn da
+        (match da.data ⟨ cut , by sorry ⟩ with
          | .inl _ => p.1
-         | .inr _ => p.2) cut (by omega)
-    elem_in_reveler_winning_condition da_left (splitSeq rev cut (by omega)).1
+         | .inr _ => p.2)
+    elem_in_reveler_winning_condition_backward da_left (splitSeq rev cut (by omega)).1
   := sorry
 
 -- Perfect Splitting DAs  + Reveler + Winning conditions
@@ -566,32 +618,32 @@ theorem split_da_perfect_left {ℍ}[BEq ℍ][HashMagma ℍ]{lgn : Nat}
   (da : ElemInTreeH (2^lgn.succ - 1) ℍ)
   (rev : Sequence (2^lgn.succ - 1) (PMoves ℍ))
   -- Good rev
-  (lin_rev : elem_in_reveler_winning_condition da rev)
-  : let ⟨ left_skl, mid_skl, right_skl ⟩ := seqPerfectSplit da.data.2
+  (lin_rev : elem_in_reveler_winning_condition_backward da rev)
+  : let ⟨ left_skl, mid_skl, right_skl ⟩ := seqPerfectSplit da.data
     let ⟨ left_rev, mid_rev, right_rev ⟩ := seqPerfectSplit rev
     let ⟨ h_rev_l , h_rev_r ⟩ := mid_rev.destruct
     let top_hash := match mid_skl with
                           | .inl _ => h_rev_l
                           | .inr _ => h_rev_r
-    let da_left := {data := ⟨ da.data.1 , left_skl ⟩, mtree := top_hash}
-    elem_in_reveler_winning_condition da_left left_rev
+    let da_left := {data := left_skl , mtree := ⟨ da.mtree.1 ,top_hash ⟩}
+    elem_in_reveler_winning_condition_backward da_left left_rev
   := sorry
 
 theorem split_da_perfect_right {ℍ}[BEq ℍ][HashMagma ℍ]{lgn : Nat}
   (da : ElemInTreeH (2^lgn.succ - 1) ℍ)
   (rev : Sequence (2^lgn.succ - 1) (PMoves ℍ))
   -- Good rev
-  (lin_rev : elem_in_reveler_winning_condition da rev)
-  : let ⟨ left_skl, mid_skl, right_skl ⟩ := seqPerfectSplit da.data.2
+  (lin_rev : elem_in_reveler_winning_condition_backward da rev)
+  : let ⟨ left_skl, mid_skl, right_skl ⟩ := seqPerfectSplit da.data
     let ⟨ left_rev, mid_rev, right_rev ⟩ := seqPerfectSplit rev
     let ⟨ h_rev_l , h_rev_r ⟩ := mid_rev.destruct
     let bot_hash := match mid_skl with
                           | .inl _ => h_rev_l
                           | .inr _ => h_rev_r
     --
-    let da_right := { data  := ⟨ op_side mid_skl h_rev_l h_rev_r, right_skl ⟩
-                    , mtree := da.mtree}
-    elem_in_reveler_winning_condition da_right right_rev
+    let da_right := { data  := right_skl
+                    , mtree := ⟨ op_side mid_skl h_rev_l h_rev_r, da.mtree.2⟩}
+    elem_in_reveler_winning_condition_backward da_right right_rev
   := sorry
 ----------------------------------------
 
@@ -655,13 +707,13 @@ theorem linear_to_log_winning_proposer {ℍ : Type}
     (da : ElemInTreeH (2^lgn.succ - 1 - 1) ℍ) -- total path of 2^lgn.succ - 1
     -- Reveler
     (lin_reveler : Sequence (2^lgn.succ - 1 - 1) (PMoves ℍ))
-    (win_lin : elem_in_reveler_winning_condition da lin_reveler)
+    (win_lin : elem_in_reveler_winning_condition_backward da lin_reveler)
     : reveler_winning_condition
         leaf_condition_transformation
         mid_condition_transformation
         -- DA is just a tree generate of height lgn and
         -- boundaries [da.data.1, da.mtree]
-        (gen_tree lgn da.data.1 da.mtree)
+        (gen_tree lgn da.mtree.1 da.mtree.2)
         --
         ((tree_da_generator (complete_tree_proposer da lin_reveler)).map .some (fun p => .some ⟨ (), p⟩))
     := by
@@ -672,27 +724,20 @@ theorem linear_to_log_winning_proposer {ℍ : Type}
       intros da lin_rev HElem
       simp [complete_tree_proposer,perfectSeq,logarithmic_proposer_hashes, tree_da_generator]
       simp [tree_distance]
-      simp [node_hashes]
+      simp [node_hashes_backward]
       simp [gen_tree]
       simp [gen_empty_perfect_tree,reveler_winning_condition]
       simp [leaf_condition_transformation]
       simp [condWProp]
-      unfold elem_in_reveler_winning_condition at HElem
+      unfold elem_in_reveler_winning_condition_backward at HElem
       simp [SingleLastStepH,condWProp] at HElem
       constructor
       rw [HElem]
+      simp [Fin.snoc]
       assumption
     | succ plgn HInd =>
       intros da lin_rev HElem
-      -- cases plgn with
-      -- | zero =>
-      --   simp [complete_tree_proposer]
-      --   rw [complete_tree_decomp da lin_rev]
-      --   simp [tree_da_generator, logarithmic_proposer_hashes, node_hashes, tree_distance]
-
-
-      -- | succ pplgn => _
-      have prop_perfect := concat_perfect_split (@sequence_coerce _ _ (2^plgn.succ.succ - 1) (by simp; sorry) (node_hashes da lin_rev))
+      have prop_perfect := concat_perfect_split (@sequence_coerce _ _ (2^plgn.succ.succ - 1) (by simp; sorry) (node_hashes_backward da.mtree.1 da.data lin_rev))
       have compl_decomp := complete_tree_decomp da lin_rev
       simp at compl_decomp; rw [compl_decomp]
       simp [tree_da_generator, tree_distance]
@@ -704,6 +749,6 @@ theorem linear_to_log_winning_proposer {ℍ : Type}
       · apply And.intro
         · have elem_0 := last_hash_node_hashes da lin_rev HElem
           have bot_hash := get_bot_from_sequence (logarithmic_proposer_hashes da lin_rev)
-          _
-        · _
-      · _
+          sorry
+        · sorry
+      · sorry
