@@ -77,6 +77,7 @@ def tree_computation {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
       mid_condition_da_checking
       da proposer chooser
 
+-- Min path 2
 def tree_computation_triangle {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
     -- DA provides last two sides.
     (da : CompTree (SkElem × SkElem) Unit (Range ℍ))
@@ -121,6 +122,7 @@ def skeleton_to_merged_tree {lgn : Nat}
   (skl : Sequence (2^lgn.succ.succ - 1) SkElem)
   : ABTree (SkElem × SkElem × SkElem) SkElem
   := sequence_to_merged_tree skl
+
 @[simp]
 def triangle_arena {lgn : Nat}
   (skl : Sequence (2^lgn.succ.succ - 1) SkElem)

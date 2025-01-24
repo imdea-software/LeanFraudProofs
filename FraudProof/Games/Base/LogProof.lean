@@ -53,10 +53,16 @@ def gen_triangles {ℍ : Type}{n : Nat}{nNZ : 0 < n}
       $ Fin.snoc (tailSeq' spine) top_hash)
   seq_zip_with (fun (a,b) c => (a,b,c)) tupled_interval (extract_sibling_hashes skl hashes)
 
-def triangles_tree_to_range {ℍ : Type}
-  : ABTree (ℍ × ℍ × ℍ) (ℍ × ℍ × ℍ) -> ABTree ℍ (Range ℍ × Range ℍ)
-  | .leaf (_ , _ , sib) => .leaf sib
-  | .node (_ , mid, _ ) nleft nright => _
+def triangles_tree {ℍ : Type}{lgn : Nat}
+  (triag : Sequence (2^lgn) (ℍ × ℍ × ℍ) )
+  : ABTree (ℍ × ℍ × ℍ) (ℍ × ℍ × ℍ)
+  :=
+  consume_seq _
+  $ seqMap .leaf triag
+-- def triangles_tree_to_range {ℍ : Type}
+--   : ABTree (ℍ × ℍ × ℍ) (ℍ × ℍ × ℍ) -> ABTree ℍ (Range ℍ × Range ℍ)
+--   | .leaf (_ , _ , sib) => .leaf sib
+--   | .node (_ , mid, _ ) nleft nright => _
 
 -- def proposer_transformation {ℍ : Type}{lgn:Nat}
 --     (top_hash : ℍ)

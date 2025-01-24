@@ -127,6 +127,16 @@ def join_seq_tree {α : Type}{n : Nat}
       Fin.cons (f (seq ⟨ 0 , by simp ⟩) (seq ⟨ 1 , by omega⟩))
       $ join_seq_tree f (Fin.tail $ Fin.tail seq)
 
+def consume_seq {α : Type}{lgn : Nat}
+  (f : α -> α -> α)
+  (seq : Sequence (2^lgn) α)
+  : α
+  := match lgn with
+    | .zero => headSeq seq
+    | .succ plgn => consume_seq f
+      $ join_seq_tree f
+      $ @sequence_coerce _ _ (2 * 2^plgn)
+        (by simp; rw [Nat.pow_add]; simp;omega) seq
 
 
 def seqPerfectSplit {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α)
