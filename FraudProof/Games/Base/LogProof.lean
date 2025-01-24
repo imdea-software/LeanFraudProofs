@@ -53,23 +53,54 @@ def gen_triangles {ℍ : Type}{n : Nat}{nNZ : 0 < n}
       $ Fin.snoc (tailSeq' spine) top_hash)
   seq_zip_with (fun (a,b) c => (a,b,c)) tupled_interval (extract_sibling_hashes skl hashes)
 
+-- def comb_tree {α β: Type}(inj : α -> β) (f : β -> β -> β) (p q : ABTree α β) : ABTree α β
+--  := .node (f (ABTree.getI' inj id p) (ABTree.getI' inj id q)) p q
+
+def comb_tree_homogeneous {α: Type}(f : α -> α -> α) (p q : ABTree α α) : ABTree α α
+ := .node (f (ABTree.hget p) (ABTree.hget q)) p q
+
 def triangles_tree {ℍ : Type}{lgn : Nat}
   (triag : Sequence (2^lgn) (ℍ × ℍ × ℍ) )
   : ABTree (ℍ × ℍ × ℍ) (ℍ × ℍ × ℍ)
   :=
-  consume_seq _
-  $ seqMap .leaf triag
--- def triangles_tree_to_range {ℍ : Type}
---   : ABTree (ℍ × ℍ × ℍ) (ℍ × ℍ × ℍ) -> ABTree ℍ (Range ℍ × Range ℍ)
---   | .leaf (_ , _ , sib) => .leaf sib
---   | .node (_ , mid, _ ) nleft nright => _
+  consume_seq
+  (comb_tree_homogeneous
+    (fun l r => ( l.1  , r.2.1 , l.2.1 ))) -- l.2.1 = r.1 (it's the connection)
+  (seqMap .leaf triag)
 
--- def proposer_transformation {ℍ : Type}{lgn:Nat}
---     (top_hash : ℍ)
---     (skl : Sequence (2^lgn.succ - 2)  SkElem)
---     (hashes : Sequence (2^lgn.succ - 2) (ℍ × ℍ))
---     : ABTree ℍ ℍ
---     := have spine : Sequence (2^lgn.succ - 1) ℍ
---             := sequence_coerce (by simp; sorry )
---                $ Fin.snoc (extract_intermed_hashes skl hashes) top_hash
---     perfectSeq spine
+-- Now we can define two revelers, depending on the game.
+-- One that offers the /hidden/ hash, mid or sibling hash.
+def game_triangles_tree_single_hash {ℍ : Type}
+  (tree : ABTree (ℍ × ℍ × ℍ) (ℍ × ℍ × ℍ))
+  : ABTree ℍ ℍ
+  := ABTree.map (fun t => t.2.2) (fun t => t.2.2) tree
+
+def proposer_triangles_tree_single_hash {ℍ : Type} {lgn : Nat}
+  (skl : Sequence (2^lgn) SkElem)
+  (top_hash : ℍ)
+  (hashes : Sequence (2^lgn) (ℍ × ℍ))
+  : ABTree ℍ ℍ
+  := game_triangles_tree_single_hash
+    $ triangles_tree
+    $ @gen_triangles _ _ (by exact pow_gt_zero) skl top_hash hashes
+
+-- One that offers ranges and siblings at leaves.
+def game_triangles_tree {ℍ : Type}
+  (tree : ABTree (ℍ × ℍ × ℍ) (ℍ × ℍ × ℍ))
+  : ABTree ℍ (Range ℍ × Range ℍ)
+  := ABTree.map (fun t => t.2.2) (fun t => ((t.1, t.2.2) , (t.2.2, t.2.1))) tree
+
+--
+def proposer_triangles_tree {ℍ : Type} {lgn : Nat}
+  (skl : Sequence (2^lgn) SkElem)
+  (top_hash : ℍ)
+  (hashes : Sequence (2^lgn) (ℍ × ℍ))
+  : ABTree ℍ (Range ℍ × Range ℍ)
+  := game_triangles_tree
+    $ triangles_tree
+    $ @gen_triangles _ _ (by exact pow_gt_zero) skl top_hash hashes
+
+-- * Chooser
+-- Similar to proposer, but what's the chooser transformation.
+-- It is actually similar, no? We know what to do at each level.
+-- But how do we decide mid levels?
