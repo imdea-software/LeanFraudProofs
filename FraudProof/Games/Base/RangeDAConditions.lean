@@ -2,6 +2,10 @@ import FraudProof.Games.GameDef -- Players, Winner
 
 def Range (α : Type) := α × α
 
+-- Mech range union, without checking anything
+def range_union {α : Type} (l r : Range α) : Range α
+  := ( l.1 , r.2 )
+
 @[simp]
 def all_true (ls : List Bool) : Bool := ls.all id
 

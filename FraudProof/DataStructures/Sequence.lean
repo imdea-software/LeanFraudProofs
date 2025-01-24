@@ -90,6 +90,13 @@ def zip_succ {α : Type}{n : Nat}
   (seq : Sequence n.succ.succ α) : Sequence n.succ (α × α)
   := zip_succ_int (headSeq seq) (Fin.tail seq)
 
+-- Same as above but using indexes.
+def zip_succ' {α : Type}{n : Nat}
+  (seq : Sequence n.succ.succ α) : Sequence n.succ (α × α)
+  := fun i =>
+    match i with
+    | .mk i iLtns => ( seq ⟨ i , by omega ⟩ , seq ⟨ i.succ , by omega ⟩ )
+
 @[simp]
 def snocSeq {α : Type}{n : Nat}(a : α)(seq : Sequence n α) : Sequence n.succ α
   := fun ⟨ x , _xLT ⟩ => if H : x < n then seq ⟨ x , H ⟩ else a
