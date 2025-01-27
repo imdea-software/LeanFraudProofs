@@ -209,3 +209,47 @@ def elem_in_reveler_winning_condition_backward {ℍ : Type}
                                             )⟩
                }
                (tailSeq proposer)
+
+-- lemma elem_forall {ℍ : Type}
+--     [BEq ℍ][HashMagma ℍ]
+--     {n : Nat}
+--     (da : ElemInTreeH n ℍ)
+--     (proposer : Sequence n (PMoves ℍ))
+--     (hP : elem_in_reveler_winning_condition_backward da proposer)
+--     : forall (i : Nat)(iLt : i < n - 1), spine[n] = op_side da[n.succ] spine[n.succ] siblings[n.succ]
+
+
+-- Winning proposer prop is a winning sufficient condition.
+theorem winning_reveler_wins {ℍ : Type}
+    [BEq ℍ][HashMagma ℍ]
+    {n : Nat}
+    (da : ElemInTreeH n ℍ)
+    (proposer : Sequence n (PMoves ℍ))
+    (winning_prop : elem_in_reveler_winning_condition_backward da proposer)
+    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+    : elem_in_tree_backward da (seqMap .some proposer) chooser = Player.Proposer
+    := by revert n
+          intro n
+          induction n with
+          | zero =>
+            intros da prop Hwin cho
+            simp [elem_in_tree_backward]
+            simp [elem_in_reveler_winning_condition_backward] at Hwin
+            assumption
+          | succ pn HInd =>
+            intros da prop Hwin cho
+            simp [elem_in_tree_backward]
+            simp [elem_in_reveler_winning_condition_backward] at Hwin
+            cases HP : prop 0 with
+            | End v => contradiction
+            | Next p =>
+              simp; rw [HP] at Hwin; simp at Hwin
+              cases HC : cho 0 (da.mtree.2, p) with
+              | none => simp
+              | some chod =>
+                cases chod with
+                | Now => simp; exact Hwin.1
+                | Continue _ =>
+                  simp
+                  apply HInd
+                  exact Hwin.2

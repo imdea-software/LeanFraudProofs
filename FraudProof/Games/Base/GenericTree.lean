@@ -42,6 +42,52 @@ structure CompTree (α β γ : Type) where
 
 ----------------------------------------
 -- * Game Mechanics
+
+def simp_tree {α α' β β' γ : Type}
+    -- Game Mechanics
+    -- Next goals function: how from current goal and information provided the
+    -- reveler, generates next goals. Do we need to take β' (arena info) into
+    -- account?
+    (splitter : γ -> β -> γ × γ)
+    -- Conditions
+    (leafCondition : α' -> α -> γ -> Winner)
+    (midCondition  : β' -> β -> γ -> Winner)
+    -- Public Information
+    (da : CompTree α' β' γ)
+    -- Da is a game arena (ABTree α' β') and some result of type γ
+    -- Players
+    (reveler : ABTree (Option α) (Option β))
+    (chooser : ABTree Unit (γ -> β -> Option ChooserMoves))
+ := match da.data, reveler with
+    | .leaf h, .leaf (some a) => leafCondition h a da.res
+    | .node ib bl br , .node (some proposition) nextProposerLeft nextProposerRight =>
+      match chooser with
+      | .node cfun nextChooserLeft nextChooserRight =>
+        match cfun da.res proposition with
+        -- Chooser -> challenge hashes now.
+        | some .Now =>
+          midCondition ib proposition da.res
+        -- Chooser chooses to go left.
+        | some (.Continue .Left) =>
+          simp_tree splitter leafCondition midCondition
+          -- next da
+          ⟨ bl , (splitter da.res proposition).1 ⟩
+          --
+          nextProposerLeft nextChooserLeft
+        -- Chooser chooses to go right.
+        | some (.Continue .Right) =>
+          simp_tree splitter leafCondition midCondition
+          -- next da
+            ⟨ br , (splitter da.res proposition).2 ⟩
+          --
+            nextProposerRight nextChooserRight
+        -- No moves
+        | none => Player.Proposer
+      -- Chooser does not follows computation tree.
+      | _ => Player.Proposer
+    -- If reveler does not follow the compuetation tree, it loses.
+    | _ , _ => Player.Chooser
+
 -- Generic game focusing on |da : CompTree|
 -- Here the arena is |ABTree|
 def treeCompArbGame {α α' β β' γ : Type}
@@ -71,6 +117,47 @@ def treeCompArbGame {α α' β β' γ : Type}
         -- Chooser chooses to go right.
         | some (.Continue .Right) =>
           treeCompArbGame leafCondition midCondition ⟨ br , proposition.2.2 ⟩ nextProposerRight nextChooserRight
+        -- No moves
+        | none => Player.Proposer
+      -- Chooser does not follows computation tree.
+      | _ => Player.Proposer
+    -- If reveler does not follow the compuetation tree, it loses.
+    | _ , _ => Player.Chooser
+
+-- Splitter Tree Game
+-- This is a similar game, but here we can split da.res following a function.
+-- res := [a,c], revelear can just revel something |b| and the game continues
+-- |[a,b] or [b,c]|
+def splitter_tree_game {α α' β β' γ γ' : Type}
+    -- splitte
+    (splitter : γ -> γ' -> (γ × γ))
+    -- Game Mechanics
+    (leafCondition : α' -> α -> γ -> Winner)
+    (midCondition  : β' -> β -> γ -> γ -> γ -> Winner)
+    -- Public Information
+    (da : CompTree α' β' γ)
+    -- Players
+    (reveler : ABTree (Option α) (Option (β × γ')))
+    (chooser : ABTree Unit ((γ × β × γ × γ) -> Option ChooserMoves))
+    --
+    : Winner :=
+    -- Reveler plays first
+    match da.data, reveler with
+    | .leaf h, .leaf (some a) => leafCondition h a da.res
+    | .node ib bl br , .node (some proposition) nextProposerLeft nextProposerRight =>
+      match chooser with
+      | .node cfun nextChooserLeft nextChooserRight =>
+        have sp := splitter da.res proposition.2
+        match cfun ⟨ da.res , ( proposition.1 , sp ) ⟩ with
+        -- Chooser -> challenge hashes now.
+        | some .Now =>
+          midCondition ib proposition.1 da.res sp.1 sp.2
+        -- Chooser chooses to go left.
+        | some (.Continue .Left) =>
+          splitter_tree_game splitter leafCondition midCondition ⟨ bl , sp.1 ⟩ nextProposerLeft nextChooserLeft
+        -- Chooser chooses to go right.
+        | some (.Continue .Right) =>
+          splitter_tree_game splitter leafCondition midCondition ⟨ br , sp.2 ⟩ nextProposerRight nextChooserRight
         -- No moves
         | none => Player.Proposer
       -- Chooser does not follows computation tree.

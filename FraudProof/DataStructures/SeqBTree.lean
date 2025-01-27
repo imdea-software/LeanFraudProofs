@@ -138,6 +138,12 @@ def consume_seq {α : Type}{lgn : Nat}
       $ @sequence_coerce _ _ (2 * 2^plgn)
         (by simp; rw [Nat.pow_add]; simp;omega) seq
 
+-- lemma consume_tree_height {α β: Type}{lgn : Nat}
+--       (seq : Sequence (2^lgn) (ABTree α β))
+--       (topH : Nat)
+--       (sameH : forall (i : Nat)(iLT : i < (2^lgn)), (seq ⟨ i , iLT⟩).height = topH  )
+--       : (consume_seq .node seq).height = lgn
+--       := _
 
 def seqPerfectSplit {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α)
   : ( Sequence ((2^n) - 1) α × α × Sequence ((2^n) - 1) α)

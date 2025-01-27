@@ -15,6 +15,19 @@ def skeleton_arena {lgn : Nat}
   := ABTree.map id (fun _ => ())
   $ perfectSeq skl
 
+def comb_tree_heterogeneous {α β: Type}(lf : α -> β) (f : β -> β -> β) (p q : ABTree α β) : ABTree α β
+ := .node (f (ABTree.getI' lf id p) (ABTree.getI' lf id q)) p q
+
+def comb_tree_homogeneous {α: Type}(f : α -> α -> α) (p q : ABTree α α) : ABTree α α
+ := .node (f (ABTree.hget p) (ABTree.hget q)) p q
+
+-- Log game
+def game_arena {lgn : Nat}
+  (skl : Sequence (2^lgn) SkElem)
+  : ABTree SkElem Unit
+  := consume_seq (comb_tree_heterogeneous (fun _ => ()) (fun _ _ => ()))
+   $ seqMap .leaf skl
+
 -- One follows side
 def get_spine {α : Type} (side : SkElem)( e : α × α ) : α
   := match side with
@@ -27,11 +40,13 @@ def get_sibling {α : Type} (side : SkElem)( e : α × α ) : α
      | .inr _ => e.1
 
 -- Extracting from proposer
+@[simp]
 def extract_intermed_hashes {ℍ : Type}{n : Nat}
   (skl : Sequence n SkElem) (prop : Sequence n (ℍ × ℍ))
   : Sequence n ℍ
   := seq_zip_with get_spine skl prop
 
+@[simp]
 def extract_sibling_hashes {ℍ : Type}{n : Nat}
   (skl : Sequence n SkElem) (prop : Sequence n (ℍ × ℍ))
   : Sequence n ℍ
@@ -55,9 +70,6 @@ def gen_triangles {ℍ : Type}{n : Nat}{nNZ : 0 < n}
 
 -- def comb_tree {α β: Type}(inj : α -> β) (f : β -> β -> β) (p q : ABTree α β) : ABTree α β
 --  := .node (f (ABTree.getI' inj id p) (ABTree.getI' inj id q)) p q
-
-def comb_tree_homogeneous {α: Type}(f : α -> α -> α) (p q : ABTree α α) : ABTree α α
- := .node (f (ABTree.hget p) (ABTree.hget q)) p q
 
 def triangles_tree {ℍ : Type}{lgn : Nat}
   (triag : Sequence (2^lgn) (ℍ × ℍ × ℍ) )
@@ -99,6 +111,43 @@ def proposer_triangles_tree {ℍ : Type} {lgn : Nat}
   := game_triangles_tree
     $ triangles_tree
     $ @gen_triangles _ _ (by exact pow_gt_zero) skl top_hash hashes
+
+theorem proposer_winning {ℍ : Type} {lgn : Nat}
+       [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
+       (da : ElemInTreeH (2^lgn) ℍ)
+       (proposer : Sequence (2^lgn) (ℍ × ℍ))
+       (wProp : elem_in_reveler_winning_condition_backward da (seqMap (.Next) proposer))
+       (chooser : ABTree Unit
+                      ((Range ℍ × Unit × Range ℍ × Range ℍ)
+                      -> Option ChooserMoves))
+       : tree_computation ({data := game_arena da.data , res := da.mtree})
+         (ABTree.map .some (fun p => .some ((), p) ) (proposer_triangles_tree da.data da.mtree.2 proposer))
+         chooser = Player.Proposer
+        := by revert lgn
+              intro lgn
+              induction lgn with
+              | zero =>
+                intros da proposer wProp
+                simp [tree_computation, proposer_triangles_tree, gen_triangles, extract_intermed_hashes,get_spine,extract_sibling_hashes]
+                simp [get_sibling, triangles_tree, comb_tree_homogeneous,consume_seq]
+                simp [game_triangles_tree, game_arena, consume_seq, treeCompArbGame]
+                simp [leaf_condition_length_one, condWProp]
+                simp [elem_in_reveler_winning_condition_backward] at wProp
+                have ⟨ mid, lastH ⟩ := wProp
+                simp [SingleLastStepH] at lastH
+                simp [SingleMidStep] at mid
+                simp [condWProp] at *
+                rw [<- mid]
+                cases HC : da.data 0
+                all_goals {
+                  rw [HC] at lastH; simp at *; rw [lastH]
+                }
+              | succ plgn HInd =>
+                intros da proposer wProp
+                simp [proposer_triangles_tree,tree_computation,game_triangles_tree, triangles_tree, consume_seq,treeCompArbGame]
+                simp [gen_triangles]
+                -- simp [seq_zip_with]
+
 
 -- * Chooser
 -- Similar to proposer, but what's the chooser transformation.
