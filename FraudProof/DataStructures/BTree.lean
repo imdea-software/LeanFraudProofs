@@ -21,6 +21,9 @@ def ABTree.sizeI {α β : Type} (sa : α -> Nat)(sb : β -> Nat) : ABTree α β 
 def ABTree.size {α β : Type} : ABTree α β -> Nat := ABTree.sizeI (fun _ => 1) (fun _ => 1)
   -- | .leaf _ => 1
   -- | .node _ bl br => 1 + bl.size + br.size
+  --
+@[simp]
+def ABTree.height {α β : Type} : ABTree α β -> Nat := ABTree.sizeI (fun _ => 0) (fun _ => 1)
 
 abbrev ABTreeSkeleton := ABTree Unit Unit
 
