@@ -93,6 +93,25 @@ def tree_computation_triangle {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
       leaf_triangle
       mid_condition_da_checking
       da proposer chooser
+
+-- Simple game using splitter.
+def spl_game {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
+    -- DA provides last two sides.
+    (da : CompTree SkElem Unit (Range ℍ))
+    --
+    (proposer : ABTree (Option ℍ) (Option ℍ))
+    (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
+    --
+    : Winner
+    :=
+    simp_tree
+      -- Splitting range into two ranges
+      (fun (a,b) c => ((a,c),(c,b)))
+      leaf_condition_length_one
+      -- Chooser won't challenge these. Game is played until reaching a leaf.
+      (fun _ _ _ => Player.Proposer)
+      da proposer chooser
+
 ----------------------------------------
 --
 -- We want to stop at the last level. And we need an arena prepared for that.

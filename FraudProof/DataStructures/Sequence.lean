@@ -11,6 +11,10 @@ import Mathlib.Data.List.FinRange
 abbrev Sequence (n : Nat) (α : Type) := Fin n -> α
 
 @[simp]
+def seq_constant {α : Type} {n : Nat}(a : α) : Sequence n α
+ := fun _ => a
+
+@[simp]
 def polyLenSeqEq {α : Type}[BEq α]{n m : Nat}(p : Sequence n α)(q : Sequence m α) : Bool
   := match n , m with
      | .zero , .zero => true

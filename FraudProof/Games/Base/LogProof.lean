@@ -149,6 +149,23 @@ theorem proposer_winning {ℍ : Type} {lgn : Nat}
                 -- simp [seq_zip_with]
 
 
+-- * Arena
+def built_up_arena {n : Nat}
+   : Sequence (2^n) SkElem -> ABTree SkElem Unit
+   := gen_info_perfect_tree (seq_constant ())
+
+def forward_proposer_to_tree {α : Type}{ n : Nat}
+    (sides : Sequence (2^n) SkElem)
+    (prop : Sequence (2^n) (α × α) )
+    : ABTree α α
+    := gen_info_perfect_tree
+       -- nodes
+       ( Fin.init -- Drop last hash (in this case is hash of the element [forward])
+       $ sequence_coerce (by have pg := @pow_gt_zero n; omega) -- 2^n - 1 + 1 = 2^n [lengt computation]
+       $ extract_intermed_hashes sides prop -- Spine hashes)
+       -- leaves
+       (extract_sibling_hashes sides prop)
+
 -- * Chooser
 -- Similar to proposer, but what's the chooser transformation.
 -- It is actually similar, no? We know what to do at each level.
