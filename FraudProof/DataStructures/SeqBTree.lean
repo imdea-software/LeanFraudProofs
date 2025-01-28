@@ -117,6 +117,12 @@ def half_split {α : Type}{n : Nat}(seq : Sequence (2*n) α)
   := (takeN n (by omega) seq
   , sequence_coerce (by omega) $ dropN n (by omega) seq)
 
+def half_split_pow {α : Type}{n : Nat}(seq : Sequence (2^n.succ) α)
+  : Sequence (2^n) α × Sequence (2^n) α
+  := (takeN (2^n) (by have pg := @pow_gt_zero n; omega) seq
+  , sequence_coerce (by have pg := @pow_gt_zero n;omega)
+  $ dropN (2^n) (by have pg := @pow_gt_zero n;omega) seq)
+
 def join_seq_tree {α : Type}{n : Nat}
   (f : α -> α -> α)
   (seq : Sequence (2*n) α)
@@ -226,6 +232,19 @@ theorem seq_tree_seq {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
 def gen_empty_perfect_tree : Nat -> ABTree Unit Unit
   | .zero => .leaf ()
   | .succ pn => .node () (gen_empty_perfect_tree pn) (gen_empty_perfect_tree pn)
+
+def gen_info_perfect_tree {α β : Type}{h : Nat}
+  (nodes : Sequence (2^h - 1) β)
+  (leaves : Sequence (2^h) α)
+  : ABTree α β
+  := match h with
+    | .zero => .leaf $ headSeq leaves
+    | .succ _ =>
+     have (ll , lr) := half_split_pow leaves
+     have (ln , m, rn) := seqPerfectSplit nodes
+     .node m
+     (gen_info_perfect_tree ln ll)
+     (gen_info_perfect_tree rn lr)
 
 lemma gen_empty_size {n : Nat}
   : (gen_empty_perfect_tree n).size = 2^n.succ - 1
