@@ -202,7 +202,7 @@ theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
 
        apply And.intro
        ·
-         have mid_h : ℍ := (seqPerfectSplit ( Fin.init $ @sequence_coerce _ _ ((2^pnlgn.succ) - 1 + 1) sorry ( seq_zip_with get_spine da.data proposer))).2.1
+         have mid_h : ℍ := (seqPerfectSplit ( Fin.init $ @sequence_coerce _ _ ((2^pnlgn.succ) - 1 + 1) (by simp; sorry) ( seq_zip_with get_spine da.data proposer))).2.1
          have hind := HInd
           ⟨ (half_split_pow da.data).1
           , (da.mtree.1, mid_h )⟩
@@ -210,6 +210,8 @@ theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
          simp at hind
          unfold built_up_arena at hind
          unfold forward_proposer_to_tree at hind
+         unfold extract_sibling_hashes at hind
+
          simp [seqPerfectSplit,splitSeq]
          -- almost there
          -- exact hind
