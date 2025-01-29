@@ -58,6 +58,7 @@ def simp_tree {α α' β β' γ : Type}
     -- Players
     (reveler : ABTree (Option α) (Option β))
     (chooser : ABTree Unit (γ -> β -> Option ChooserMoves))
+    : Winner
  := match da.data, reveler with
     | .leaf h, .leaf (some a) => leafCondition h a da.res
     | .node ib bl br , .node (some proposition) nextProposerLeft nextProposerRight =>
@@ -87,6 +88,86 @@ def simp_tree {α α' β β' γ : Type}
       | _ => Player.Proposer
     -- If reveler does not follow the compuetation tree, it loses.
     | _ , _ => Player.Chooser
+
+-- Reveler winning_condition is just always winning if challenged
+def reveler_winning_condition_simp_game {α α' β β' γ : Type}
+    (splitter : γ -> β -> γ × γ)
+    -- Game Mechanics
+    (leafCondition : α' -> α -> γ -> Winner)
+    (midCondition  : β' -> β -> γ -> Winner)
+    -- Public Information
+    (da : CompTree α' β' γ)
+    -- Players
+    (reveler : ABTree (Option α) (Option β))
+  : Prop :=
+  match da.data , reveler with
+  | .node b bl br , .node (.some proposed) left_reveler right_reveler =>
+    -- If challenged, proposer wins
+    midCondition b proposed da.res = Player.Proposer
+    -- Same for each branch
+    ∧ reveler_winning_condition_simp_game splitter
+       leafCondition midCondition
+       {data := bl, res:= (splitter da.res proposed).1}
+       left_reveler
+    ∧ reveler_winning_condition_simp_game splitter
+       leafCondition midCondition
+       {data := br, res:= (splitter da.res proposed).2}
+       right_reveler
+   | .leaf a, .leaf (.some a') =>
+     leafCondition a a' da.res = Player.Proposer
+   | _ , _ => False
+
+theorem simp_game_reveler_wins {α α' β β' γ : Type}
+    (splitter : γ -> β -> γ × γ)
+    (leafCondition : α' -> α -> γ -> Winner)
+    (midCondition  : β' -> β -> γ -> Winner)
+    (da : CompTree α' β' γ)
+    (reveler : ABTree (Option α) (Option β))
+    (wProp : reveler_winning_condition_simp_game splitter leafCondition midCondition da reveler)
+    (chooser : ABTree Unit (γ -> β -> Option ChooserMoves))
+    : simp_tree splitter leafCondition midCondition da reveler chooser = Player.Proposer
+    := by
+     revert da reveler chooser; intro da
+     -- unfold reveler_winning_condition_simp_game
+     -- unfold simp_tree
+     have ⟨ arena , res ⟩ := da
+     revert res
+     induction arena with
+     | leaf v =>
+       intros res reveler wProp chooser
+       cases HR : reveler with
+       | node i _ _ =>
+         unfold reveler_winning_condition_simp_game at wProp
+         rw [HR] at wProp
+         simp at wProp
+       | leaf p =>
+         cases HP : p with
+         | none => rw [HP] at HR; rw [HR] at wProp; simp [reveler_winning_condition_simp_game] at wProp
+         | some ped => simp [simp_tree]; rw [HP] at HR; rw [HR] at wProp; simp [reveler_winning_condition_simp_game] at wProp; assumption
+     | node b bl br HL HR =>
+       intro res reveler wProp chooser
+       cases HRev : reveler with
+       | leaf _ => clear HL HR; rw [HRev] at wProp; simp [reveler_winning_condition_simp_game] at wProp
+       | node ped pl pr =>
+         cases HPed : ped with
+         | none => rw [HPed] at HRev; rw [HRev] at wProp; simp [reveler_winning_condition_simp_game] at wProp
+         | some proposed =>
+           rw [HPed] at HRev; rw [HRev] at wProp; simp [reveler_winning_condition_simp_game] at wProp
+           simp [simp_tree]
+           cases HCho : chooser with
+           | leaf _ => simp
+           | node cf cl cr =>
+             simp
+             cases HCed : cf res proposed with
+             | none => simp
+             | some ced =>
+               cases HCee : ced with
+               | Now => simp; exact wProp.1
+               | Continue s =>
+                 cases HSide : s with
+                 | Left => simp; apply HL; exact wProp.2.1
+                 | Right =>simp; apply HR; exact wProp.2.2
+
 
 -- Generic game focusing on |da : CompTree|
 -- Here the arena is |ABTree|
@@ -204,7 +285,6 @@ theorem winning_proposer_wins {α α' β β' γ : Type}
     : forall (chooser : ABTree Unit ((γ × β × γ × γ) -> Option ChooserMoves)),
       treeCompArbGame leafCondition midCondition da reveler chooser = Player.Proposer
     := sorry
-
 
 
 -- Another generid tree, more focused on logarithmic games.

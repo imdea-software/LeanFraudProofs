@@ -112,6 +112,16 @@ def spl_game {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
       (fun _ _ _ => Player.Proposer)
       da proposer chooser
 
+-- def reveler_spl_winning_condition {ℍ : Type}
+--     [BEq ℍ][m : HashMagma ℍ]
+--     -- DA provides last two sides.
+--     (da : CompTree SkElem Unit (Range ℍ))
+--     --
+--     (proposer : ABTree (Option ℍ) (Option ℍ))
+--     --
+--     : Prop
+--     :=
+
 ----------------------------------------
 --
 -- We want to stop at the last level. And we need an arena prepared for that.
