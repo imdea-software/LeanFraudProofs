@@ -135,6 +135,13 @@ def seqMap {α β : Type} {n : Nat} (f : α -> β) ( seq : Sequence n α ) : Seq
      | .succ _pn => Fin.cons (f $ headSeq seq) (seqMap f (Fin.tail seq))
 
 @[simp]
+def seq_zip_with' {α β ε : Type}{n : Nat}
+    (f : α -> β -> ε)
+    (sl : Sequence n α)
+    (sr : Sequence n β)
+    : Sequence n ε
+    := fun i => f (sl i) (sr i)
+@[simp]
 def seq_zip_with {α β ε : Type}{n : Nat}
     (f : α -> β -> ε)
     (sl : Sequence n α)
