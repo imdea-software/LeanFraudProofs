@@ -199,11 +199,20 @@ theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
        intros da proposer wProp
        simp [forward_proposer_to_tree, built_up_arena, gen_info_perfect_tree]
        simp [reveler_winning_condition_simp_game]
+
        apply And.intro
-       · have hind := HInd
+       ·
+         have mid_h : ℍ := (seqPerfectSplit ( Fin.init $ @sequence_coerce _ _ ((2^pnlgn.succ) - 1 + 1) sorry ( seq_zip_with get_spine da.data proposer))).2.1
+         have hind := HInd
           ⟨ (half_split_pow da.data).1
-          , (da.2.1, _)⟩
-          _ _
+          , (da.mtree.1, mid_h )⟩
+          (half_split_pow proposer).1 sorry
+         simp at hind
+         unfold built_up_arena at hind
+         unfold forward_proposer_to_tree at hind
+         simp [seqPerfectSplit,splitSeq]
+         -- almost there
+         -- exact hind
        sorry -- Todo split winning conditions and follow induction
        ·  sorry
 
