@@ -162,9 +162,74 @@ def forward_proposer_to_tree {α : Type}{ n : Nat}
        -- nodes
        ( Fin.init -- Drop last hash (in this case is hash of the element [forward])
        $ sequence_coerce (by have pg := @pow_gt_zero n; omega) -- 2^n - 1 + 1 = 2^n [lengt computation]
-       $ extract_intermed_hashes sides prop -- Spine hashes)
+       $ extract_intermed_hashes sides prop) -- Spine hashes)
        -- leaves
        (extract_sibling_hashes sides prop)
+
+theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
+       [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
+       (da : ElemInTreeH (2^lgn) ℍ)
+       (proposer : Sequence (2^lgn) (ℍ × ℍ))
+       (wProp : elem_in_reveler_winning_condition_backward da (seqMap (.Next) proposer))
+       (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
+       : spl_game
+         ({data := built_up_arena da.data , res := da.mtree})
+         ( ABTree.map .some .some $ forward_proposer_to_tree da.data proposer)
+         chooser
+         = Player.Proposer
+       := by
+       apply simp_game_reveler_wins
+       revert lgn; intro lgn
+       induction lgn with
+       | zero =>
+   intros da proposer wProp
+   unfold reveler_winning_condition_simp_game
+   simp [built_up_arena,gen_info_perfect_tree,get_sibling]
+   simp [forward_proposer_to_tree]
+   simp [gen_info_perfect_tree]
+   simp [leaf_condition_length_one, get_sibling]
+   simp [elem_in_reveler_winning_condition_backward] at wProp
+   have ⟨ midH , singH ⟩ := wProp
+   unfold SingleLastStepH at singH
+   unfold SingleMidStep at midH
+   simp [condWProp] at *
+   cases HC : da.data 0
+   all_goals { rw [HC] at singH; simp at *; rw [singH]; assumption }
+       | succ pnlgn HInd =>
+       intros da proposer wProp
+       simp [forward_proposer_to_tree, built_up_arena, gen_info_perfect_tree]
+       simp [reveler_winning_condition_simp_game]
+       apply And.intro
+       · have hind := HInd
+          ⟨ (half_split_pow da.data).1
+          , (da.2.1, _)⟩
+          _ _
+       sorry -- Todo split winning conditions and follow induction
+       ·  sorry
+
+
+
+
+
+
+by
+ revert lgn; intro lgn
+ induction lgn with
+ -- Base cases are the legit challenges.
+ | zero =>
+   intros da proposer wProp
+   simp [spl_game, forward_proposer_to_tree]
+   simp [built_up_arena,gen_info_perfect_tree,get_sibling]
+   simp [simp_tree, leaf_condition_length_one]
+   simp [elem_in_reveler_winning_condition_backward] at wProp
+   have ⟨ midH , singH ⟩ := wProp
+   unfold SingleLastStepH at singH
+   unfold SingleMidStep at midH
+   simp [condWProp] at *
+   cases HC : da.data 0
+   all_goals { rw [HC] at singH; simp at *; rw [singH]; assumption }
+ -- Intermediary steps are just challenge logic
+ | succ pdlgn HInd => _
 
 -- * Chooser
 -- Similar to proposer, but what's the chooser transformation.
