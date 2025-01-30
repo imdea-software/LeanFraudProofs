@@ -259,6 +259,12 @@ without knowing the tree.
 *** TODO Optimization: We can build players choosing shorters paths when possible.
 We know the whole tree and it is not complete.
 
+*** TODO Chooser generation stategy game.
+We can define a game using generation strategies. If choosers provide inside
+knowledge of how they created their strategies, we can perform useful
+transformation.
+Honest choosers know the data and thus, are part of this family.
+
 * To build the whole project
 #+begin_src sh :noeval
 lake build
