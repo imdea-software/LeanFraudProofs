@@ -246,19 +246,23 @@ def gen_info_perfect_tree {α β : Type}{h : Nat}
      (gen_info_perfect_tree ln ll)
      (gen_info_perfect_tree rn lr)
 
-lemma half_pefect_split_same {α : Type} {n : Nat}
-      ( s : Sequence (2^n.succ) α )
-      : -- have init : Sequence (2^n.succ - 1) :=
-       have ⟨ left, mid, _ ⟩ : Sequence (2^n - 1) α × α × _ := (seqPerfectSplit $ Fin.init $ @sequence_coerce _ _ (2^n.succ - 1 + 1) sorry s)
-       (half_split_pow s).1
-      = sequence_coerce sorry (Fin.snoc left mid)
-      := sorry
+-- lemma half_pefect_split_same {α : Type} {n : Nat}
+--       ( s : Sequence (2^n.succ) α )
+--       : -- have init : Sequence (2^n.succ - 1) :=
+--        have ⟨ left, mid, _ ⟩ : Sequence (2^n - 1) α × α × _ := (seqPerfectSplit $ Fin.init $ @sequence_coerce _ _ (2^n.succ - 1 + 1) sorry s)
+--        (half_split_pow s).1
+--       = sequence_coerce sorry (Fin.snoc left mid)
+--       := sorry
 
 lemma half_perfect_split_same {α : Type} {n : Nat}
       ( s : Sequence (2^n.succ) α )
-      : Fin.init (sequence_coerce sorry (half_split_pow s).1)
-      = (seqPerfectSplit ( Fin.init (@sequence_coerce _ _ (2^n.succ -1 +1) sorry s))).1
-      := sorry
+      : Fin.init (sequence_coerce ( by have pNZ := @pow_gt_zero n; omega) (half_split_pow s).1)
+      = (seqPerfectSplit ( Fin.init (@sequence_coerce _ _ (2^n.succ -1 +1) ( by have pNZ := @pow_gt_zero n.succ; omega) s))).1
+      := by
+      apply funext
+      intro x
+      simp [seqPerfectSplit, splitSeq, Fin.init]
+      simp [half_split_pow]
 
 lemma half_zip_with {α β ε : Type}{lgn : Nat}
     {f : α -> β -> ε}
@@ -266,14 +270,18 @@ lemma half_zip_with {α β ε : Type}{lgn : Nat}
     {sr : Sequence (2^lgn.succ) β}
     : (half_split_pow (seq_zip_with f sl sr)).1
     = seq_zip_with f (half_split_pow sl).1 (half_split_pow sr).1
-    := sorry
+    := by
+      apply funext
+      intro x
+      simp [half_split_pow]
+
 
 lemma perfect_split_constant { α : Type }{lgn : Nat}
   (a : α)
   -- (s : Sequence (2^lgn - 1) α)
   : @seq_constant _ (2^lgn - 1) a
   = (seqPerfectSplit (seq_constant a)).1
-  := sorry
+  := by apply funext; intro x; simp [seqPerfectSplit, splitSeq]
 
 lemma gen_empty_size {n : Nat}
   : (gen_empty_perfect_tree n).size = 2^n.succ - 1

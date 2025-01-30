@@ -193,23 +193,23 @@ def seqMap {α β : Type} {n : Nat} (f : α -> β) ( seq : Sequence n α ) : Seq
      | .succ _pn => Fin.cons (f $ headSeq seq) (seqMap f (Fin.tail seq))
 
 @[simp]
-def seq_zip_with' {α β ε : Type}{n : Nat}
-    (f : α -> β -> ε)
-    (sl : Sequence n α)
-    (sr : Sequence n β)
-    : Sequence n ε
-    := fun i => f (sl i) (sr i)
-@[simp]
 def seq_zip_with {α β ε : Type}{n : Nat}
     (f : α -> β -> ε)
     (sl : Sequence n α)
     (sr : Sequence n β)
     : Sequence n ε
-    := match n with
-    | .zero => nilSeq
-    | .succ _pn => Fin.cons
-                   (f (headSeq sl) (headSeq sr))
-                   (seq_zip_with f (Fin.tail sl) (Fin.tail sr))
+    := fun i => f (sl i) (sr i)
+-- @[simp]
+-- def seq_zip_with {α β ε : Type}{n : Nat}
+--     (f : α -> β -> ε)
+--     (sl : Sequence n α)
+--     (sr : Sequence n β)
+--     : Sequence n ε
+--     := match n with
+--     | .zero => nilSeq
+--     | .succ _pn => Fin.cons
+--                    (f (headSeq sl) (headSeq sr))
+--                    (seq_zip_with f (Fin.tail sl) (Fin.tail sr))
 
 lemma init_seq_zip {α β ε : Type}{n m : Nat}
     {f : α -> β -> ε}
@@ -218,15 +218,18 @@ lemma init_seq_zip {α β ε : Type}{n m : Nat}
     (hnq : n = m+1)
     : Fin.init (sequence_coerce hnq $ seq_zip_with f sl sr )
       = seq_zip_with f (Fin.init $ sequence_coerce hnq sl) (Fin.init $ sequence_coerce hnq sr)
-    := sorry -- TODO
+    := by
+    apply funext
+    intro x
+    simp [Fin.init]
 
 
-@[simp]
-def seq_scanl {α β : Type}{n : Nat}
-  (f : α -> β -> α)
-  (b : α)
-  (seq : Sequence n β) : Sequence n.succ α
-  := sorry -- To be defined
+-- @[simp]
+-- def seq_scanl {α β : Type}{n : Nat}
+--   (f : α -> β -> α)
+--   (b : α)
+--   (seq : Sequence n β) : Sequence n.succ α
+--   := sorry -- To be defined
 
 -- Replicate
 @[simp]

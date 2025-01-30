@@ -147,6 +147,7 @@ theorem proposer_winning {ℍ : Type} {lgn : Nat}
                 simp [proposer_triangles_tree,tree_computation,game_triangles_tree, triangles_tree, consume_seq,treeCompArbGame]
                 simp [gen_triangles]
                 -- simp [seq_zip_with]
+                sorry
 
 
 -- * Arena
@@ -166,6 +167,46 @@ def forward_proposer_to_tree {α : Type}{ n : Nat}
        -- leaves
        (extract_sibling_hashes sides prop)
 
+def split_da {ℍ : Type}{lgn : Nat}
+ (da : ElemInTreeH (2^lgn.succ) ℍ)
+ (proposer : Sequence (2^lgn.succ) (ℍ × ℍ))
+ : ( ElemInTreeH (2^lgn) ℍ × ElemInTreeH (2^lgn) ℍ)
+ :=
+ have mid := extract_intermed_hashes da.data proposer ⟨ 2^lgn - 1 , by sorry ⟩
+ have ( left_da , right_da ) := half_split_pow da.data -- backwards
+ ( ⟨ right_da , ⟨ da.mtree.1 , mid ⟩ ⟩, ⟨ left_da , ⟨ mid, da.mtree.2⟩ ⟩ )
+
+def split_winning_condition_left {ℍ : Type} {lgn : Nat}
+       [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
+       (da : ElemInTreeH (2^lgn.succ) ℍ)
+       (proposer : Sequence (2^lgn.succ) (ℍ × ℍ))
+       (wProp : elem_in_reveler_winning_condition_backward da (seqMap (.Next) proposer))
+       :
+       elem_in_reveler_winning_condition_backward ( ( split_da da proposer).1 ) ( seqMap (.Next) (half_split_pow proposer).2 )
+       := by
+ revert lgn; intro lgn; induction lgn with
+ | zero =>
+   intros da proposer wProp; simp at *
+   simp [split_da]
+   simp [half_split_pow, Fin.tail, Fin.cons]
+   unfold elem_in_reveler_winning_condition_backward; simp
+   unfold elem_in_reveler_winning_condition_backward
+   simp [SingleMidStep,SingleLastStepH, condWProp]
+   simp [seqPerfectSplit,splitSeq, Fin.init, get_spine]
+   unfold elem_in_reveler_winning_condition_backward at wProp; simp at wProp
+   unfold elem_in_reveler_winning_condition_backward at wProp; simp at wProp
+   unfold elem_in_reveler_winning_condition_backward at wProp
+   simp [SingleMidStep,SingleLastStepH,condWProp] at wProp
+   simp [Fin.tail] at wProp
+   apply And.intro
+   · exact wProp.2.1
+   · exact wProp.2.2
+ | succ pnlgn HInd =>
+   intros da proposer wProp
+   -- have lg :2^(pnlgn.succ) = 2^(pnlgn.succ) - 1 + 1 := sorry
+   unfold elem_in_reveler_winning_condition_backward
+   sorry
+
 theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
        [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
        (da : ElemInTreeH (2^lgn) ℍ)
@@ -174,7 +215,7 @@ theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
        (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
        : spl_game
          ({data := built_up_arena da.data , res := da.mtree})
-         ( ABTree.map .some .some $ forward_proposer_to_tree da.data proposer)
+         ( ABTree.map .some .some $ forward_proposer_to_tree da.data proposer) -- How's this forward and wProp backwards?
          chooser
          = Player.Proposer
        := by
@@ -205,7 +246,7 @@ theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
          have hind := HInd
           ⟨ (half_split_pow da.data).1
           , (da.mtree.1, (seqPerfectSplit (Fin.init
-                            $ @sequence_coerce _ _ ((2^pnlgn.succ) - 1 + 1) sorry
+                            $ @sequence_coerce _ _ ((2^pnlgn.succ) - 1 + 1) (by have pw := @pow_gt_zero pnlgn.succ; omega)
                             (seq_zip_with get_spine da.data proposer))).2.1 )⟩
           (half_split_pow proposer).1 sorry
          simp at hind
@@ -218,31 +259,13 @@ theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
          rw [half_zip_with]
          rw [<- perfect_split_constant]
          exact hind
-       ·  sorry
-
-
-
-
-
-
-by
- revert lgn; intro lgn
- induction lgn with
- -- Base cases are the legit challenges.
- | zero =>
-   intros da proposer wProp
-   simp [spl_game, forward_proposer_to_tree]
-   simp [built_up_arena,gen_info_perfect_tree,get_sibling]
-   simp [simp_tree, leaf_condition_length_one]
-   simp [elem_in_reveler_winning_condition_backward] at wProp
-   have ⟨ midH , singH ⟩ := wProp
-   unfold SingleLastStepH at singH
-   unfold SingleMidStep at midH
-   simp [condWProp] at *
-   cases HC : da.data 0
-   all_goals { rw [HC] at singH; simp at *; rw [singH]; assumption }
- -- Intermediary steps are just challenge logic
- | succ pdlgn HInd => _
+       ·
+         have hind := HInd
+          ⟨ (half_split_pow da.data).2
+          , ((seqPerfectSplit (Fin.init
+                            $ @sequence_coerce _ _ ((2^pnlgn.succ) - 1 + 1) sorry
+                            (seq_zip_with get_spine da.data proposer))).2.1 , da.mtree.2)⟩
+          (half_split_pow proposer).2 sorry
 
 -- * Chooser
 -- Similar to proposer, but what's the chooser transformation.
