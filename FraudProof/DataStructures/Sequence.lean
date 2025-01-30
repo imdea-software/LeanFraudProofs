@@ -6,10 +6,93 @@ import Mathlib.Data.List.FinRange
 
 ----------------------------------------
 -- * Sequences
-
+-- TODO { list xs // xs.lenght = n }
 -- Sequence of |n| elements
 abbrev Sequence (n : Nat) (α : Type) := Fin n -> α
 
+-- ** Basic API
+-- Nil Sequence
+def nilSeq {γ : Type} : Sequence 0 γ
+ := fun x => by have e := x.isLt; simp at e
+
+def singleSeq {α : Type} (a : α) : Sequence 1 α
+ := Fin.cons a nilSeq
+
+-- Head
+@[simp]
+def headSeq {α : Type}{ n : Nat } ( seq : Sequence n.succ α) : α
+  := seq ⟨ 0 , by simp ⟩
+
+@[simp]
+def headSeq' {α : Type}{ n : Nat } ( seq : Sequence n α)(notZ : 0 < n) : α
+ := seq ⟨ 0 , notZ ⟩
+
+-- Last
+@[simp]
+def lastSeq {α : Type}{n : Nat} (seq : Sequence n.succ α) : α
+  := seq $ Fin.last n
+@[simp]
+def lastSeq' {α : Type}{n m : Nat} (seq : Sequence n α)(ns : n = m + 1) : α
+  := seq ⟨ m , by omega ⟩
+def lastSeq'' {α : Type}{n : Nat} (seq : Sequence n α)(notZ : 0 < n) : α
+  := seq ⟨ n - 1, by omega ⟩
+----------------------------------------
+-- ** Sequence coercions and eq
+@[simp] -- I have defined it already hehe
+def sequence_coerce {α : Type} {n m : Nat}( hEq : n = m )(s : Sequence n α) : Sequence m α
+  := fun ix => match ix with
+               | ⟨ i , iLt ⟩ => s ⟨ i , by omega ⟩
+
+def beq_sequences {α : Type}[BEq α]{n : Nat} : BEq (Sequence n α) where
+  beq sl sr :=
+    match n with
+   | .zero => true
+   | .succ _pn => headSeq sl == headSeq sr
+                  && beq_sequences.beq (Fin.tail sl) (Fin.tail sr)
+
+def kyle_sequence_beq {n : Nat}{α : Type} [BEq α] (sl sr : Sequence n α) : Bool :=
+  Nat.all n (fun i iLt => sl ⟨ i , iLt ⟩ == sr ⟨ i , iLt ⟩)
+
+-- Here the magic is happening at Decidable α  and the decidable_of_iff.
+def kyle_decidable_seq {α : Type} [dec : DecidableEq α](n : Nat) : DecidableEq (Sequence n α)
+  := fun sl sr => decidable_of_iff (kyle_sequence_beq sl sr) <| by
+                      constructor
+                      case mp =>
+                        intro h
+                        apply funext
+                        simpa [kyle_sequence_beq, Nat.all_eq_finRange_all] using h
+                        -- intro x
+                        -- have xinRange := List.mem_finRange x
+                        -- apply h
+                      case mpr =>
+                        intro heq
+                        rw [heq]
+                        simp [kyle_sequence_beq, Nat.all_eq_finRange_all]
+
+
+-- theorem beq_sequence_head {α : Type}[BEq α]{n : Nat}(l r : Sequence n.succ α)(heq : l == r)
+--         : l ⟨ 0 , by simp ⟩ == r ⟨ 0 , by simp ⟩
+--         := by simp;
+
+-- theorem beq_sequence_ {α : Type}[BEq α]{n : Nat}(l r : Sequence n α)(heq : l == r)
+--         : forall (i : Nat), (iLt : i < n) -> l ⟨ i, iLt ⟩ == r ⟨ i , iLt ⟩
+--         := by
+--         intros i iLt
+--         apply funext at heq
+
+-- instance law_full_beq_seq {α : Type}[BEq α][LawfulBEq α]{n : Nat} : LawfulBEq (Sequence n α) where
+--   eq_of_beq := by
+--     intros a b heq
+--     apply funext
+--     intro x; replace ⟨ x , xLT ⟩ := x
+--     induction x with
+--     | zero => _
+--     | succ px HPx => _
+--   rfl := _
+
+-- structure EqSeq (α : Type)(m n : Nat)(sl : Sequence m α)(sr : Sequence n α) where
+--   sameLen : m = n
+--   sameVals : sequence_coerce sameLen sl = sr
 @[simp]
 def seq_constant {α : Type} {n : Nat}(a : α) : Sequence n α
  := fun _ => a
@@ -55,31 +138,6 @@ theorem seqEqLawRfl {α : Type}[BEq α][LawfulBEq α]{n : Nat}(p : Sequence n α
       simp
       apply HInd
 
--- Nil Sequence
-def nilSeq {γ : Type} : Sequence 0 γ
- := fun x => by have e := x.isLt; simp at e
-
-def singleSeq {α : Type} (a : α) : Sequence 1 α
- := Fin.cons a nilSeq
-
--- Head
-@[simp]
-def headSeq {α : Type}{ n : Nat } ( seq : Sequence n.succ α) : α
-  := seq ⟨ 0 , by simp ⟩
-
-@[simp]
-def headSeq' {α : Type}{ n : Nat } ( seq : Sequence n α)(notZ : 0 < n) : α
- := seq ⟨ 0 , notZ ⟩
-
--- Last
-@[simp]
-def lastSeq {α : Type}{n : Nat} (seq : Sequence n.succ α) : α
-  := seq $ Fin.last n
-@[simp]
-def lastSeq' {α : Type}{n m : Nat} (seq : Sequence n α)(ns : n = m + 1) : α
-  := seq ⟨ m , by omega ⟩
-def lastSeq'' {α : Type}{n : Nat} (seq : Sequence n α)(notZ : 0 < n) : α
-  := seq ⟨ n - 1, by omega ⟩
 
 
 def zip_succ_int {α : Type}{n : Nat}
@@ -153,6 +211,16 @@ def seq_zip_with {α β ε : Type}{n : Nat}
                    (f (headSeq sl) (headSeq sr))
                    (seq_zip_with f (Fin.tail sl) (Fin.tail sr))
 
+lemma init_seq_zip {α β ε : Type}{n m : Nat}
+    {f : α -> β -> ε}
+    {sl : Sequence n α}
+    {sr : Sequence n β}
+    (hnq : n = m+1)
+    : Fin.init (sequence_coerce hnq $ seq_zip_with f sl sr )
+      = seq_zip_with f (Fin.init $ sequence_coerce hnq sl) (Fin.init $ sequence_coerce hnq sr)
+    := sorry -- TODO
+
+
 @[simp]
 def seq_scanl {α β : Type}{n : Nat}
   (f : α -> β -> α)
@@ -196,63 +264,6 @@ def concatSeq {α : Type}{n m : Nat}(p : Sequence n α)(q : Sequence m α) : Seq
 def splitSeq {α : Type}{n : Nat}(p : Sequence n α)(m : Nat)(mLTn : m ≤ n): Sequence m α × Sequence (n - m) α
   := ⟨ takeN m mLTn p , dropN m mLTn p ⟩
 
-----------------------------------------
-
-@[simp] -- I have defined it already hehe
-def sequence_coerce {α : Type} {n m : Nat}( hEq : n = m )(s : Sequence n α) : Sequence m α
-  := fun ix => match ix with
-               | ⟨ i , iLt ⟩ => s ⟨ i , by omega ⟩
-
-def beq_sequences {α : Type}[BEq α]{n : Nat} : BEq (Sequence n α) where
-  beq sl sr :=
-    match n with
-   | .zero => true
-   | .succ _pn => headSeq sl == headSeq sr
-                  && beq_sequences.beq (Fin.tail sl) (Fin.tail sr)
-
-def kyle_sequence_beq {n : Nat}{α : Type} [BEq α] (sl sr : Sequence n α) : Bool :=
-  Nat.all n (fun i iLt => sl ⟨ i , iLt ⟩ == sr ⟨ i , iLt ⟩)
-
--- Here the magic is happening at Decidable α  and the decidable_of_iff.
-def kyle_decidable_seq {α : Type} [dec : DecidableEq α](n : Nat) : DecidableEq (Sequence n α)
-  := fun sl sr => decidable_of_iff (kyle_sequence_beq sl sr) <| by
-                      constructor
-                      case mp =>
-                        intro h
-                        apply funext
-                        simpa [kyle_sequence_beq, Nat.all_eq_finRange_all] using h
-                        -- intro x
-                        -- have xinRange := List.mem_finRange x
-                        -- apply h
-                      case mpr =>
-                        intro heq
-                        rw [heq]
-                        simp [kyle_sequence_beq, Nat.all_eq_finRange_all]
-
-
--- theorem beq_sequence_head {α : Type}[BEq α]{n : Nat}(l r : Sequence n.succ α)(heq : l == r)
---         : l ⟨ 0 , by simp ⟩ == r ⟨ 0 , by simp ⟩
---         := by simp;
-
--- theorem beq_sequence_ {α : Type}[BEq α]{n : Nat}(l r : Sequence n α)(heq : l == r)
---         : forall (i : Nat), (iLt : i < n) -> l ⟨ i, iLt ⟩ == r ⟨ i , iLt ⟩
---         := by
---         intros i iLt
---         apply funext at heq
-
--- instance law_full_beq_seq {α : Type}[BEq α][LawfulBEq α]{n : Nat} : LawfulBEq (Sequence n α) where
---   eq_of_beq := by
---     intros a b heq
---     apply funext
---     intro x; replace ⟨ x , xLT ⟩ := x
---     induction x with
---     | zero => _
---     | succ px HPx => _
---   rfl := _
-
--- structure EqSeq (α : Type)(m n : Nat)(sl : Sequence m α)(sr : Sequence n α) where
---   sameLen : m = n
---   sameVals : sequence_coerce sameLen sl = sr
 
 --
 theorem split_seq_eq {α : Type}{n m : Nat}{ mLTn : m ≤ n }( seq : Sequence n α ):
