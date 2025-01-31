@@ -188,9 +188,10 @@ def desc_Seq {n : Nat}{α : Type} (seq : Sequence n.succ α) : α × Sequence n 
 -- Map
 @[simp]
 def seqMap {α β : Type} {n : Nat} (f : α -> β) ( seq : Sequence n α ) : Sequence n β
-  := match n with
-     | 0 => nilSeq
-     | .succ _pn => Fin.cons (f $ headSeq seq) (seqMap f (Fin.tail seq))
+  := f ∘ seq
+  -- match n with
+  --    | 0 => nilSeq
+  --    | .succ _pn => Fin.cons (f $ headSeq seq) (seqMap f (Fin.tail seq))
 
 @[simp]
 def seq_zip_with {α β ε : Type}{n : Nat}
@@ -237,7 +238,7 @@ def replicate {α : Type}{n : Nat}(c : α) : Sequence n α
  := fun _ => c
 
 -- Reverse
-@[simp]
+-- @[simp]
 def sequence_reverse {α : Type} {n : Nat} (seq : Sequence n α) : Sequence n α
   := seq ∘ Fin.rev
 
