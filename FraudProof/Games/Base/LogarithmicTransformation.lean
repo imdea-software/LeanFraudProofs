@@ -759,7 +759,7 @@ theorem linear_to_log_winning_proposer {ℍ : Type}
       simp [gen_tree]
       simp [gen_empty_perfect_tree,reveler_winning_condition]
       simp [leaf_condition_transformation]
-      simp [condWProp]
+      simp [condWProp, sequence_reverse]
       unfold elem_in_reveler_winning_condition_backward at HElem
       simp [SingleLastStepH,condWProp] at HElem
       constructor

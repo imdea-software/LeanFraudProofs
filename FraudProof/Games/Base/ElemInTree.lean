@@ -168,19 +168,19 @@ def elem_in_tree_forward {ℍ : Type}[BEq ℍ][HashMagma ℍ]
     := match n with
       | 0 => SingleLastStepH da
       | .succ _pn =>
-        match lastSeq proposer with
+        match headSeq proposer with
         | .none => Player.Chooser
         | .some (.Next proposed) =>
-            match lastSeq chooser ⟨ da.mtree.1, proposed ⟩ with
+            match headSeq chooser ⟨ da.mtree.1, proposed ⟩ with
             | .none  => Player.Proposer
             | .some .Now =>
               forward_mid_step_condition
-                (lastSeq da.data) ⟨ da.mtree.1 , proposed.2⟩ proposed.1
+                (headSeq da.data) ⟨ da.mtree.1 , proposed.2⟩ proposed.1
             | .some (.Continue _) =>
               elem_in_tree_forward
-                {data := Fin.init da.data, mtree := ⟨ proposed.1 , da.mtree.2⟩}
-                (Fin.init proposer)
-                (Fin.init chooser)
+                {data := Fin.tail da.data, mtree := ⟨ proposed.1 , da.mtree.2⟩}
+                (Fin.tail proposer)
+                (Fin.tail chooser)
 
 ----
 -- * Winning conditions
@@ -209,6 +209,26 @@ def elem_in_reveler_winning_condition_backward {ℍ : Type}
                                             )⟩
                }
                (tailSeq proposer)
+
+def elem_in_reveler_winning_condition_forward {ℍ : Type}
+    [BEq ℍ][HashMagma ℍ]
+    {n : Nat}
+    (da : ElemInTreeH n ℍ)
+    (proposer : Sequence n (PMoves ℍ))
+    -- Proposer proposes parent and sibling.
+    : Prop
+    := match n with
+       | .zero => SingleLastStepH da = Player.Proposer
+       | .succ _pn =>
+         match headSeq proposer with
+         | .Next proposed =>
+           (condWProp ((op_side (headSeq da.data) da.mtree.1 proposed.2) == proposed.1) = Player.Proposer)
+           ∧ elem_in_reveler_winning_condition_forward
+               { data := tailSeq da.data
+                , mtree := ⟨ proposed.1
+                           , da.mtree.2⟩
+               }
+               (Fin.tail proposer)
 
 -- lemma elem_forall {ℍ : Type}
 --     [BEq ℍ][HashMagma ℍ]
@@ -253,3 +273,39 @@ theorem winning_reveler_wins {ℍ : Type}
                   simp
                   apply HInd
                   exact Hwin.2
+
+-- Winning proposer prop is a winning sufficient condition.
+theorem winning_reveler_wins_forward {ℍ : Type}
+    [BEq ℍ][HashMagma ℍ]
+    {n : Nat}
+    (da : ElemInTreeH n ℍ)
+    (proposer : Sequence n (PMoves ℍ))
+    (winning_prop : elem_in_reveler_winning_condition_forward da proposer)
+    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+    : elem_in_tree_forward da (seqMap .some proposer) chooser = Player.Proposer
+    := by
+ revert n; intro n; induction n with
+ | zero =>
+   intros da proposer wProp cho
+   simp [elem_in_reveler_winning_condition_forward] at wProp
+   simp [elem_in_tree_forward]
+   assumption
+ | succ pn Hind =>
+   intros da prop wProp ch
+   simp [elem_in_tree_forward]
+   simp [elem_in_reveler_winning_condition_forward] at wProp
+   cases HP : prop 0 with
+   | End v => contradiction
+   | Next p =>
+    simp
+    cases HC : ch 0 (da.mtree.1 , p) with
+    | none => simp
+    | some ched =>
+      cases HCd : ched with
+      | Now =>
+        simp
+        rw [HP] at wProp; simp at wProp
+        exact wProp.1
+      | Continue s =>
+       simp; rw [HP] at wProp; simp at wProp
+       exact Hind ⟨ Fin.tail da.data, (p.1 , da.mtree.2)⟩ (Fin.tail prop) wProp.2 (Fin.tail ch)

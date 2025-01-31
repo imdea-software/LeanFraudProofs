@@ -253,6 +253,30 @@ def gen_info_perfect_tree {α β : Type}{h : Nat}
 --        (half_split_pow s).1
 --       = sequence_coerce sorry (Fin.snoc left mid)
 --       := sorry
+--
+lemma half_split_rev {α : Type}{lgn : Nat}
+      (s : Sequence (2^lgn.succ) α)
+      : half_split_pow (sequence_reverse s)
+      = (sequence_reverse (half_split_pow s).2 , sequence_reverse (half_split_pow s).1)
+      := by
+ unfold half_split_pow
+ unfold sequence_reverse
+ simp
+ apply And.intro
+ · apply funext
+   intro x
+   unfold Fin.rev
+   simp
+   congr
+   omega
+ · apply funext
+   intro x
+   have ⟨ xi , xLt ⟩ := x
+   simp
+   unfold Fin.rev
+   simp
+   have sameI : 2^(lgn + 1) - (2^lgn + xi + 1) = 2 ^ lgn - (xi + 1) := by omega
+   congr
 
 lemma half_perfect_split_same {α : Type} {n : Nat}
       ( s : Sequence (2^n.succ) α )
@@ -275,6 +299,14 @@ lemma half_zip_with {α β ε : Type}{lgn : Nat}
       intro x
       simp [half_split_pow]
 
+lemma half_split_map_left {α β : Type}{lgn : Nat}
+    {f : α -> β}
+    ( s : Sequence (2^lgn.succ) α)
+    : (half_split_pow (seqMap f s)).1
+    = seqMap f (half_split_pow s).1
+ := by unfold half_split_pow;simp;unfold takeN
+       apply funext
+       intro x; simp
 
 lemma perfect_split_constant { α : Type }{lgn : Nat}
   (a : α)
