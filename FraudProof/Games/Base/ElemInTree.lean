@@ -210,6 +210,19 @@ def elem_in_reveler_winning_condition_backward {ℍ : Type}
                }
                (tailSeq proposer)
 
+-- lemma elem_forall_backward {ℍ : Type}
+--     [BEq ℍ][HashMagma ℍ]
+--     {n : Nat}
+--     (da : ElemInTreeH n ℍ)
+--     (proposer : Sequence n (PMoves ℍ))
+--     (hP : elem_in_reveler_winning_condition_backward da proposer)
+--     : forall (i : Nat)(iLt : i < n - 1),
+--       (spine_forward proposer ⟨ i , by omega ⟩)
+--       = op_side (da.data ⟨ i.succ , by omega ⟩)
+--                 ( proposer ⟨ i.succ , by omega ⟩)
+--                 (sibling_forward proposer ⟨ i.succ , by omega ⟩)
+--     := sorry
+
 def elem_in_reveler_winning_condition_forward {ℍ : Type}
     [BEq ℍ][HashMagma ℍ]
     {n : Nat}
@@ -230,14 +243,27 @@ def elem_in_reveler_winning_condition_forward {ℍ : Type}
                }
                (Fin.tail proposer)
 
--- lemma elem_forall {ℍ : Type}
---     [BEq ℍ][HashMagma ℍ]
---     {n : Nat}
---     (da : ElemInTreeH n ℍ)
---     (proposer : Sequence n (PMoves ℍ))
---     (hP : elem_in_reveler_winning_condition_backward da proposer)
---     : forall (i : Nat)(iLt : i < n - 1), spine[n] = op_side da[n.succ] spine[n.succ] siblings[n.succ]
+def spine_forward {ℍ : Type}{n : Nat}
+  : Sequence n (PMoves ℍ) -> Sequence n ℍ
+  := seqMap (fun p => p.destruct.1)
 
+def sibling_forward {ℍ : Type}{n : Nat}
+  : Sequence n (PMoves ℍ) -> Sequence n ℍ
+  := seqMap (fun p => p.destruct.2)
+
+
+lemma elem_forall_forward {ℍ : Type}
+    [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ]
+    {n : Nat}
+    (da : ElemInTreeH n ℍ)
+    (proposer : Sequence n (PMoves ℍ))
+    (hP : elem_in_reveler_winning_condition_forward da proposer)
+    : forall (i : Nat)(iLt : i < n - 1),
+      (spine_forward proposer ⟨ i.succ , by omega ⟩)
+      = op_side (da.data ⟨ i.succ , by omega ⟩)
+                (spine_forward proposer ⟨ i , by omega ⟩)
+                (sibling_forward proposer ⟨ i.succ , by omega ⟩)
+    := sorry
 
 -- Winning proposer prop is a winning sufficient condition.
 theorem winning_reveler_wins {ℍ : Type}
