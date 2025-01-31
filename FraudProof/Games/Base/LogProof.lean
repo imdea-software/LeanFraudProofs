@@ -325,7 +325,7 @@ theorem proposer_winning_mod_forward {ℍ : Type} {lgn : Nat}
        unfold reveler_winning_condition_simp_game
        simp [forward_proposer_to_tree, built_up_arena, gen_info_perfect_tree]
        apply And.intro
-       · -- have mid := (seqPerfectSplit (Fin.init ( @sequence_coerce _ _ (2^(pnlgn.succ) -1 + 1) sorry (seqMap (fun p => p.1) proposer)) )).2.1
+       ·
          have hind := HInd ⟨ (half_split_pow da.data).1
                            , ⟨ da.mtree.1
                              , (seqPerfectSplit (Fin.init ( @sequence_coerce _ _ (2^(pnlgn.succ) -1 + 1) sorry (seqMap (fun p => p.1) proposer)) )).2.1 ⟩ ⟩
