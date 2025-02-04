@@ -36,6 +36,8 @@ structure CompTree (α β γ : Type) where
 -- + leafCondition : α' -> α -> γ -> Winner
 -- + midCondition : β' -> β -> γ -> γ -> γ -> Winner
 --
+-- These can vary from game to game.
+--
 -- Both basically take all information at a giving point and return who the
 -- winner is.
 ----------------------------------------
@@ -246,7 +248,9 @@ def splitter_tree_game {α α' β β' γ γ' : Type}
     -- If reveler does not follow the compuetation tree, it loses.
     | _ , _ => Player.Chooser
 
--- Reveler  winning condition
+----------------------------------------
+-- * Reveler  winning condition
+-- Reveler wins all possible games.
 def reveler_winning_condition
   {α α' β β' γ : Type}
     -- Game Mechanics
@@ -272,6 +276,40 @@ def reveler_winning_condition
      leafCondition a a' da.res = Player.Proposer
    | _ , _ => False
 
+def winning_condition_player {α α' β β' γ : Type}
+    -- Game Mechanics
+    (leafCondition : α' -> α -> γ -> Prop)
+    (midCondition  : β' -> β -> γ -> Prop) -- If True then P.Proposer.
+    (splitter : γ -> β -> γ × γ)
+    -- Public Information
+    (da : CompTree α' β' γ)
+    (player : ABTree (Option α) (Option β))
+  : Prop :=
+  match da.data , player with
+  | .leaf a' , .leaf (.some a) => leafCondition a' a da.res
+  | .node b' gl gr , .node (.some b) pl pr =>
+    midCondition b' b da.res
+    ∧ winning_condition_player leafCondition midCondition splitter ⟨ gl , (splitter da.res b).1 ⟩ pl
+    ∧ winning_condition_player leafCondition midCondition splitter ⟨ gr , (splitter da.res b).2 ⟩ pr
+  | _ , _ => False
+
+-- Gen chooser from knowing the path?
+-- Assuming we have a DA that the top hash is correct.
+-- When splitting if it is not the one the player knows to be correct, goes to the right.
+-- When splitting if the proposed hash *is* the one the player knows to be correct, goes to the left.
+-- Inv: top hash is always correct, data it is not. If top hash is not correct,
+-- we do not know what tree are we playing with. In other words, we do not know the data.
+--
+def gen_to_fun_chooser {α β γ: Type}[BEq β]
+    : ABTree (Option α) (Option β) -> ABTree Unit (γ -> β -> Option ChooserMoves)
+    := ABTree.map
+      (fun _ => ())
+      (fun mid _r proposed =>
+        if mid == proposed
+        then .some (.Continue .Left)
+        else .some (.Continue .Right)
+        )
+
 -- TODO Prove that this is correct
 theorem winning_proposer_wins {α α' β β' γ : Type}
     -- Game Mechanics
@@ -286,6 +324,81 @@ theorem winning_proposer_wins {α α' β β' γ : Type}
       treeCompArbGame leafCondition midCondition da reveler chooser = Player.Proposer
     := sorry
 
+def prop_winner : Winner -> Prop
+    | .Proposer => True
+    | .Chooser => False
+
+lemma prop_win_chooser (p : Winner) : ¬ prop_winner p ↔ p = Player.Chooser := sorry -- TODO
+
+theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
+    (splitter : γ -> β -> γ × γ)
+    -- Conditions
+    (leafCondition : α' -> α -> γ -> Winner)
+    (midCondition  : β' -> β -> γ -> Winner)
+    -- Public Information
+    (da : CompTree α' β' γ)
+    -- Reveler
+    (reveler : ABTree (Option α) (Option β))
+    -- Chooser
+    (wise_chooser : ABTree (Option α) (Option β))
+    -- Assumptions
+    (win_chooser : winning_condition_player (fun x y z => prop_winner $ leafCondition x y z) (fun x y z => prop_winner $ midCondition x y z) splitter da wise_chooser)
+    (lossing_reveler : ¬ winning_condition_player (fun x y z => prop_winner $ leafCondition x y z) (fun x y z => prop_winner $ midCondition x y z) splitter da reveler)
+    : simp_tree splitter
+      leafCondition
+      midCondition
+      da reveler (gen_to_fun_chooser wise_chooser) = Player.Chooser
+    := by
+ revert reveler wise_chooser da; intro da
+ have ⟨ data , res ⟩ := da
+ unfold simp_tree; simp
+ induction data with
+ | leaf a' =>
+   intros reveler chooser wCh loPro
+   unfold simp_tree
+   cases H : reveler with
+   | leaf r =>
+     cases r with
+     | some p =>
+       simp
+       unfold winning_condition_player at loPro; simp at loPro
+       rw [H] at loPro; simp at loPro
+       rw [prop_win_chooser ] at loPro
+       assumption
+     | none => simp
+   | node _ _ _ => simp
+ | node b' gl gr HIndL HIndR =>
+   intros reveler chooser wCh loPro
+   cases HR : reveler with
+   | leaf _ => simp
+   | node p pl pr =>
+     cases HP : p with
+     | none => simp
+     | some proposed =>
+       simp [gen_to_fun_chooser]
+       cases HC : wise_chooser with
+       | leaf _ => rw [HC] at wCh; simp [winning_condition_player] at wCh
+       | node ch chL chR =>
+         simp
+         cases HCed : ch with
+         | none =>
+           rw [HC, HCed] at wCh
+           simp [winning_condition_player] at wCh
+         | some ched =>
+           split
+           case h_1 x heq =>
+            simp at heq
+            have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Chooser.Side.Left)) (some (ChooserPrimMoves.Continue Chooser.Side.Right)) (some ChooserPrimMoves.Now)
+            rw [iteeq] at heq
+            simp at heq
+           case h_2 x heq =>
+             simp at heq
+             unfold simp_tree
+             simp
+
+             apply HIndL
+
+----------------------------------------
 
 -- Another generid tree, more focused on logarithmic games.
 -- We may want to prove that the previous generic games and these ones are
