@@ -333,8 +333,6 @@ theorem proposer_winning_mod_forward {ℍ : Type} {lgn : Nat}
          simp [built_up_arena] at hind
          simp [forward_proposer_to_tree] at hind
          rw [<- half_perfect_split_same]
-         rw [half_split_map_left]
-         rw [half_split_map_left]
          rw [<- perfect_split_constant]
          apply hind
          _
