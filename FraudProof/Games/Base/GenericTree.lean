@@ -328,7 +328,13 @@ def prop_winner : Winner -> Prop
     | .Proposer => True
     | .Chooser => False
 
-lemma prop_win_chooser (p : Winner) : ¬ prop_winner p ↔ p = Player.Chooser := sorry -- TODO
+lemma prop_win_chooser (p : Winner)
+  : ¬ prop_winner p
+    ↔ p = Player.Chooser
+  := by
+  cases p
+  all_goals { simp [prop_winner]}
+
 
 theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
     (splitter : γ -> β -> γ × γ)
@@ -342,7 +348,9 @@ theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
     -- Chooser
     (wise_chooser : ABTree (Option α) (Option β))
     -- Assumptions
-    (win_chooser : winning_condition_player (fun x y z => prop_winner $ leafCondition x y z) (fun x y z => prop_winner $ midCondition x y z) splitter da wise_chooser)
+    (win_chooser : winning_condition_player
+                   (fun x y z => prop_winner $ leafCondition x y z)
+                   (fun x y z => prop_winner $ midCondition x y z) splitter da wise_chooser)
     (lossing_reveler : ¬ winning_condition_player (fun x y z => prop_winner $ leafCondition x y z) (fun x y z => prop_winner $ midCondition x y z) splitter da reveler)
     : simp_tree splitter
       leafCondition
@@ -351,10 +359,11 @@ theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
     := by
  revert reveler wise_chooser da; intro da
  have ⟨ data , res ⟩ := da
- unfold simp_tree; simp
+ revert res; clear da
+ -- unfold simp_tree; simp
  induction data with
  | leaf a' =>
-   intros reveler chooser wCh loPro
+   intros res reveler chooser wCh loPro
    unfold simp_tree
    cases H : reveler with
    | leaf r =>
@@ -368,12 +377,12 @@ theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
      | none => simp
    | node _ _ _ => simp
  | node b' gl gr HIndL HIndR =>
-   intros reveler chooser wCh loPro
+   intros res reveler wise_chooser wCh loPro
    cases HR : reveler with
-   | leaf _ => simp
+   | leaf _ => simp [simp_tree]
    | node p pl pr =>
      cases HP : p with
-     | none => simp
+     | none => simp [simp_tree]
      | some proposed =>
        simp [gen_to_fun_chooser]
        cases HC : wise_chooser with
@@ -385,18 +394,29 @@ theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
            rw [HC, HCed] at wCh
            simp [winning_condition_player] at wCh
          | some ched =>
+           simp [simp_tree]
            split
            case h_1 x heq =>
-            simp at heq
+            -- simp at heq
             have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Chooser.Side.Left)) (some (ChooserPrimMoves.Continue Chooser.Side.Right)) (some ChooserPrimMoves.Now)
             rw [iteeq] at heq
             simp at heq
            case h_2 x heq =>
              simp at heq
-             unfold simp_tree
-             simp
+             have hind := HIndL (splitter res proposed).1 pl chL sorry sorry
+             exact hind
+           case h_3 x heq =>
+             simp at heq
+             -- Winning chooser left
+             rw [HC, HCed] at wCh; simp [winning_condition_player] at wCh
+             -- unfold winning_condition_player at wCh
+             have hind := HIndR (splitter res proposed).2 pr chR
+               sorry -- This case is the interesting one. We need to specialize our winning chooser.
+               sorry
+             exact hind
+           case h_4 x heq =>
+             sorry -- heq is a contradiction
 
-             apply HIndL
 
 ----------------------------------------
 
