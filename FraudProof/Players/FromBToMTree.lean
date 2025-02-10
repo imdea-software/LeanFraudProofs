@@ -156,6 +156,11 @@ def SemiGoodChooser {α ℍ : Type} [BEq ℍ]
   -- path is longer than the tree.
   | .cons _ _ , .leaf _ => none
 
+def chooser_challenge_hash_tree {ℍ : Type}[BEq ℍ][mg : HashMagma ℍ]
+  ( data : BTree ℍ)( res : ℍ )
+  : Bool
+  := (@hash_BTree _ _ ⟨ id ⟩ mg data).hash == res
+
 ----------------------------------------
 -- * Indexed Trees and Paths
 -- Function generating a /good proposer/ from a tree, i.e. a proposer winning
