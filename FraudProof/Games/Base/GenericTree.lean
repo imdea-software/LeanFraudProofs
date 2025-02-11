@@ -173,39 +173,57 @@ theorem simp_game_reveler_wins {α α' β β' γ : Type}
 
 -- Generic game focusing on |da : CompTree|
 -- Here the arena is |ABTree|
-def treeCompArbGame {α α' β β' γ : Type}
+def treeCompArbGame {α α' β γ : Type}
     -- Game Mechanics
-    (leafCondition : α' -> α -> γ -> Winner)
-    (midCondition  : β' -> β -> γ -> γ -> γ -> Winner)
+    (leafCondition : α -> α' -> γ -> Bool)
+    (midCondition  : β -> γ -> γ -> γ -> Bool)
     -- Public Information
-    (da : CompTree α' β' γ)
+    (da : CompTree α β γ)
     -- Players
-    (reveler : ABTree (Option α) (Option (β × γ × γ)))
-    (chooser : ABTree Unit ((γ × β × γ × γ) -> Option ChooserMoves))
+    (reveler : ABTree (Option α') (Option (γ × γ)))
+    (chooser : ABTree Unit ((γ × γ × γ) -> Option ChooserMoves))
     --
     : Winner :=
     -- Reveler plays first
     match da.data, reveler with
-    | .leaf h, .leaf (some a) => leafCondition h a da.res
+    | .leaf h, .leaf (some a) =>
+       if leafCondition h a da.res then Player.Proposer else Player.Chooser
     | .node ib bl br , .node (some proposition) nextProposerLeft nextProposerRight =>
       match chooser with
       | .node cfun nextChooserLeft nextChooserRight =>
         match cfun ⟨ da.res , proposition ⟩ with
         -- Chooser -> challenge hashes now.
         | some .Now =>
-          midCondition ib proposition.1 da.res proposition.2.1 proposition.2.2
+        if midCondition ib da.res proposition.1 proposition.2
+        then Player.Proposer else Player.Chooser
         -- Chooser chooses to go left.
         | some (.Continue .Left) =>
-          treeCompArbGame leafCondition midCondition ⟨ bl , proposition.2.1 ⟩ nextProposerLeft nextChooserLeft
+          treeCompArbGame leafCondition midCondition ⟨ bl , proposition.1 ⟩ nextProposerLeft nextChooserLeft
         -- Chooser chooses to go right.
         | some (.Continue .Right) =>
-          treeCompArbGame leafCondition midCondition ⟨ br , proposition.2.2 ⟩ nextProposerRight nextChooserRight
+          treeCompArbGame leafCondition midCondition ⟨ br , proposition.2 ⟩ nextProposerRight nextChooserRight
         -- No moves
         | none => Player.Proposer
       -- Chooser does not follows computation tree.
       | _ => Player.Proposer
     -- If reveler does not follow the compuetation tree, it loses.
     | _ , _ => Player.Chooser
+
+def tree_comp_winning_conditions {α α' β γ : Type}
+    -- Game Mechanics
+    (leafCondition : α -> α' -> γ -> Prop)
+    (midCondition  : β -> γ -> γ -> γ -> Prop)
+    -- Public Information
+    (da : CompTree α β γ)
+    (player : ABTree (Option α') (Option (γ × γ)))
+  : Prop :=
+  match da.data , player with
+  | .leaf a' , .leaf (.some a) => leafCondition a' a da.res
+  | .node b' gl gr , .node (.some b) pl pr =>
+    midCondition b' da.res b.1 b.2
+    ∧ tree_comp_winning_conditions leafCondition midCondition ⟨ gl , b.1 ⟩ pl
+    ∧ tree_comp_winning_conditions leafCondition midCondition ⟨ gr , b.2 ⟩ pr
+  | _ , _ => False
 
 -- Splitter Tree Game
 -- This is a similar game, but here we can split da.res following a function.
@@ -252,28 +270,28 @@ def splitter_tree_game {α α' β β' γ γ' : Type}
 -- * Reveler  winning condition
 -- Reveler wins all possible games.
 def reveler_winning_condition
-  {α α' β β' γ : Type}
+  {α α' β γ : Type}
     -- Game Mechanics
-    (leafCondition : α' -> α -> γ -> Winner)
-    (midCondition  : β' -> β -> γ -> γ -> γ -> Winner)
+    (leafCondition : α -> α' -> γ -> Bool)
+    (midCondition  : β -> γ -> γ -> γ -> Bool)
     -- Public Information
-    (da : CompTree α' β' γ)
+    (da : CompTree α β γ)
     -- Players
-    (reveler : ABTree (Option α) (Option (β × γ × γ)))
+    (reveler : ABTree (Option α') (Option (γ × γ)))
   : Prop :=
   match da.data , reveler with
   | .node b bl br , .node (.some proposed) left_reveler right_reveler =>
     -- If challenged, proposer wins
-    midCondition b proposed.1 da.res proposed.2.1 proposed.2.2 = Player.Proposer
+    midCondition b da.res proposed.1 proposed.2
     -- Same for each branch
     ∧ reveler_winning_condition leafCondition midCondition
-                                               {data := bl, res:=proposed.2.1}
+                                               {data := bl, res:=proposed.1}
                                                left_reveler
     ∧ reveler_winning_condition leafCondition midCondition
-                                               {data := br, res:=proposed.2.2}
+                                               {data := br, res:=proposed.2}
                                                right_reveler
    | .leaf a, .leaf (.some a') =>
-     leafCondition a a' da.res = Player.Proposer
+     leafCondition a a' da.res
    | _ , _ => False
 
 def winning_condition_player {α α' β β' γ : Type}
@@ -313,16 +331,50 @@ def gen_to_fun_chooser {α β γ: Type}[BEq β]
 -- TODO Prove that this is correct
 theorem winning_proposer_wins {α α' β β' γ : Type}
     -- Game Mechanics
-    (leafCondition : α' -> α -> γ -> Winner)
-    (midCondition  : β' -> β -> γ -> γ -> γ -> Winner)
+    (leafCondition : α' -> α -> γ -> Bool)
+    (midCondition  : β' -> γ -> γ -> γ -> Bool)
     -- Public Information
     (da : CompTree α' β' γ)
     -- Players
-    (reveler : ABTree (Option α) (Option (β × γ × γ)))
+    (reveler : ABTree (Option α) (Option (γ × γ)))
     (good_reveler : reveler_winning_condition leafCondition midCondition da reveler)
-    : forall (chooser : ABTree Unit ((γ × β × γ × γ) -> Option ChooserMoves)),
+    : forall (chooser : ABTree Unit ((γ × γ × γ) -> Option ChooserMoves)),
       treeCompArbGame leafCondition midCondition da reveler chooser = Player.Proposer
-    := sorry
+    := by
+ revert good_reveler reveler
+ have ⟨ data , res ⟩ := da
+ revert res
+ induction data with
+ | leaf v =>
+   intros res reveler rev_win ch
+   cases reveler with
+   | node _ _ _ => simp [reveler_winning_condition] at rev_win
+   | leaf v' =>
+     cases v' with
+     | none => simp [reveler_winning_condition] at rev_win
+     | some p =>
+       simp [treeCompArbGame]
+       simp [reveler_winning_condition] at rev_win
+       assumption
+ | node g gl gr IndL IndR =>
+   intros res reveler rev_win ch
+   cases reveler with
+   | leaf _ => simp [reveler_winning_condition] at rev_win
+   | node mb rl rr =>
+     cases mb with
+     | none => simp [reveler_winning_condition] at rev_win
+     | some rev_p =>
+       simp [treeCompArbGame]
+       simp [reveler_winning_condition] at rev_win
+       cases ch with
+       | leaf _ => simp
+       | node mch chl chr =>
+         simp; split
+         case h_1 x heq => simp; exact rev_win.1
+         case h_2 x heq => apply IndL; exact rev_win.2.1
+         case h_3 x heq => apply IndR; exact rev_win.2.2
+         case h_4 x heq => simp
+
 
 def prop_winner : Winner -> Prop
     | .Proposer => True
@@ -572,3 +624,67 @@ def tree_da {γ : Type} { lgn : Nat }
 --           let treeDA : CompTree (Option SkElem) SkElem γ
 --              := ⟨ tDA , da.res ⟩
 --           treeCompArbGame _ _ treeDA tP tC
+
+theorem chooser_data_availability {α α' β γ : Type}
+    [BEq γ][LawfulBEq γ]
+    -- Conditions
+    (leafCondition : α -> α' -> γ -> Bool)
+    (midCondition  : β -> γ -> γ -> γ -> Bool)
+    -- Public Information
+    -- (da : CompTree α β γ)
+    (data : ABTree α β)
+    (ch_res da_res : γ)
+    -- Reveler
+    (reveler : ABTree (Option α') (Option (γ × γ)))
+    -- Chooser
+    (wise_chooser : ABTree α' (γ × γ))
+    -- Assumptions
+    (win_chooser : tree_comp_winning_conditions
+                   (fun x y z => leafCondition x y z)
+                   (fun w x y z  => midCondition w x y z) ⟨ data, ch_res ⟩ (wise_chooser.map some some))
+    (hneq : ¬ (ch_res = da_res))
+    : treeCompArbGame leafCondition midCondition
+                      ⟨ data , da_res⟩ reveler
+                      ( wise_chooser.map (fun _ => ()) (fun k gargs =>
+                       if (k.1 == gargs.2.1 && k.2 == gargs.2.2)
+                       then some .Now
+                       else if (k.1 != gargs.2.1)
+                            then some $ .Continue .Left
+                            else some $ .Continue .Right
+                       ))
+                      = Player.Chooser
+    := by
+    revert hneq win_chooser wise_chooser reveler ch_res da_res
+    induction data with
+    | leaf v =>
+     intros ch_res da_res rev wch win_ch nheq
+     cases rev with
+     | node _ _ _ => simp [treeCompArbGame]
+     | leaf mp => cases mp with
+                  | none => simp [treeCompArbGame]
+                  | some p =>
+                    simp [treeCompArbGame]
+                    cases wch with
+                    | node _ _ _ => simp [tree_comp_winning_conditions] at win_ch
+                    | leaf ch_l =>
+                      simp [tree_comp_winning_conditions, prop_winner] at win_ch
+                      sorry -- leaf uniqueness -- collision free hash
+    | node gb gl gr HIndL HIndR =>
+     intros ch_res da_res rev wch win_ch nheq
+     cases rev with
+     | leaf _ => simp [treeCompArbGame]
+     | node mrev revl revr =>
+       cases mrev with
+       | none =>  simp [treeCompArbGame]
+       | some proposed =>
+         simp [treeCompArbGame]
+         cases wch with
+         | leaf _ => simp [tree_comp_winning_conditions] at win_ch
+         | node ch_n chl chr =>
+           simp [tree_comp_winning_conditions] at win_ch
+           simp
+           split
+           case h_1 x heq => sorry -- destroy heq plus unique property about midcondition.
+           case h_2 x heq => apply HIndL; exact win_ch.2.1; sorry
+           case h_3 x heq => apply HIndR; exact win_ch.2.2; sorry
+           case h_4 x heq => sorry -- heq is nonsense

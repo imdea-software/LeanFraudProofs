@@ -27,6 +27,7 @@ def leaf_condition {α ℍ : Type}[BEq ℍ][o : Hash α ℍ]
     (a : α)(h : ℍ) : Winner
     := condWProp $ o.mhash a == h
 
+
 def mid_condition {ℍ : Type}[BEq ℍ][mag : HashMagma ℍ]
     ( p :  PMoves ℍ ) (h : ℍ) : Winner
     := match p with
@@ -267,6 +268,7 @@ lemma elem_forall_forward {ℍ : Type}
                 (sibling_forward proposer ⟨ i.succ , by omega ⟩)
     := sorry
 
+-- @check foldr
 -- Winning proposer prop is a winning sufficient condition.
 theorem winning_reveler_wins {ℍ : Type}
     [BEq ℍ][HashMagma ℍ]
