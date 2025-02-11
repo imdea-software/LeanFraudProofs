@@ -21,9 +21,8 @@ import FraudProof.Games.Base.RangeDAConditions
 -- completing the triplet.
 -- [a,b] -> side, c such that |op_side| side a c == b
 def leaf_condition_length_one {ℍ : Type}[BEq ℍ][HashMagma ℍ]
-  : SkElem -> ℍ -> Range ℍ -> Winner
-  := (fun side prop ⟨ src , dst ⟩
-  => condWProp $ op_side side src prop == dst)
+  : SkElem -> ℍ -> Range ℍ -> Bool
+  := (fun side prop ⟨ src , dst ⟩ => op_side side src prop == dst)
 
 -- Leaf Triangle approach
 -- When checking the triangle
@@ -34,25 +33,23 @@ def leaf_condition_length_one {ℍ : Type}[BEq ℍ][HashMagma ℍ]
 --   + h_mid = op_side side1 a h1
 --   + b = op_sid side2 hmid h2
 def leaf_triangle {ℍ : Type}[BEq ℍ][HashMagma ℍ]
-  : (SkElem × SkElem) -> (ℍ × ℍ) -> Range ℍ -> Winner
+  : (SkElem × SkElem) -> (ℍ × ℍ) -> Range ℍ -> Bool
   := (fun sides hashes ⟨ src , dst ⟩
   => have h_mid := op_side sides.1 src hashes.1
-    condWProp $ op_side sides.2 h_mid hashes.2 == dst
+    op_side sides.2 h_mid hashes.2 == dst
     )
 
 def mid_condition_da_checking {ℍ : Type}[BEq ℍ]
   -- Arena conditions
-  : Unit -> Unit
-  -> Range ℍ -> Range ℍ -> Range ℍ
-  -> Winner
-  := (fun _ _
+  : Unit -> Range ℍ -> Range ℍ -> Range ℍ
+  -> Bool
+  := (fun _
         hres hl hr =>
         let ⟨ parent_from , parent_to⟩ := hres
         let ⟨ left_from , left_to⟩ := hl
         let ⟨ right_from , right_to⟩ := hr
           -- Mid condition is the expected one
-        condWProp $
-          all_true
+        all_true
           -- Path consistency
           -- [a, b] <=> [a,c] and [c,b]
           [ parent_from == left_from
@@ -66,9 +63,9 @@ def tree_computation {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
     (da : CompTree SkElem Unit (Range ℍ))
     --
     (proposer : ABTree (Option ℍ)
-                       (Option (Unit × Range ℍ × Range ℍ)))
+                       (Option (Range ℍ × Range ℍ)))
     (chooser : ABTree Unit
-                      ((Range ℍ × Unit × Range ℍ × Range ℍ)
+                      ((Range ℍ × Range ℍ × Range ℍ)
                       -> Option ChooserMoves))
     --
     :=
@@ -83,9 +80,9 @@ def tree_computation_triangle {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
     (da : CompTree (SkElem × SkElem) Unit (Range ℍ))
     --
     (proposer : ABTree (Option (ℍ × ℍ))
-                       (Option (Unit × Range ℍ × Range ℍ)))
+                       (Option (Range ℍ × Range ℍ)))
     (chooser : ABTree Unit
-                      ((Range ℍ × Unit × Range ℍ × Range ℍ)
+                      ((Range ℍ × Range ℍ × Range ℍ)
                       -> Option ChooserMoves))
     --
     :=
@@ -107,7 +104,7 @@ def spl_game {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
     simp_tree
       -- Splitting range into two ranges
       (fun (a,b) c => ((a,c),(c,b)))
-      leaf_condition_length_one
+      (fun s h rh => condWProp $ @leaf_condition_length_one _ _ m s h rh)
       -- Chooser won't challenge these. Game is played until reaching a leaf.
       (fun _ _ _ => Player.Proposer)
       da proposer chooser
@@ -214,12 +211,12 @@ structure DA_Statement (ℍ : Type) where
 --
 @[simp]
 def Tree_Reveler (ℍ : Type)
-  := ABTree (Option ℍ) (Option (Unit × DA_Statement ℍ × DA_Statement ℍ))
+  := ABTree (Option ℍ) (Option (DA_Statement ℍ × DA_Statement ℍ))
 
 @[simp]
 def Tree_Reveler.top {ℍ : Type} : Tree_Reveler ℍ -> Option ℍ
   | .leaf oh => oh
-  | .node (.some ⟨ _, ⟨ _, hmid , _⟩ , _ ⟩ ) _ _ => .some hmid
+  | .node (.some ⟨ ⟨ _, hmid , _⟩ , _ ⟩ ) _ _ => .some hmid
   | _ => .none
 -- Good DAs also have some stuff like
 -- da.len = 0 => da.src = da.dst
@@ -236,11 +233,11 @@ def Tree_DA (ℍ : Type) :=
     (DA_Statement ℍ) -- [a, b] and length ...
 
 def leaf_condition_transformation {ℍ : Type}[BEq ℍ]
-  : Unit -> ℍ -> DA_Statement ℍ-> Winner
+  : Unit -> ℍ -> DA_Statement ℍ-> Bool
   := (fun _ prop ⟨ src , dst , len ⟩
     -- Unitary range and proposed same hash
     -- This is the end of the game. If nothing happened before.
-     => condWProp $ all_true
+     => all_true
      -- Unitary range [prop,prop] of length 0
      [ len == 0
      , prop == src
@@ -250,28 +247,25 @@ def leaf_condition_transformation {ℍ : Type}[BEq ℍ]
 
 def mid_condition_transformation{ℍ : Type}[BEq ℍ][mag : HashMagma ℍ]
   -- Arena conditions
-  : Unit -> Unit
-  -> DA_Statement ℍ -> DA_Statement ℍ -> DA_Statement ℍ
-  -> Winner
-  := (fun _ _
+  :  Unit -> DA_Statement ℍ -> DA_Statement ℍ -> DA_Statement ℍ
+  -> Bool
+  := (fun _
         hres hl hr =>
         let ⟨ parent_from , parent_to, len ⟩ := hres
         let ⟨ left_from , left_to, left_len ⟩ := hl
         let ⟨ right_from , right_to, right_len ⟩ := hr
-          -- Mid condition is the expected one
-        condWProp $
-          all_true
-          -- Path consistency
-          [ parent_from == left_from
+        -- Mid condition is the expected one
+        all_true
+        -- Path consistency
+        [ parent_from == left_from
           , parent_to == right_to
           , left_to == right_from
           , left_len + right_len == len
           , left_len > 0
           , right_len > 0
           -- Last condition (before leaf)
-          , (not (len == 2))
-            || (mag.comb parent_from parent_to == left_to)
-          ]
+          , ((not (len == 2)) || (mag.comb parent_from parent_to == left_to))
+        ]
       )
 
 def element_in_tree_transform {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
@@ -282,9 +276,9 @@ def element_in_tree_transform {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
     (da : CompTree Unit Unit (DA_Statement ℍ))
     --
     (proposer : ABTree (Option ℍ)
-                       (Option (Unit × (DA_Statement ℍ) × (DA_Statement ℍ))))
+                       (Option ((DA_Statement ℍ) × (DA_Statement ℍ))))
     (chooser : ABTree Unit
-                      (DA_Statement ℍ × Unit × (DA_Statement ℍ) × (DA_Statement ℍ)
+                      (DA_Statement ℍ × (DA_Statement ℍ) × (DA_Statement ℍ)
                       -> Option ChooserMoves))
     --
     :=
@@ -746,7 +740,7 @@ theorem linear_to_log_winning_proposer {ℍ : Type}
         -- boundaries [da.data.1, da.mtree]
         (gen_tree lgn da.mtree.1 da.mtree.2)
         --
-        ((tree_da_generator (complete_tree_proposer da lin_reveler)).map .some (fun p => .some ⟨ (), p⟩))
+        ((tree_da_generator (complete_tree_proposer da lin_reveler)).map .some .some)
     := by
     revert lgn
     intro lgn
@@ -775,7 +769,7 @@ theorem linear_to_log_winning_proposer {ℍ : Type}
       simp [da_generator]
       simp [gen_tree, gen_empty_perfect_tree, reveler_winning_condition]
       simp [ABTree.getI', mid_condition_transformation]
-      simp [condWProp]
+      -- simp [condWProp]
       apply And.intro
       · apply And.intro
         · have elem_0 := last_hash_node_hashes da lin_rev HElem

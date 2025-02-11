@@ -273,17 +273,18 @@ def treeArbitrationGame {α ℍ : Type}
     (chooser : ChooserStrategy ℍ)
     --
     : Winner :=
-    @treeCompArbGame α ℍ Unit Unit ℍ
+    @treeCompArbGame ℍ α Unit ℍ
       -- Leaf winning condition
-      (fun h data revealed => condWProp <| (o.mhash data == h) ∧ (h == revealed))
+      (fun ha data res => (o.mhash data == ha) ∧ (ha == res))
       -- Node winning condition
-      (fun _ _ r hl hr => condWProp $ m.comb hl hr == r)
+      (fun _ r hl hr =>  m.comb hl hr == r)
       -- DA
       ⟨ da.computation.toAB , da.res ⟩
       -- Revelear Strategy
-      (ABTree.map id (Option.map (fun x => ⟨ () , x ⟩)) reveler)
+      reveler
       -- Chooser Strategy
       (ABTree.map
         (fun _ => ())
-        (fun fhs ⟨hrs , _, hl , hr ⟩ => fhs ⟨ hrs, hl , hr ⟩) chooser)
+        (fun fhs ⟨hrs , hl , hr ⟩ => fhs ⟨ hrs, hl , hr ⟩)
+        chooser)
 ----------------------------------------

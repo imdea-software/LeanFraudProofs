@@ -39,7 +39,7 @@ def build_proposer' {ℍ : Type}{n : Nat}
     (bot_hash : ℍ)
     (skl : ISkeleton n)
     (rev : Sequence n (Option (PMoves ℍ)))
-    : ABTree (Option ℍ) (Option (SkElem × Range ℍ × Range ℍ))
+    : ABTree (Option ℍ) (Option (Range ℍ × Range ℍ))
     := match n with
     | .zero => .leaf $ .some bot_hash
     | .succ _ =>
@@ -48,11 +48,11 @@ def build_proposer' {ℍ : Type}{n : Nat}
       | .some (.Next proposed) =>
         match headSeq skl with
         | .inl _ =>
-               .node (.some ( ⟨ .inl () , ⟨ bot_hash , proposed.1⟩ , proposed  ⟩ ))
+               .node (.some ( ⟨ ⟨ bot_hash , proposed.1⟩ , proposed  ⟩ ))
                      (build_proposer' bot_hash (Fin.tail skl) (Fin.tail rev))
                      (.leaf $ .some proposed.2)
         | .inr _ =>
-               .node (.some ( ⟨ .inr () , ⟨ bot_hash , proposed.2 ⟩ , proposed  ⟩ ))
+               .node (.some ( ⟨ proposed   , ⟨ bot_hash , proposed.2 ⟩ ⟩ ))
                      (build_proposer' bot_hash (Fin.tail skl) (Fin.tail rev))
                      (.leaf $ .some proposed.1)
 
@@ -175,7 +175,7 @@ def elem_in_tree_forward_gentree {ℍ : Type}
       -- DA
       {data := skl_to_tree da.data, res:= da.mtree}
       (build_proposer' da.mtree.1 da.data proposer)
-      (build_chooser' da.data chooser)
+      (build_chooser' da.data⟩ chooser)
 ----------------------------------------
 -- Are both games equivs?
 --
