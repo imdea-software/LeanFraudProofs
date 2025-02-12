@@ -108,7 +108,20 @@ theorem winning_gen_chooser {ℍ α : Type}
             case h_1 x heq =>
               injections; rename_i val_eq heq
               rw [ite_eq_iff] at heq
-              sorry
+              simp at heq
+              cases heq with
+              | inl h =>
+                simp; unfold cond_hash at *
+                have ⟨eq_l ,eq_r⟩ := h
+                rw [<- eq_l, <- eq_r]
+                simp at good_ch
+                rw [good_ch.1]
+                simp
+                intro a; apply hneq; rw [a]
+              | inr h =>
+                have ⟨h_some , h_nonsense ⟩ := h
+                rw [ite_eq_iff] at h_nonsense
+                simp at h_nonsense
             case h_2 x heq => apply HIndL; exact good_ch.2.1; sorry
             case h_3 x heq => apply HIndR; exact good_ch.2.2; sorry
             case h_4 x heq => simp at heq
