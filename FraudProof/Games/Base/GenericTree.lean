@@ -328,8 +328,7 @@ def gen_to_fun_chooser {α β γ: Type}[BEq β]
         else .some (.Continue .Right)
         )
 
--- TODO Prove that this is correct
-theorem winning_proposer_wins {α α' β β' γ : Type}
+theorem winning_proposer_wins {α α' β' γ : Type}
     -- Game Mechanics
     (leafCondition : α' -> α -> γ -> Bool)
     (midCondition  : β' -> γ -> γ -> γ -> Bool)
@@ -468,8 +467,6 @@ theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
              exact hind
            case h_4 x heq =>
              sorry -- heq is a contradiction
-
-
 ----------------------------------------
 
 -- Another generid tree, more focused on logarithmic games.
