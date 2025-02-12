@@ -386,8 +386,22 @@ lemma prop_win_chooser (p : Winner)
   cases p
   all_goals { simp [prop_winner]}
 
+-- Principle of inoncense.
+-- If Hashes match what we know, there is no reason to challenge them.
+-- So, in our world, we assume they are correct if the observable data is okay.
+axiom no_challenge_matching_data {α α' β β' γ : Type}
+     {splitter : γ -> β -> γ × γ}
+     {da : CompTree α' β' γ}
+     {leafCondition : α' -> α -> γ -> Prop}
+     {midCondition  : β' -> β -> γ -> Prop}
+     { player : ABTree (Option α) (Option β) }
+     ( knowing : winning_condition_player leafCondition midCondition splitter da player )
+     : forall {other_player : ABTree (Option α) (Option β) },
+       winning_condition_player leafCondition midCondition splitter da other_player
 
-theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
+-- This is a generic proof. There is a specific one at ElemInTree!
+theorem winning_chooser_wins {α α' β β' γ : Type}
+    [BEq β][LawfulBEq β]
     (splitter : γ -> β -> γ × γ)
     -- Conditions
     (leafCondition : α' -> α -> γ -> Winner)
@@ -402,7 +416,9 @@ theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
     (win_chooser : winning_condition_player
                    (fun x y z => prop_winner $ leafCondition x y z)
                    (fun x y z => prop_winner $ midCondition x y z) splitter da wise_chooser)
-    (lossing_reveler : ¬ winning_condition_player (fun x y z => prop_winner $ leafCondition x y z) (fun x y z => prop_winner $ midCondition x y z) splitter da reveler)
+    (lossing_reveler : ¬ winning_condition_player
+                   (fun x y z => prop_winner $ leafCondition x y z)
+                   (fun x y z => prop_winner $ midCondition x y z) splitter da reveler)
     : simp_tree splitter
       leafCondition
       midCondition
@@ -454,7 +470,20 @@ theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
             simp at heq
            case h_2 x heq =>
              simp at heq
-             have hind := HIndL (splitter res proposed).1 pl chL sorry sorry
+             subst heq
+             -- Win Left Condition
+             rw [ HC, HCed ] at wCh ; simp [winning_condition_player] at wCh
+             -- have subwin_ch := wCh.2.1 ; rw [heq] at subwin_ch
+             -- Not Winning?
+             rw [HR,HP] at loPro --; simp [winning_condition_player] at loPro
+             unfold winning_condition_player at loPro
+             have lemm {a b c : Prop} :  a ∧ b ∧ c <-> a ∧ c ∧ b := sorry
+             rw [lemm] at loPro
+             simp at loPro
+             replace loPro := loPro wCh.1 (no_challenge_matching_data wCh.2.2)
+             have hind := HIndL (splitter res ched).1 pl chL
+               wCh.2.1
+               loPro
              exact hind
            case h_3 x heq =>
              simp at heq
@@ -462,11 +491,17 @@ theorem winning_chooser_wins {α α' β β' γ : Type}[BEq β]
              rw [HC, HCed] at wCh; simp [winning_condition_player] at wCh
              -- unfold winning_condition_player at wCh
              have hind := HIndR (splitter res proposed).2 pr chR
-               sorry -- This case is the interesting one. We need to specialize our winning chooser.
+               -- This case is the interesting one. We need to specialize our winning chooser.
+               -- In this case, we need to assume something else, like, if res
+               -- does not match, then I won't play
+               sorry -- wCh.2.2 -- This we cannot do, we need partial information to be correct and another to be bad.
+               --
                sorry
              exact hind
            case h_4 x heq =>
-             sorry -- heq is a contradiction
+             have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Chooser.Side.Left)) (some (ChooserPrimMoves.Continue Chooser.Side.Right)) none
+             rw [iteeq] at heq
+             simp at heq
 ----------------------------------------
 
 -- Another generid tree, more focused on logarithmic games.
