@@ -105,7 +105,10 @@ theorem winning_gen_chooser {ℍ α : Type}
             simp [reveler_winning_condition] at good_ch
             simp [gen_chooser_opt]
             split
-            case h_1 x heq => sorry
+            case h_1 x heq =>
+              injections; rename_i val_eq heq
+              rw [ite_eq_iff] at heq
+              sorry
             case h_2 x heq => apply HIndL; exact good_ch.2.1; sorry
             case h_3 x heq => apply HIndR; exact good_ch.2.2; sorry
             case h_4 x heq => simp at heq
