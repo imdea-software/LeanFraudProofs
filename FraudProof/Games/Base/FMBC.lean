@@ -1,6 +1,7 @@
 import FraudProof.Games.Base.GenericTree -- Complex Strategies
 
-def cond_hash_elem {ℍ α : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ] (leaf: ℍ) (rev : α) (res : ℍ)
+def cond_hash_elem {ℍ α : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ]
+  (leaf: ℍ) (rev : α) (res : ℍ)
    : Bool :=  h.mhash rev == leaf && leaf == res
 
 def cond_hash { ℍ : Type }[BEq ℍ][mag : HashMagma ℍ] (res l r : ℍ) : Bool
@@ -30,23 +31,21 @@ theorem winning_prop_hashes {ℍ α : Type}
     := winning_proposer_wins _ _ da reveler good_reveler
 
 def gen_chooser_opt {ℍ : Type}
-   [BEq ℍ]
+   [DecidableEq ℍ]
    ( data : Option (ℍ × ℍ) )
    (proposed : ℍ × ℍ × ℍ)
    : Option ChooserMoves
    := data.map ( fun (l , r) =>
-     if l == proposed.2.1 && r == proposed.2.2
+     if l = proposed.2.1 ∧ r = proposed.2.2
      then .Now
-     else if l != proposed.2.1 then .Continue .Left
-     else .Continue .Right
+     else if ¬ l = proposed.2.1
+          then .Continue .Left
+          else .Continue .Right
    )
 
 theorem winning_gen_chooser {ℍ α : Type}
-    [BEq ℍ][LawfulBEq ℍ]
+    [DecidableEq ℍ] -- Dec here hides collision free.
     [h : Hash α ℍ][HashMagma ℍ]
-    --
-    [collres : CollResistant α ℍ]
-    [hash_props : SLawFulHash ℍ]
     -- Public Information
     (pub_data : ABTree ℍ Unit)
     -- Players
@@ -122,6 +121,18 @@ theorem winning_gen_chooser {ℍ α : Type}
                 have ⟨h_some , h_nonsense ⟩ := h
                 rw [ite_eq_iff] at h_nonsense
                 simp at h_nonsense
-            case h_2 x heq => apply HIndL; exact good_ch.2.1; sorry
-            case h_3 x heq => apply HIndR; exact good_ch.2.2; sorry
+            case h_2 x heq =>
+              apply HIndL; exact good_ch.2.1
+              simp at heq
+              rw [ite_eq_iff] at heq
+              simp at heq
+              intro a; apply heq.2; rw [a]
+            case h_3 x heq =>
+              apply HIndR; exact good_ch.2.2
+              simp at heq
+              rw [ite_eq_iff] at heq
+              simp at heq
+              have ⟨ f , a ⟩ := heq
+              have fa := f a
+              intro b; apply fa; rw [b]
             case h_4 x heq => simp at heq

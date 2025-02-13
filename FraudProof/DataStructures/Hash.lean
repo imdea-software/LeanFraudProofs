@@ -118,3 +118,18 @@ end HashString
 ----------------------------------------
 -- Useful names
 ----------------------------------------
+
+----------------------------------------
+-- * Hash Properties
+-- Decable eq!
+def eq_eqhash {α ℍ : Type}
+  [ eqa : DecidableEq α]
+  [o : Hash α ℍ][cfree : CollResistant α ℍ]
+  (a b : α)
+ :  Decidable ((o.mhash a) = (o.mhash b))
+ := match eqa a b with
+    | isTrue e =>
+     isTrue (by rw [e])
+    | isFalse e =>
+     isFalse (by apply cfree.noCollisions; assumption)
+----------------------------------------
