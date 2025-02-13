@@ -264,6 +264,10 @@ We can define a game using generation strategies. If choosers provide inside
 knowledge of how they created their strategies, we can perform useful
 transformation.
 Honest choosers know the data and thus, are part of this family.
+** Simultaneous games
+Since we have data behind Choosers now (and we generate functions based on that), we can play a simultaneous game.
+At each step, both players reveal information and based on that the game progresses.
+I think they are equivalent, but I am leaving the proof of that to after FMBC.
 
 * To build the whole project
 #+begin_src sh :noeval
