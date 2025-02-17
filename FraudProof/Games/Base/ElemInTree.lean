@@ -19,6 +19,15 @@ structure ElemInMTree (α ℍ : Type) where
   mtree : ℍ
   -- Prop: foldl hash_Path (hash elem) path = mtree
 
+def implicit_element_in_tree {α ℍ : Type}[m : Hash α ℍ][mag : HashMagma ℍ]
+   (computation : ElemInMTree α ℍ)
+   (missing_data : List ℍ)
+   : Prop
+   := List.foldr
+       (fun (side, h) acc => match side with | .inl _ => mag.comb h acc | .inr _ => mag.comb acc h)
+       (m.mhash computation.elem) (List.zip computation.path missing_data)
+      = computation.mtree
+
 -- Here we do not need to know the whole tree.
 -- maybe we need to define some notion of DA promotion.
 -- Whatever game we define over Skeletons we can play over trees?

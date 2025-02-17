@@ -59,7 +59,7 @@ def build_proposer' {ℍ : Type}{n : Nat}
 @[simp]
 def build_proposer {ℍ : Type}{n : Nat}
   (data : ℍ × ISkeleton n) (rev : Sequence n (Option (PMoves ℍ)))
-  : ABTree (Option ℍ) (Option (Unit × ℍ × ℍ))
+  : ABTree (Option ℍ) (Option (ℍ × ℍ))
   := match n with
   | .zero => .leaf $ .some data.1
   | .succ _pn =>
@@ -69,24 +69,24 @@ def build_proposer {ℍ : Type}{n : Nat}
       | .some (.Next ⟨ hl , hr⟩)=>
        match headSeq data.2 with
          | .inl _ =>
-           .node (.some ⟨ (), hl, hr ⟩)
+           .node (.some ⟨ hl, hr ⟩)
                  rest_tree
                  (.leaf (.some hr))
          | .inr _ =>
-           .node (.some ⟨ (), hl, hr ⟩)
+           .node (.some ⟨  hl, hr ⟩)
                  (.leaf (.some hl))
                  rest_tree
 @[simp]
 def build_chooser {ℍ : Type}{n : Nat}
   (data : ℍ × ISkeleton n)
   (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
-  : ABTree Unit (ℍ × Unit × ℍ × ℍ -> Option ChooserMoves)
+  : ABTree Unit (ℍ × ℍ × ℍ -> Option ChooserMoves)
   := match n with
     | .zero => .leaf ()
     | .succ _pn =>
-      let side_choose (s : Chooser.Side) (arg : ℍ × Unit × ℍ × ℍ)
+      let side_choose (s : Chooser.Side) (arg : ℍ × ℍ × ℍ)
           : Option ChooserMoves :=
-          have ⟨ ht , _ , hl , hr ⟩ := arg
+          have ⟨ ht ,  hl , hr ⟩ := arg
           (headSeq chooser ⟨ ht, hl , hr ⟩).map
             (fun ch => match ch with
                        | .Now => .Now
@@ -107,14 +107,14 @@ def build_chooser {ℍ : Type}{n : Nat}
 def build_chooser' {ℍ : Type}{n : Nat}
   (skl : ISkeleton n)
   (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
-  : ABTree Unit (Range ℍ × SkElem  × Range ℍ × Range ℍ -> Option ChooserMoves)
+  : ABTree Unit ((ℍ × ℍ) × (ℍ × ℍ) × (ℍ × ℍ) -> Option ChooserMoves)
   := match n with
     | .zero => .leaf ()
     | .succ _ =>
-      let curr_check (args : Range ℍ × SkElem  × Range ℍ × Range ℍ)
+      let curr_check (side : SkElem) (args : Range ℍ  × Range ℍ × Range ℍ)
                      : Option ChooserMoves
         := -- Should I check Range consistency? Not necesseary during transformations
-          have ⟨ top_range, side, _next_range, decomp ⟩ := args
+          have ⟨ top_range, _next_range, decomp ⟩ := args
           -- top_range.1 == next_range.1 && next_range.2 == decomp.side
           match side with
           | .inl _ => match headSeq chooser ⟨ top_range.2, decomp.1, decomp.2 ⟩ with
@@ -126,8 +126,8 @@ def build_chooser' {ℍ : Type}{n : Nat}
                       | .some (.Continue _) => .some $ .Continue .Right
                       | .none => .none
       match headSeq skl with
-      | .inl _ => .node curr_check (build_chooser' (Fin.tail skl) (Fin.tail chooser)) (.leaf ())
-      | .inr _ => .node curr_check (.leaf ()) (build_chooser' (Fin.tail skl) (Fin.tail chooser))
+      | .inl _ => .node (curr_check (.inl _)) (build_chooser' (Fin.tail skl) (Fin.tail chooser)) (.leaf ())
+      | .inr _ => .node (curr_check (.inr _)) (.leaf ()) (build_chooser' (Fin.tail skl) (Fin.tail chooser))
 
 
 def elem_in_tree_gen_tree {ℍ : Type}
@@ -143,21 +143,22 @@ def elem_in_tree_gen_tree {ℍ : Type}
     :=
     let da_tree : CompTree (Option ℍ) Unit ℍ
       := {data := skl_to_maybe_elem da.mtree.1 da.data , res := da.mtree.2}
-    let tree_revealer : ABTree (Option ℍ) (Option (Unit × ℍ × ℍ))
+    let tree_revealer : ABTree (Option ℍ) (Option (ℍ × ℍ))
       := build_proposer ⟨ da.mtree.1 , da.data⟩ proposer
-    let tree_chooser : ABTree Unit (ℍ × Unit × ℍ × ℍ -> Option ChooserMoves)
+    let tree_chooser : ABTree Unit (ℍ × ℍ × ℍ -> Option ChooserMoves)
       := build_chooser ⟨ da.mtree.1 , da.data⟩ chooser
     treeCompArbGame
       (fun opth _h1 h2 =>
         match opth with
         | .none => -- this case is a bit artificial
         -- chooser should challenge previous step.
-          Player.Proposer
-        | .some hp => condWProp <| (hp == h2)
+          true
+          -- Player.Proposer
+        | .some hp => (hp == h2)
       )
-      (fun _ _ hres pl pr =>
+      (fun _ hres pl pr =>
         -- _nodeh and hres should be the same.
-           condWProp $ mag.comb pl pr == hres)
+           mag.comb pl pr == hres)
       da_tree tree_revealer tree_chooser
 
 def elem_in_tree_forward_gentree {ℍ : Type}
@@ -175,7 +176,8 @@ def elem_in_tree_forward_gentree {ℍ : Type}
       -- DA
       {data := skl_to_tree da.data, res:= da.mtree}
       (build_proposer' da.mtree.1 da.data proposer)
-      (build_chooser' da.data⟩ chooser)
+      (build_chooser' da.data chooser)
+
 ----------------------------------------
 -- Are both games equivs?
 --
