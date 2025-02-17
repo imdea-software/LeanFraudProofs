@@ -288,3 +288,25 @@ def treeArbitrationGame {α ℍ : Type}
         (fun fhs ⟨hrs , hl , hr ⟩ => fhs ⟨ hrs, hl , hr ⟩)
         chooser)
 ----------------------------------------
+
+@[simp]
+def arbitrationTree {α ℍ : Type}
+    [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+    (arena : ABTree Unit Unit)
+    (res : ℍ)
+    --
+    (reveler : ProposerStrategy α ℍ )
+    (chooser : ChooserStrategy ℍ)
+    --
+    : Winner :=
+    @treeCompArbGame Unit α Unit ℍ
+      -- Leaf winning condition
+      (fun _ a hres => o.mhash a == hres)
+      -- Node winning condition
+      (fun _ r hl hr =>  m.comb hl hr == r)
+      -- DA
+      ⟨ arena , res ⟩
+      -- Revelear Strategy
+      reveler
+      -- Chooser Strategy
+      (ABTree.map (fun _ => ()) (fun fhs ⟨hrs , hl , hr ⟩ => fhs ⟨ hrs, hl , hr ⟩) chooser)
