@@ -1,15 +1,15 @@
 import FraudProof.Games.Base.GenericTree -- Complex Strategies
 
 def cond_hash_elem {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ]
-  (_leaf: Unit) (rev : α) (res : ℍ)
-   : Bool :=  h.mhash rev == res
+  (leaf: ℍ ) (rev : α) (res : ℍ)
+   : Bool :=  h.mhash rev == res && leaf == res
 
 def cond_hash { ℍ : Type }[BEq ℍ][mag : HashMagma ℍ] (res l r : ℍ) : Bool
   := mag.comb l r == res
 
 -- Hash Game
 abbrev dac_game {ℍ α : Type}[BEq ℍ][LawfulBEq ℍ][Hash α ℍ][HashMagma ℍ]
-  (da : CompTree Unit Unit ℍ)
+  (da : CompTree ℍ Unit ℍ)
   (revealer : ABTree (Option α) (Option (ℍ × ℍ)))
   (chooser : ABTree Unit ((ℍ × ℍ × ℍ) -> Option ChooserMoves))
   :=
@@ -19,7 +19,7 @@ theorem winning_prop_hashes {ℍ α : Type}
     [DecidableEq ℍ]
     [Hash α ℍ][HashMagma ℍ]
     -- Public Information
-    (da : CompTree Unit Unit ℍ)
+    (da : CompTree ℍ Unit ℍ)
     -- Players
     (revealer : ABTree (Option α) (Option (ℍ × ℍ)))
     (good_revealer : reveler_winning_condition cond_hash_elem (fun _ => cond_hash)
@@ -32,51 +32,52 @@ theorem winning_prop_hashes {ℍ α : Type}
     := winning_proposer_wins _ _ da revealer good_revealer
 
 def gen_chooser_opt {ℍ : Type}
-   [DecidableEq ℍ]
+   -- [DecidableEq ℍ]
+   [BEq ℍ]
    ( data : Option (ℍ × ℍ) )
    (proposed : ℍ × ℍ × ℍ)
    : Option ChooserMoves
    := data.map ( fun (l , r) =>
-     if l = proposed.2.1 ∧ r = proposed.2.2
+     if l == proposed.2.1 ∧ r == proposed.2.2
      then .Now
-     else if ¬ l = proposed.2.1
+     else if ¬ l == proposed.2.1
           then .Continue .Left
           else .Continue .Right
    )
 
-def same_leaves {α β : Type}(revealer chooser : ABTree α β) : Prop
- := match revealer, chooser with
-   | .leaf v , .leaf w => v = w
-   | .node _rn rl rr , .node _ln ll lr =>
-     same_leaves rl ll ∧ same_leaves rr lr
-   -- Isomorph
-   | _ , _ => False
+-- def same_hash_leaves {α β ℍ : Type}[m : Hash α ℍ](revealer chooser : ABTree (Option α) β) : Prop
+--  := match revealer, chooser with
+--    | .leaf v , .leaf w => m.mhash <$> v = m.mhash <$> w
+--    | .node _rn rl rr , .node _ln ll lr =>
+--      @same_hash_leaves _ _ _ m rl ll ∧ @same_hash_leaves _ _ _ m rr lr
+--    -- Isomorph
+--    | _ , _ => False
 
 
 theorem winning_gen_chooser {ℍ α : Type}
-    [DecidableEq ℍ] [h : Hash α ℍ][HashMagma ℍ]
+    [hash : Hash α ℍ][HashMagma ℍ]
+    [DecidableEq ℍ]
     -- Public Information
-    (pub_data : ABTree Unit Unit)
+    (pub_data : ABTree ℍ Unit)
     -- Players
     (revealer : ABTree (Option α) (Option (ℍ × ℍ)))(rev_res : ℍ)
     (chooser : ABTree (Option α) (Option (ℍ × ℍ)))(ch_res : ℍ)
     -- Chooser knows the data and hashes do not match
-    (same_data : same_leaves revealer chooser)
+    -- (same_data : @same_hash_leaves _ _ _ h revealer chooser)
     (good_chooser: winning_condition_player
-                   (fun _ a h => @cond_hash_elem α ℍ _ _ _ () a h )
-                                      (fun _ (l,r) res => cond_hash res l r)
-                                      (fun _ x => x)
-                                      ⟨ pub_data , ch_res ⟩ chooser)
+                    (fun c a h => cond_hash_elem c a h)
+                    (fun _ (l,r) res => cond_hash res l r)
+                    (fun _ => id) ⟨ pub_data , ch_res ⟩ chooser)
     (hneq : ¬ rev_res = ch_res)
-    : treeCompArbGame
-         cond_hash_elem (fun _ => cond_hash)
+    : treeCompArbGame cond_hash_elem (fun _ => cond_hash)
          ⟨ pub_data, rev_res ⟩ revealer (chooser.map (fun _ => ()) gen_chooser_opt)
          = Player.Chooser
     := by
-  revert hneq good_chooser same_data ch_res chooser rev_res revealer
+  revert hneq good_chooser ch_res chooser rev_res revealer
   induction pub_data with
   | leaf v =>
-    intros revealer rev_res chooser ch_res same_data good_ch hneq
+    intros revealer rev_res chooser ch_res good_ch hneq
+    -- intros revealer rev_res chooser ch_res same_data good_ch hneq
     cases revealer with
     | node _ _ _ => simp [treeCompArbGame]
     | leaf mrev =>
@@ -92,13 +93,12 @@ theorem winning_gen_chooser {ℍ α : Type}
         | some ched =>
           simp [winning_condition_player] at good_ch
           unfold cond_hash_elem at *
-          simp at good_ch
-          simp [same_leaves] at same_data
-          simp
+          simp at *; intro hrev
           subst_eqs
+          rw [good_ch.2]
           intro pp; apply hneq; symm; assumption
   | node _ gl gr HIndL HIndR =>
-    intros revealer rev_res chooser ch_res hsame good_ch hneq
+    intros revealer rev_res chooser ch_res good_ch hneq
     cases revealer with
     | leaf _ => simp [treeCompArbGame]
     | node mp revl revr =>
@@ -134,7 +134,7 @@ theorem winning_gen_chooser {ℍ α : Type}
                 simp at h_nonsense
             case h_2 x heq =>
               apply HIndL
-              unfold same_leaves at hsame; exact hsame.1
+              -- unfold same_hash_leaves at hsame; exact hsame.1
               exact good_ch.2.1
               simp at heq
               rw [ite_eq_iff] at heq
@@ -142,7 +142,7 @@ theorem winning_gen_chooser {ℍ α : Type}
               intro a; apply heq.2; rw [a]
             case h_3 x heq =>
               apply HIndR
-              unfold same_leaves at hsame; exact hsame.2
+              -- unfold same_hash_leaves at hsame; exact hsame.2
               exact good_ch.2.2
               simp at heq
               rw [ite_eq_iff] at heq
