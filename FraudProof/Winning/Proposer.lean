@@ -61,7 +61,7 @@ structure PropHash {ℍ : Type}[HashMagma ℍ](pathLen : Nat) (hv hr : ℍ) wher
 
 -- Higher definition linking the intuition stated before.
 def WinningProp {α ℍ : Type}[m : Hash α ℍ][HashMagma ℍ](pathLen : Nat) (v : α) (mt : MTree ℍ)
-   := PropHash pathLen (m.mhash v) mt.hash
+   := PropHash pathLen (m.mhash v) mt
 
 lemma WinningOne {ℍ : Type}[HashMagma ℍ]{hb ht : ℍ} (P : PropHash 1 hb ht)
       : opHash hb (P.strategies.pathSib ⟨ 0 , by omega ⟩) = ht
@@ -288,12 +288,14 @@ lemma hashChainF [HashMagma ℍ] ps ( n : Fin ps.length ) :
     | succ pnVal =>
     simp at *
     intro hV
-    have pnLt : pnVal < pes.length := by
-      { simp at nLt; assumption }
+    have pnLt : pnVal < pes.length := by { simp at nLt; assumption }
     rw  [ Fin.forall_iff ] at HInd
     have appN := HInd pnVal pnLt (opHash hV pe)
     -- unfold SibsF' at appN
     simp at *
+    rw [appN]
+    -- have eqmod : (hV :: List.scanl opHash (opHash hV pe) pes)[(pnVal + 1) % (pes.length + 1 + 1)]
+    --               = (List.scanl opHash (opHash hV pe) pes)[(pnVal + 1) % (pes.length + 1 )] := sorry
     sorry -- Broke after update
     -- assumption
 
@@ -425,7 +427,7 @@ def LP_HPlayer {m n : Nat} (eqMN : m = n) (p : HC ℍ m) : HC ℍ n
   -- We can create a winning strategy.
 def WProposerCreate {α : Type}[aeq : BEq α][aeqLaw : LawfulBEq α][m : Hash α ℍ][op : HashMagma ℍ]( v : α ) (bt : BTree α) (path : TreePath α) (pathNNil : 0 < path.length)
     ( vInTree : valueInProof v bt = some path )
-    : @WinningProposer.WinningProp α ℍ m op path.length v (hash_BTree bt)
+    : @WinningProposer.WinningProp α ℍ m op path.length v bt.hash_BTree
     := have eqLen : path.length = List.length (@treeTohashPath α ℍ _ _ path)
        := (by unfold treeTohashPath; rw [ List.length_map ])
     { pathLenNZ := pathNNil

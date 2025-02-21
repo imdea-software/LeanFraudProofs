@@ -1,5 +1,5 @@
 import FraudProof.Games.GameDef -- Players, Winner
-import FraudProof.Games.Base.GenericTree -- Generic Game trees
+import FraudProof.Games.GenericTree -- Generic Game trees
 
 import FraudProof.DataStructures.Sequence
 
@@ -24,7 +24,7 @@ def implicit_element_in_tree {α ℍ : Type}[m : Hash α ℍ][mag : HashMagma �
    (missing_data : List ℍ)
    : Prop
    := List.foldr
-       (fun (side, h) acc => match side with | .inl _ => mag.comb h acc | .inr _ => mag.comb acc h)
+       (fun (side, h) acc => op_side side h acc)
        (m.mhash computation.elem) (List.zip computation.path missing_data)
       = computation.mtree
 
@@ -34,13 +34,11 @@ def implicit_element_in_tree {α ℍ : Type}[m : Hash α ℍ][mag : HashMagma �
 
 def leaf_condition {α ℍ : Type}[BEq ℍ][o : Hash α ℍ]
     (a : α)(h : ℍ) : Winner
-    := condWProp $ o.mhash a == h
-
+    := winning_proposer $ o.mhash a == h
 
 def mid_condition {ℍ : Type}[BEq ℍ][mag : HashMagma ℍ]
     ( p :  PMoves ℍ ) (h : ℍ) : Winner
-    := match p with
-      | .Next ⟨hl, hr⟩ => condWProp $ mag.comb hl hr == h
+    := winning_proposer $ mag.comb p.1 p.2 == h
 
 -- Element in Tree arbitration game! Intermediate steps
 def arbElem {α ℍ : Type}
@@ -64,12 +62,12 @@ def arbElem {α ℍ : Type}
             | some .Now => mid_condition proposed da.mtree
             | some (.Continue _) =>
                 let nextHash := match sibside with
-                                | .inl _ => proposed.left
-                                | .inr _ => proposed.left
+                                | .Left => proposed.left
+                                | .Right => proposed.right
                 arbElem (pos ++ [sibside]) ⟨ da.elem , rest, nextHash⟩
                         proposer chooser
     termination_by da.path
-    decreasing_by {simp_wf; rw [_HC]; simp}
+    decreasing_by {simp_wf; rw [_HC]; simp; omega}
 
 -- Element in Tree arbitration game!
 def arbElemInit {α ℍ : Type} [BEq ℍ] [Hash α ℍ][HashMagma ℍ]
@@ -89,10 +87,10 @@ structure ElemInTreeN (n : Nat)(α ℍ : Type) where
   -- This da says |bt ! data.2| leads to |data.1|
 
 def SingleLastStep {α ℍ : Type}[BEq ℍ][h : Hash α ℍ] (data : ElemInTreeN 0 α ℍ) : Winner
-  := condWProp $ h.mhash (data.data.1) == data.mtree
+  := winning_proposer $ h.mhash (data.data.1) == data.mtree
 
 def SingleMidStep {ℍ : Type}[BEq ℍ][m : HashMagma ℍ ](data : ℍ × ℍ × ℍ) : Winner
-  := condWProp $ m.comb data.2.1 data.2.2 == data.1
+  := winning_proposer $ m.comb data.2.1 data.2.2 == data.1
 
 def elemInHGame {α ℍ : Type}
     [BEq ℍ][Hash α ℍ][HashMagma ℍ]
@@ -104,23 +102,23 @@ def elemInHGame {α ℍ : Type}
     := match n with
        | 0 => SingleLastStep da
        | .succ _pn =>
-         match headSeq proposer with
+         match proposer.head with
          | .none => Player.Chooser -- Proposer forfeits the game
-         | .some (.Next proposed) =>
-           match headSeq chooser ⟨ da.mtree , proposed ⟩ with
+         | .some proposed =>
+           match chooser.head ⟨ da.mtree , proposed ⟩ with
            | .none => Player.Proposer -- Chooser forfeits the game
            | .some .Now =>
              SingleMidStep  ⟨ da.mtree , proposed ⟩
            | .some (.Continue _) =>
-             have nextHash := match headSeq da.data.2 with
-                    | .inl _ => proposed.1
-                    | .inr _ => proposed.2
+             have nextHash := match da.data.2.head with
+                    | .Left => proposed.1
+                    | .Right => proposed.2
              elemInHGame
                -- Next step DA
-               ⟨⟨ da.data.1, tailSeq da.data.2⟩ , nextHash ⟩
+               ⟨⟨ da.data.1, da.data.2.tail⟩ , nextHash ⟩
                -- Next step players
-               (tailSeq proposer)
-               (tailSeq chooser)
+               proposer.tail
+               chooser.tail
 
 structure ElemInTreeH (n : Nat)(ℍ : Type) where
   data : ISkeleton n -- This is the 'skeleton proof'
@@ -134,7 +132,7 @@ structure ElemInTreeH (n : Nat)(ℍ : Type) where
 -- If path is of length 0, then elements should be the same. Although, hashes
 -- are the same, elements maybe not be.
 def SingleLastStepH {ℍ : Type}[BEq ℍ] (data : ElemInTreeH 0 ℍ) : Winner
-  := condWProp $ data.mtree.1 == data.mtree.2
+  := winning_proposer $ data.mtree.1 == data.mtree.2
 
 def elem_in_tree_backward {ℍ : Type}
     [BEq ℍ][HashMagma ℍ]
@@ -146,27 +144,27 @@ def elem_in_tree_backward {ℍ : Type}
     := match n with
        | 0 => SingleLastStepH da
        | .succ _pn =>
-         match headSeq proposer with
+         match proposer.head with
          | .none => Player.Chooser -- Proposer forfeits the game
-         | .some (.Next proposed) =>
-           match headSeq chooser ⟨ da.mtree.2 , proposed ⟩ with
+         | .some proposed =>
+           match chooser.head ⟨ da.mtree.2 , proposed ⟩ with
            | .none => Player.Proposer -- Chooser forfeits the game
            | .some .Now => SingleMidStep  ⟨ da.mtree.2 , proposed ⟩
            | .some (.Continue _) =>
-             have nextHash := match headSeq da.data with
-                    | .inl _ => proposed.1
-                    | .inr _ => proposed.2
+             have nextHash := match da.data.head with
+                    | .Left => proposed.1
+                    | .Right => proposed.2
              elem_in_tree_backward
                -- Next step DA
-               { data := tailSeq da.data, mtree := ⟨ da.mtree.1 , nextHash⟩  }
+               { data := da.data.tail, mtree := ⟨ da.mtree.1 , nextHash⟩  }
                -- Next step players
-               (tailSeq proposer)
-               (tailSeq chooser)
+               proposer.tail
+               chooser.tail
 
 @[simp]
 def forward_mid_step_condition {ℍ : Type}[BEq ℍ][m : HashMagma ℍ ]
   (side : SkElem) (data : ℍ × ℍ) (res : ℍ) : Winner
-  := condWProp $ op_side side data.1 data.2 == res
+  := winning_proposer $ op_side side data.1 data.2 == res
 
 -- Reverse game -- It is not (*JUST*) the reverse game.
 -- Proposer proposes different hashes that the previos linear game.
@@ -180,19 +178,19 @@ def elem_in_tree_forward {ℍ : Type}[BEq ℍ][HashMagma ℍ]
     := match n with
       | 0 => SingleLastStepH da
       | .succ _pn =>
-        match headSeq proposer with
+        match proposer.head with
         | .none => Player.Chooser
-        | .some (.Next proposed) =>
-            match headSeq chooser ⟨ da.mtree.1, proposed ⟩ with
+        | .some proposed =>
+            match chooser.head ⟨ da.mtree.1, proposed ⟩ with
             | .none  => Player.Proposer
             | .some .Now =>
               forward_mid_step_condition
-                (headSeq da.data) ⟨ da.mtree.1 , proposed.2⟩ proposed.1
+                da.data.head ⟨ da.mtree.1 , proposed.2⟩ proposed.1
             | .some (.Continue _) =>
               elem_in_tree_forward
-                {data := Fin.tail da.data, mtree := ⟨ proposed.1 , da.mtree.2⟩}
-                (Fin.tail proposer)
-                (Fin.tail chooser)
+                {data := da.data.tail, mtree := ⟨ proposed.1 , da.mtree.2⟩}
+                proposer.tail
+                chooser.tail
 
 ----
 -- * Winning conditions
@@ -210,72 +208,43 @@ def elem_in_reveler_winning_condition_backward {ℍ : Type}
     := match n with
        | .zero => SingleLastStepH da = Player.Proposer
        | .succ _pn =>
-         match headSeq proposer with
-         | .Next proposed =>
-           SingleMidStep  ⟨ da.mtree.2 , proposed ⟩ = Player.Proposer
+         -- match proposer.head with
+         -- | .Next proposed =>
+           SingleMidStep  ⟨ da.mtree.2 , proposer.head ⟩ = Player.Proposer
            ∧ elem_in_reveler_winning_condition_backward
-               { data := tailSeq da.data
-                , mtree := ⟨ da.mtree.1 , (match headSeq da.data with
-                                            | .inl _ => proposed.1
-                                            | .inr _ => proposed.2
+               { data := da.data.tail
+                , mtree := ⟨ da.mtree.1 , (match da.data.head with
+                                            | .Left => proposer.head.1
+                                            | .Right => proposer.head.2
                                             )⟩
                }
-               (tailSeq proposer)
-
--- lemma elem_forall_backward {ℍ : Type}
---     [BEq ℍ][HashMagma ℍ]
---     {n : Nat}
---     (da : ElemInTreeH n ℍ)
---     (proposer : Sequence n (PMoves ℍ))
---     (hP : elem_in_reveler_winning_condition_backward da proposer)
---     : forall (i : Nat)(iLt : i < n - 1),
---       (spine_forward proposer ⟨ i , by omega ⟩)
---       = op_side (da.data ⟨ i.succ , by omega ⟩)
---                 ( proposer ⟨ i.succ , by omega ⟩)
---                 (sibling_forward proposer ⟨ i.succ , by omega ⟩)
---     := sorry
+               proposer.tail
 
 def elem_in_reveler_winning_condition_forward {ℍ : Type}
     [BEq ℍ][HashMagma ℍ]
     {n : Nat}
     (da : ElemInTreeH n ℍ)
-    (proposer : Sequence n (PMoves ℍ))
+    (proposer : Sequence n (ℍ × ℍ))
     -- Proposer proposes parent and sibling.
     : Prop
     := match n with
        | .zero => SingleLastStepH da = Player.Proposer
        | .succ _pn =>
-         match headSeq proposer with
-         | .Next proposed =>
-           (condWProp ((op_side (headSeq da.data) da.mtree.1 proposed.2) == proposed.1) = Player.Proposer)
+           (winning_proposer ((op_side da.data.head da.mtree.1 proposer.head.2) == proposer.head.1) = Player.Proposer)
            ∧ elem_in_reveler_winning_condition_forward
-               { data := tailSeq da.data
-                , mtree := ⟨ proposed.1
+               { data := da.data.tail
+                , mtree := ⟨ proposer.head.1
                            , da.mtree.2⟩
                }
-               (Fin.tail proposer)
+               proposer.tail
 
 def spine_forward {ℍ : Type}{n : Nat}
   : Sequence n (PMoves ℍ) -> Sequence n ℍ
-  := seqMap (fun p => p.destruct.1)
+  := Sequence.map (fun p => p.1)
 
 def sibling_forward {ℍ : Type}{n : Nat}
   : Sequence n (PMoves ℍ) -> Sequence n ℍ
-  := seqMap (fun p => p.destruct.2)
-
-
-lemma elem_forall_forward {ℍ : Type}
-    [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ]
-    {n : Nat}
-    (da : ElemInTreeH n ℍ)
-    (proposer : Sequence n (PMoves ℍ))
-    (hP : elem_in_reveler_winning_condition_forward da proposer)
-    : forall (i : Nat)(iLt : i < n - 1),
-      (spine_forward proposer ⟨ i.succ , by omega ⟩)
-      = op_side (da.data ⟨ i.succ , by omega ⟩)
-                (spine_forward proposer ⟨ i , by omega ⟩)
-                (sibling_forward proposer ⟨ i.succ , by omega ⟩)
-    := sorry
+  := Sequence.map (fun p => p.2)
 
 -- @check foldr
 -- Winning proposer prop is a winning sufficient condition.
@@ -286,7 +255,7 @@ theorem winning_reveler_wins {ℍ : Type}
     (proposer : Sequence n (PMoves ℍ))
     (winning_prop : elem_in_reveler_winning_condition_backward da proposer)
     (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
-    : elem_in_tree_backward da (seqMap .some proposer) chooser = Player.Proposer
+    : elem_in_tree_backward da (proposer.map .some) chooser = Player.Proposer
     := by revert n
           intro n
           induction n with
@@ -299,19 +268,20 @@ theorem winning_reveler_wins {ℍ : Type}
             intros da prop Hwin cho
             simp [elem_in_tree_backward]
             simp [elem_in_reveler_winning_condition_backward] at Hwin
-            cases HP : prop 0 with
-            | End v => contradiction
-            | Next p =>
-              simp; rw [HP] at Hwin; simp at Hwin
-              cases HC : cho 0 (da.mtree.2, p) with
-              | none => simp
-              | some chod =>
-                cases chod with
-                | Now => simp; exact Hwin.1
-                | Continue _ =>
-                  simp
-                  apply HInd
-                  exact Hwin.2
+            sorry
+            -- cases HP : prop.head with
+            -- | End v => contradiction
+            -- | Next p =>
+            --   simp; rw [HP] at Hwin; simp at Hwin
+            --   cases HC : cho 0 (da.mtree.2, p) with
+            --   | none => simp
+            --   | some chod =>
+            --     cases chod with
+            --     | Now => simp; exact Hwin.1
+            --     | Continue _ =>
+            --       simp
+            --       apply HInd
+            --       exact Hwin.2
 
 -- Winning proposer prop is a winning sufficient condition.
 theorem winning_reveler_wins_forward {ℍ : Type}
@@ -321,7 +291,7 @@ theorem winning_reveler_wins_forward {ℍ : Type}
     (proposer : Sequence n (PMoves ℍ))
     (winning_prop : elem_in_reveler_winning_condition_forward da proposer)
     (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
-    : elem_in_tree_forward da (seqMap .some proposer) chooser = Player.Proposer
+    : elem_in_tree_forward da (proposer.map .some) chooser = Player.Proposer
     := by
  revert n; intro n; induction n with
  | zero =>
@@ -333,21 +303,22 @@ theorem winning_reveler_wins_forward {ℍ : Type}
    intros da prop wProp ch
    simp [elem_in_tree_forward]
    simp [elem_in_reveler_winning_condition_forward] at wProp
-   cases HP : prop 0 with
-   | End v => contradiction
-   | Next p =>
-    simp
-    cases HC : ch 0 (da.mtree.1 , p) with
-    | none => simp
-    | some ched =>
-      cases HCd : ched with
-      | Now =>
-        simp
-        rw [HP] at wProp; simp at wProp
-        exact wProp.1
-      | Continue s =>
-       simp; rw [HP] at wProp; simp at wProp
-       exact Hind ⟨ Fin.tail da.data, (p.1 , da.mtree.2)⟩ (Fin.tail prop) wProp.2 (Fin.tail ch)
+   sorry
+   -- cases HP : prop 0 with
+   -- | End v => contradiction
+   -- | Next p =>
+   --  simp
+   --  cases HC : ch 0 (da.mtree.1 , p) with
+   --  | none => simp
+   --  | some ched =>
+   --    cases HCd : ched with
+   --    | Now =>
+   --      simp
+   --      rw [HP] at wProp; simp at wProp
+   --      exact wProp.1
+   --    | Continue s =>
+   --     simp; rw [HP] at wProp; simp at wProp
+   --     exact Hind ⟨ Fin.tail da.data, (p.1 , da.mtree.2)⟩ (Fin.tail prop) wProp.2 (Fin.tail ch)
 
 --
 --
@@ -356,7 +327,7 @@ theorem winning_reveler_wins_forward {ℍ : Type}
 -- I am sure I defined this somewhere else
 def last_step {ℍ : Type}[BEq ℍ][m : HashMagma ℍ ]
   (side : SkElem)(res : ℍ) (data : ℍ × ℍ)  : Winner
-  := condWProp $ op_side side data.1 res == data.2
+  := winning_proposer $ op_side side data.1 res == data.2
 
 def knowing {ℍ : Type}[BEq ℍ][HashMagma ℍ]
   ( skl : ABTree SkElem Unit )( know : ABTree ℍ ℍ ) (i o : ℍ) : Prop
@@ -414,14 +385,14 @@ theorem range_chooser_wins {ℍ : Type}
           simp [knowing] at kcho
         | leaf ch =>
           simp [knowing] at kcho
-          simp [last_step, condWProp]
+          simp [last_step]
           rw [<- kcho]
           cases sk with
-          | inl _ =>
+          | Left =>
             simp at *
             apply hash_props.neqLeft
             assumption
-          | inr _ =>
+          | Right =>
             simp at *
             apply hash_props.neqRight
             assumption
