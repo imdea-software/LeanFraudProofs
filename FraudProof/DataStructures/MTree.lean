@@ -1,127 +1,112 @@
--- import FraudProof.DataStructures.Value
 import FraudProof.DataStructures.BTree
 import FraudProof.DataStructures.Hash
+import FraudProof.DataStructures.Sequence
 
-inductive MTree (ℍ : Type): Type
-  | node (h : ℍ)
+----------------------------------------
+-- Merkle Tree are hashes plus an implicit invariant.
+----------------------------------------
 
--- notation
-def MTree.hash {ℍ : Type} : MTree ℍ → ℍ
-  | node h => h
+abbrev MTree (ℍ : Type) := ℍ
 
-def comb_MTree {ℍ : Type}[m : HashMagma ℍ] (tL tR : MTree ℍ) : MTree ℍ:=
- match tL , tR with
- | MTree.node hL , MTree.node hR => MTree.node (m.comb hL hR)
+@[simp]
+def comb_MTree {ℍ : Type}[m : HashMagma ℍ]
+  : MTree ℍ -> MTree ℍ -> MTree ℍ := m.comb
 
-def hash_BTree { α ℍ : Type}[o : Hash α ℍ][HashMagma ℍ] (t : BTree α) : MTree ℍ:=
-  match t with
-  | BTree.leaf v => MTree.node (o.mhash v)
-  | BTree.node hL hR => comb_MTree ( hash_BTree hL ) ( hash_BTree  hR )
+@[simp]
+def BTree.hash_BTree { α ℍ : Type}
+  [o : Hash α ℍ][HashMagma ℍ] : BTree α -> MTree ℍ
+  := fun t => t.fold o.mhash comb_MTree
 
 -- Eff HashingTree
 def hashM {α ℍ : Type}{m : Type -> Type}[Monad m]
     (hL : α -> m ℍ)(hC : ℍ -> ℍ -> m ℍ)(t : BTree α) : m (MTree ℍ)
     := match t with
-      | BTree.leaf v => MTree.node <$> hL v
-      | BTree.node nL nR =>
+      | .leaf v => hL v
+      | .node nL nR =>
         do let l <- hashM hL hC nL
            let r <- hashM hL hC nR
-           MTree.node <$> hC l.hash r.hash
+           hC l r
 
 ----------------------------------------
 -- * Paths
 -- Path in Merkle Trees are hashes indicating its position.
-abbrev PathElem (ℍ : Type) := Sum ℍ ℍ
-abbrev SkElem := Sum Unit Unit
-
-@[simp]
-def SkElem.fill {ℍ : Type}(skl : SkElem) (h : ℍ) : PathElem ℍ
-  := match skl with
-    | Sum.inl _ => Sum.inl h
-    | Sum.inr _ => Sum.inr h
-
-@[simp]
-def PathElem.forget {ℍ : Type}(h : PathElem ℍ) : SkElem
-:= match h with
-    | Sum.inl _ => Sum.inl ()
-    | Sum.inr _ => Sum.inr ()
-
-abbrev Path (ℍ : Type):= List (PathElem ℍ)
-abbrev Skeleton := List SkElem
--- |n| elements
-abbrev ISkeleton (n : Nat) := Fin n -> SkElem
-
-@[simp]
-def Skeleton.fill {ℍ : Type}(skl : Skeleton) (hs : Fin skl.length -> ℍ) : Path ℍ
-:= match skl with
-    | List.nil => List.nil
-    | List.cons s ss => s.fill (hs ⟨ 0 , by simp ⟩ )  :: Skeleton.fill ss (fun p => hs ⟨ p.val + 1 , by simp ⟩)
-
-@[simp]
-def MapSeq {α β : Type} { n : Nat } (f : α → β)
-: (Fin n -> α) -> (Fin n -> β) := fun s p => f $ s p
-
-@[simp]
-def MapSeqKey {α β : Type} {n : Nat} (f : Nat -> α -> β)
-: (Fin n -> α) -> (Fin n -> β) := fun s p => f p.val $ s p
-
-@[simp]
-def SeqForget {ℍ : Type} { n : Nat } : (Fin n -> PathElem ℍ) -> (Fin n -> SkElem)
-:= MapSeq PathElem.forget
-
-def opHash {ℍ : Type}[m : HashMagma ℍ] (h : ℍ) (e : PathElem ℍ) : ℍ :=
-match e with
-| Sum.inl hl => m.comb hl h
-| Sum.inr hr => m.comb h hr
+-- abbrev PathElem (ℍ : Type) := Sum ℍ ℍ
+-- @[simp]
+-- def PathElem.forget {ℍ : Type}(h : PathElem ℍ) : SkElem
+-- := match h with
+--     | Sum.inl _ => Sum.inl ()
+--     | Sum.inr _ => Sum.inr ()
 --
+-- abbrev Path (ℍ : Type):= List (PathElem ℍ)
+--
+-- abbrev SkElem := Sum Unit Unit
+-- @[simp]
+-- def SkElem.Left : SkElem := .inl ()
+-- @[simp]
+-- def SkElem.Right : SkElem := .inr ()
+inductive SkElem : Type where | Left | Right
+
+abbrev Skeleton := List SkElem
+--
+abbrev ISkeleton (n : Nat) := Sequence n SkElem
+--
+
+-- @[simp]
+-- def SeqForget {ℍ : Type} { n : Nat } : (Sequence n (PathElem ℍ)) -> (Sequence n SkElem)
+-- := Sequence.map PathElem.forget
+
+-- def opHash {ℍ : Type}[m : HashMagma ℍ] (h : ℍ) (e : PathElem ℍ) : ℍ :=
+-- match e with
+-- | Sum.inl hl => m.comb hl h
+-- | Sum.inr hr => m.comb h hr
+
 @[simp]
 def op_side {ℍ : Type}[mag : HashMagma ℍ](side : SkElem) (a b : ℍ) : ℍ
   := match side with
-    | .inl _ => mag.comb a b
-    | .inr _ => mag.comb b a
+    | .Left => mag.comb a b
+    | .Right => mag.comb b a
 
-
+--
 
 theorem opHash_neqRight {ℍ : Type}[ HashMagma ℍ][lHStr : SLawFulHash ℍ] {hl hr : ℍ} {pl pr : ℍ}
-: ¬ (hl = hr) -> ¬ opHash hl (Sum.inl pl) = opHash hr (Sum.inl pr)
+: ¬ (hl = hr) -> ¬ op_side .Right hl pl = op_side .Right hr pr
 := by intro H
-      simp [ opHash ]
-      apply lHStr.neqRight -- hop_neq_right
+      simp
+      apply lHStr.neqRight
       assumption
 
 theorem opHash_neqLeft {ℍ : Type}[ HashMagma ℍ][lHStr : SLawFulHash ℍ]{hl hr : ℍ} {pl pr : ℍ}
-: ¬ (hl = hr) -> ¬ opHash hl (Sum.inr pl) = opHash hr (Sum.inr pr)
+: ¬ (hl = hr) -> ¬ op_side .Left hl pl = op_side .Left hr pr
 := by intro H
-      simp [ opHash ]
+      simp
       apply lHStr.neqLeft
       assumption
 
-theorem opHash_neq {ℍ : Type}[ HashMagma ℍ][lHStr : SLawFulHash ℍ] {hl hr : ℍ} {path : PathElem ℍ}-- {el er : PathElem}
-: ¬ (hl = hr) -> ¬ opHash hl path = opHash hr path
-:= by
-intro hneq
-unfold opHash
-cases path with
-| inl pl => simp; apply lHStr.neqRight; assumption
-| inr pl => simp; apply lHStr.neqLeft ; assumption
+-- theorem opHash_neq {ℍ : Type}[ HashMagma ℍ][lHStr : SLawFulHash ℍ] {hl hr : ℍ} {path : PathElem ℍ}-- {el er : PathElem}
+-- : ¬ (hl = hr) -> ¬ opHash hl path = opHash hr path
+-- := by
+-- intro hneq
+-- unfold opHash
+-- cases path with
+-- | inl pl => simp; apply lHStr.neqRight; assumption
+-- | inr pl => simp; apply lHStr.neqLeft ; assumption
 
 -- Get the result of applying a path to a hash
 -- Notice that the length of the path is very important
 @[simp]
-def listPathHashes {ℍ : Type}[HashMagma ℍ](h : ℍ) (path : Path ℍ) : ℍ :=
-List.foldl opHash h path
+def listPathHashes {ℍ : Type}[HashMagma ℍ](h : ℍ) (path : List (SkElem × ℍ)) : ℍ
+  := List.foldl (fun h (s , l) => op_side s h l) h path
 
 ----------------------------------------
 -- Merkle Tree operations
 
 -- Hash |h| (representing a node) is in tree |t| if path |path| leads to it.
-def nodeIn {ℍ : Type}[ BEq ℍ ][HashMagma ℍ](h : ℍ )(path : Path ℍ) (t : MTree ℍ) : Bool
-:= match t with
-| MTree.node hT => listPathHashes h path == hT
+def nodeIn {ℍ : Type}[ BEq ℍ ][HashMagma ℍ](h : ℍ )(path : List (SkElem × ℍ)) (t : MTree ℍ) : Bool
+  := listPathHashes h path == t
 
 -- Same but at value level.
-def containCompute {α ℍ : Type}[ BEq ℍ ][o : Hash α ℍ][HashMagma ℍ](v : α) (path : Path ℍ) (t : MTree ℍ) : Bool
-:= nodeIn (o.mhash v) path t
+def containCompute {α ℍ : Type}[ BEq ℍ ][o : Hash α ℍ][HashMagma ℍ](v : α) (path : List (SkElem × ℍ)) (t : MTree ℍ) : Bool
+  := nodeIn (o.mhash v) path t
 
 ----------------------------------------
 -- * Element contantion
@@ -129,39 +114,32 @@ theorem leftChildContaintionN {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][Hash α �
     -- Node (Leaf v) tree
     broot = BTree.node (BTree.leaf v) btR ->
     -- tree has a hash (not empty)
-    MTree.node h = hash_BTree btR ->
+    h = btR.hash_BTree ->
     -- then we can prove the element is in the merkle tree.
-    containCompute v ([ Sum.inr h  ]) (hash_BTree broot)
+    containCompute v [ (.Left , h) ] broot.hash_BTree
 := by
     intros HRoot BtHash
     rw [containCompute]
     rw [nodeIn, HRoot]
-    rw [ hash_BTree , hash_BTree, comb_MTree]
-    rw [ <- BtHash ]
+    -- simp [BTree.hash_BTree, ABTree.fold] at BtHash
     simp
-    unfold opHash
-    simp
-
+    rw [ BtHash ]
+    simp [ BTree.hash_BTree, ABTree.fold ]
 
 theorem rightChildContaintionN {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][Hash α ℍ][HashMagma ℍ](v : α) (h : ℍ) (btL broot : BTree α) :
     -- Node (Leaf v) tree
     broot = BTree.node btL (BTree.leaf v) ->
     -- tree has a hash (not empty)
-    MTree.node h = hash_BTree btL ->
+    h = btL.hash_BTree ->
     -- then we can prove the element is in the merkle tree.
-    containCompute v ([ Sum.inl h  ]) (hash_BTree broot)
-:= by
-        intros HRoot BtHash
-        rw [containCompute , nodeIn, HRoot]
-        rw [ hash_BTree , hash_BTree, comb_MTree]
-        rw [ <- BtHash ]
-        simp
-        unfold opHash
-        simp
+    containCompute v [ (.Right , h)  ] broot.hash_BTree
+:= by intros HRoot BtHash
+      rw [containCompute , nodeIn, HRoot, BtHash]
+      simp
 
 theorem leafChildContaintionN {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][Hash α ℍ][HashMagma ℍ](v : α) (broot : BTree α) :
     -- Node (Leaf v) tree
     broot = BTree.leaf v ->
     -- We need to be explicit because of the polimophisim of |[] :: List ℍ|
-    @containCompute α ℍ _ _ _ v [] (hash_BTree broot)
-:= by intros HRoot; rw [ containCompute, nodeIn, HRoot, hash_BTree ]; simp
+    @containCompute α ℍ _ _ _ v [] broot.hash_BTree
+:= by intros HRoot; rw [ containCompute, nodeIn, HRoot, BTree.hash_BTree ]; simp

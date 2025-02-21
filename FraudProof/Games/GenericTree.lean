@@ -1,9 +1,8 @@
+import FraudProof.Games.GameDef
 import FraudProof.DataStructures.BTree -- Btree
-
 import FraudProof.DataStructures.SeqBTree -- Sequence -> BTree
 
--- Generalize players too?
-import FraudProof.Players.FromBToMTree -- Complex Strategies
+import FraudProof.DataStructures.MTree -- Merkle-Tree
 
 ----------------------------------------
 -- * DA
@@ -465,7 +464,7 @@ theorem winning_chooser_wins {α α' β β' γ : Type}
            split
            case h_1 x heq =>
             -- simp at heq
-            have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Chooser.Side.Left)) (some (ChooserPrimMoves.Continue Chooser.Side.Right)) (some ChooserPrimMoves.Now)
+            have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Side.Left)) (some (ChooserPrimMoves.Continue Side.Right)) (some ChooserPrimMoves.Now)
             rw [iteeq] at heq
             simp at heq
            case h_2 x heq =>
@@ -499,7 +498,7 @@ theorem winning_chooser_wins {α α' β β' γ : Type}
                sorry
              exact hind
            case h_4 x heq =>
-             have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Chooser.Side.Left)) (some (ChooserPrimMoves.Continue Chooser.Side.Right)) none
+             have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Side.Left)) (some (ChooserPrimMoves.Continue Side.Right)) none
              rw [iteeq] at heq
              simp at heq
 ----------------------------------------
@@ -570,22 +569,22 @@ def pathToElem {α γ : Type}{n : Nat}
     := match n with
        | 0 => leafCondition da
        | .succ _pn =>
-         match headSeq proposer with
+         match proposer.head with
          | .none => Player.Chooser -- Proposer forfeits the game
-         | .some (.Next proposed) =>
-           match headSeq chooser ⟨ da.res , proposed ⟩ with
+         | .some proposed =>
+           match chooser.head ⟨ da.res , proposed ⟩ with
            | .none => Player.Proposer -- Chooser forfeits the game
            | .some .Now => nodeCondition ⟨ da.res , proposed ⟩
            | .some (.Continue _) =>
-             have nextRes := match headSeq da.data.2 with
-                    | .inl _ => proposed.1
-                    | .inr _ => proposed.2
+             have nextRes := match da.data.2.head with
+                    | .Left => proposed.1
+                    | .Right => proposed.2
              pathToElem leafCondition nodeCondition
                -- Next step DA
-               ⟨ ⟨ da.data.1 , tailSeq da.data.2⟩ , nextRes ⟩
+               ⟨ ⟨ da.data.1 , da.data.2.tail⟩ , nextRes ⟩
                -- Next step players
-               (tailSeq proposer)
-               (tailSeq chooser)
+               proposer.tail
+               chooser.tail
 
 
 def optJoin {α : Type} : Option (Option α) -> Option α

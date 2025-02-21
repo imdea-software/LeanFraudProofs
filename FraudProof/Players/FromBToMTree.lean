@@ -157,9 +157,8 @@ def SemiGoodChooser {α ℍ : Type} [BEq ℍ]
   | .cons _ _ , .leaf _ => none
 
 def chooser_challenge_hash_tree {ℍ : Type}[BEq ℍ][mg : HashMagma ℍ]
-  ( data : BTree ℍ)( res : ℍ )
-  : Bool
-  := (@hash_BTree _ _ ⟨ id ⟩ mg data).hash == res
+  ( data : BTree ℍ)( res : ℍ ) : Bool
+  := @BTree.hash_BTree _ _ ⟨ id ⟩ mg data == res
 
 ----------------------------------------
 -- * Indexed Trees and Paths

@@ -116,10 +116,10 @@ end Proposer
 namespace IProposer
 -- Higher level name.
 abbrev proposeFromTree {α ℍ : Type}[Hash α ℍ][HashMagma ℍ]
-    : BTree α -> MTree ℍ := hash_BTree
+    : BTree α -> MTree ℍ := BTree.hash_BTree
 
 def proposeFromList {α ℍ : Type}[Hash α ℍ][HashMagma ℍ]
-    : List α -> Option (MTree ℍ) := Option.map hash_BTree ∘ List.fromList
+    : List α -> Option (MTree ℍ) := Option.map BTree.hash_BTree ∘ List.fromList
 
 -- We can also have some type information.
 def validPropose {α ℍ : Type}[Hash α ℍ][HashMagma ℍ]

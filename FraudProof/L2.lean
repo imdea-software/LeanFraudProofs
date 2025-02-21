@@ -2,67 +2,47 @@
 import FraudProof.DataStructures.BTree -- Btree
 import FraudProof.DataStructures.MTree -- MTree
 import FraudProof.DataStructures.Hash -- hash classes
+import FraudProof.DataStructures.Sequence
 
 -- Import Data Challenge
 -- Players Data Availability Challenge
 import FraudProof.Players.FromBToMTree
 -- Data Availability Challenge Game
 import FraudProof.Games.Base.FromBtoMTree
+import FraudProof.Games.Base.ElemInTree
 -- End Data Challenge
 -- Players Data Availability Challenge
 
 def find_left_invalid {α : Type}
-  (val : α -> Bool) : BTree α -> Option Skeleton
-  | .leaf a => if val a then none else some []
+  (val : α -> Bool) : BTree α -> Option ((i : Nat) × ISkeleton i)
+  | .leaf a => if val a then none else some ⟨ 0 , nilSeq ⟩
   | .node bl br =>
     match find_left_invalid val bl with
-    | .none => (find_left_invalid val br).map (fun ls => ls.concat (.inr ()))
-    | .some ph => .some $ ph.concat $ .inl ()
+    | .none => (find_left_invalid val br).map
+     (fun ⟨ n , ls ⟩ => ⟨ n.succ, snocSeq (.inr ()) ls⟩ )
+    | .some ⟨ n , ls ⟩ => .some $ ⟨ n.succ, snocSeq (.inl ()) ls ⟩
 
+inductive HonestActions (Path : Type) : Type where | DAC | Invalid Path | Ok
 
-def honest_chooser_safe_layer2_scheme {α ℍ : Type}
-  [BEq ℍ]
-  [hash : Hash α ℍ][mag : HashMagma ℍ]
-  --
+section OneHonestAgentArbLegacy
+
+-- Value Type and Hash types
+variable (α ℍ : Type)
+variable (hash : Hash α ℍ)
+
+def honest_chooser [BEq ℍ]
   (val_fun : α -> Bool)
   -- this could be a sequence too
-  (public_data : (ABTree α Unit) )
-  -- Prop Player
-  ( da_gen : ABTree α Unit
-           -- Proposer generates a DA and gives their strategy
-           -> (ABTree ℍ Unit × ℍ )
-           × (ABTree (Option α) (Option (ℍ × ℍ))) )
-  : Option (ABTree ℍ Unit × ℍ)
- := -- From public_data proposer proposes a hash tree and top hash
-    have ⟨ proposed , proposer_str ⟩ := da_gen public_data
-    -- We would like to have something like this, but we cannot.
-    -- if chooser_challenge_hash_tree (public_data.toB.map hash.mhash) proposed.2
-    -- [Future Martin: why not? it is public knowledge]
-    -- if chooser_challenge_hash_tree (proposed.1.toB) proposed.2
-    if chooser_challenge_hash_tree (public_data.toB.map hash.mhash) proposed.2
-    -- Other challenges, but comitting to top hash.
-    -- Chooser accepts proposed data matches hashes. Now, everything should be
-    -- other violations. For example, repeated elements, invalid elements.
-    then
-      match find_left_invalid val_fun public_data.toB with
-      | .none => some proposed -- accepted
-      | .some path =>
-        -- One way is to challenge it while we reveal path.
-        match elem_in_tree_forward ⟨ path , ( _ , proposed.2 ) ⟩
-                     _ -- we are
-                     _chooser
-        with
-        | Player.Proposer => .none
-        | Player.Chooser => _ -- impossible case
-        -- Another is ask it to reveal a path and challenge validity.
+  (public_data : BTree α)
+  --
+  (da_data : BTree α)
+  (da_mtree : ℍ)
+  : HonestActions
+ :=
+ if da_mtree == public_data.hash_BTree.hash
+ then match find_left_invalid val_fun public_data with
+      | .none => .Ok
+      | .some ph => Invalid ph
+ else DAC
 
-    -- Challenge markle tree construction.
-    else match @treeArbitrationGame _ _ _ hash mag
-                    -- DA challenging
-                    ⟨ proposed.1.toB , proposed.2 ⟩
-                    -- Strategies
-                    proposer_str (@simpChooser _ _ _ ⟨ id ⟩ _ proposed.1.toB)
-         with
-         | .Chooser => none
-         -- This is dead code, good chooser does not lose when plays.
-         | .Proposer => some proposed
+end OneHonestAgentArbLegacy

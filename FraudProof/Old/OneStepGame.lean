@@ -1,7 +1,6 @@
 -- Definitions
 import FraudProof.DataStructures.Hash
 import FraudProof.DataStructures.MTree
-import FraudProof.DataStructures.Value
 
 -- Utilities.
 import FraudProof.Extras.List -- ( TakeAppend )

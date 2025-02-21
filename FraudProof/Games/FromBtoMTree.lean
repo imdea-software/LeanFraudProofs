@@ -279,7 +279,7 @@ def treeArbitrationGame {α ℍ : Type}
       -- Node winning condition
       (fun _ r hl hr =>  m.comb hl hr == r)
       -- DA
-      ⟨ da.computation.toAB , da.res ⟩
+      ⟨ da.computation , da.res ⟩
       -- Revelear Strategy
       reveler
       -- Chooser Strategy

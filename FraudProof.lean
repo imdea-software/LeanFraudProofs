@@ -4,24 +4,22 @@ import FraudProof.DataStructures.Hash
 import FraudProof.DataStructures.MTree
 import FraudProof.DataStructures.SeqBTree
 import FraudProof.DataStructures.Sequence
-import FraudProof.DataStructures.Value
-import FraudProof.Extras.BToMTree
 import FraudProof.Extras.List
 import FraudProof.Extras.Nat
--- import FraudProof.Games.Base.RangeDAConditions
-import FraudProof.Games.Base.ElemInTree
-import FraudProof.Games.Base.FromBtoMTree
-import FraudProof.Games.Base.GenericTree
-import FraudProof.Games.Base.ValidBtoMTree
-import FraudProof.Games.Base.LogarithmicTransformation
 import FraudProof.Games.GameDef
-import FraudProof.Games.LinearGame
-import FraudProof.Games.LogGame
-import FraudProof.Games.OneStepGame
--- import FraudProof.OneStepGame
-import FraudProof.Players
-import FraudProof.Players.ElemInTree
-import FraudProof.Players.FromBToMTree
-import FraudProof.Proofs.BtoMTree
-import FraudProof.Winning.Chooser
-import FraudProof.Winning.Proposer
+import FraudProof.Games.GenericTree
+import FraudProof.Games.ElemInTree
+-- import FraudProof.Games.RangeDAConditions
+-- import FraudProof.Games.FromBtoMTree
+-- import FraudProof.Games.ValidBtoMTree
+-- import FraudProof.Games.LogarithmicTransformation
+-- import FraudProof.Games.LinearGame
+-- import FraudProof.Games.LogGame
+-- import FraudProof.Games.OneStepGame
+-- -- import FraudProof.OneStepGame
+-- import FraudProof.Players
+-- import FraudProof.Players.ElemInTree
+-- import FraudProof.Players.FromBToMTree
+-- import FraudProof.Proofs.BtoMTree
+-- import FraudProof.Winning.Chooser
+-- import FraudProof.Winning.Proposer
