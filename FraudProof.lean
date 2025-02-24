@@ -9,10 +9,10 @@ import FraudProof.Extras.Nat
 import FraudProof.Games.GameDef
 import FraudProof.Games.GenericTree
 import FraudProof.Games.ElemInTree
+import FraudProof.Games.LogarithmicTransformation
 -- import FraudProof.Games.RangeDAConditions
 -- import FraudProof.Games.FromBtoMTree
 -- import FraudProof.Games.ValidBtoMTree
--- import FraudProof.Games.LogarithmicTransformation
 -- import FraudProof.Games.LinearGame
 -- import FraudProof.Games.LogGame
 -- import FraudProof.Games.OneStepGame
