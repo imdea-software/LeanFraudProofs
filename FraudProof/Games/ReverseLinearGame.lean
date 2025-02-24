@@ -1,6 +1,6 @@
 import FraudProof.Games.GameDef -- Players, Winner
-import FraudProof.Games.Base.GenericTree -- Generic Game trees
-import FraudProof.Games.Base.ElemInTree -- Linear basic game definition
+import FraudProof.Games.GenericTree -- Generic Game trees
+import FraudProof.Games.ElemInTree -- Linear basic game definition
 
 import FraudProof.DataStructures.Sequence
 
@@ -27,14 +27,14 @@ def backward_to_forward_proposer
     (da : ElemInTreeH n ℍ)
     (back_proposer : Sequence n (Option (PMoves ℍ)))
     : Sequence n (Option (PMoves ℍ))
-    :=  seq_zip_with (
+    :=  Sequence.zip_with (
     fun skl opt_mov =>
       (fun mov =>
         match skl,  mov with
-           | .inl _ , .Next ⟨ l , r ⟩
-             => .Next ⟨ mag.comb l r , r ⟩
-           | .inr _ , .Next ⟨ l , r ⟩
-             => .Next ⟨ mag.comb r l , l ⟩
+           | .Left , ⟨ l , r ⟩
+             => ⟨ mag.comb l r , r ⟩
+           | .Right , ⟨ l , r ⟩
+             => ⟨ mag.comb r l , l ⟩
       ) <$> opt_mov
       ) da.data back_proposer
 

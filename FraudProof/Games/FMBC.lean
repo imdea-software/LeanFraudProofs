@@ -1,4 +1,4 @@
-import FraudProof.Games.Base.GenericTree -- Complex Strategies
+import FraudProof.Games.GenericTree -- Complex Strategies
 
 def cond_hash_elem {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][h : Hash α ℍ]
   (leaf: ℍ ) (rev : α) (res : ℍ)
@@ -44,14 +44,6 @@ def gen_chooser_opt {ℍ : Type}
           then .Continue .Left
           else .Continue .Right
    )
-
--- def same_hash_leaves {α β ℍ : Type}[m : Hash α ℍ](revealer chooser : ABTree (Option α) β) : Prop
---  := match revealer, chooser with
---    | .leaf v , .leaf w => m.mhash <$> v = m.mhash <$> w
---    | .node _rn rl rr , .node _ln ll lr =>
---      @same_hash_leaves _ _ _ m rl ll ∧ @same_hash_leaves _ _ _ m rr lr
---    -- Isomorph
---    | _ , _ => False
 
 
 theorem winning_gen_chooser {ℍ α : Type}

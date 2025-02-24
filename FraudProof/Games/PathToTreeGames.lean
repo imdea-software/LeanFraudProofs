@@ -1,7 +1,7 @@
 import FraudProof.Games.GameDef -- Players, Winner
 import FraudProof.Games.GenericTree -- Generic Game trees
 import FraudProof.Games.ElemInTree -- Linear basic game definition
-import FraudProof.Games.RangeDAConditions -- Range DAs
+-- import FraudProof.Games.RangeDAConditions -- Range DAs
 
 import FraudProof.DataStructures.Sequence
 
@@ -18,21 +18,20 @@ def skl_to_tree {n : Nat}
   := match n with
     | .zero => .leaf ()
     | .succ _pn =>
-      match headSeq sk with
-        | .inl _ => .node () (skl_to_tree $ Fin.tail sk) (.leaf ())
-        | .inr _ => .node () (.leaf ()) (skl_to_tree $ Fin.tail sk)
+      match sk.head with
+        | .Left => .node () (skl_to_tree sk.tail) (.leaf ())
+        | .Right => .node () (.leaf ()) (skl_to_tree sk.tail)
 @[simp]
 def skl_to_maybe_elem {α : Type} {n : Nat}
   (a : α) (sk : ISkeleton n) : ABTree (Option α) Unit
     := match n with
     | .zero => .leaf a
     | .succ _pn =>
-      match headSeq sk with
-        | .inl _ =>
-          .node () (skl_to_maybe_elem a (Fin.tail sk)) (.leaf none)
-        | .inr _ =>
-          .node () (.leaf none) (skl_to_maybe_elem a (Fin.tail sk))
-
+      match sk.head with
+        | .Left =>
+          .node () (skl_to_maybe_elem a sk.tail) (.leaf none)
+        | .Right =>
+          .node () (.leaf none) (skl_to_maybe_elem a sk.tail)
 
 @[simp]
 def build_proposer' {ℍ : Type}{n : Nat}
@@ -43,17 +42,17 @@ def build_proposer' {ℍ : Type}{n : Nat}
     := match n with
     | .zero => .leaf $ .some bot_hash
     | .succ _ =>
-      match headSeq rev with
+      match rev.head with
       | .none => .node .none (.leaf none) (.leaf none)
-      | .some (.Next proposed) =>
-        match headSeq skl with
-        | .inl _ =>
+      | .some proposed =>
+        match skl.head with
+        | .Left =>
                .node (.some ( ⟨ ⟨ bot_hash , proposed.1⟩ , proposed  ⟩ ))
-                     (build_proposer' bot_hash (Fin.tail skl) (Fin.tail rev))
+                     (build_proposer' bot_hash skl.tail rev.tail)
                      (.leaf $ .some proposed.2)
-        | .inr _ =>
+        | .Right =>
                .node (.some ( ⟨ proposed   , ⟨ bot_hash , proposed.2 ⟩ ⟩ ))
-                     (build_proposer' bot_hash (Fin.tail skl) (Fin.tail rev))
+                     (build_proposer' bot_hash skl.tail rev.tail)
                      (.leaf $ .some proposed.1)
 
 @[simp]
@@ -63,16 +62,16 @@ def build_proposer {ℍ : Type}{n : Nat}
   := match n with
   | .zero => .leaf $ .some data.1
   | .succ _pn =>
-    let rest_tree := build_proposer ⟨ data.1 , Fin.tail data.2⟩ (Fin.tail rev)
-    match headSeq rev with
+    let rest_tree := build_proposer ⟨ data.1 , data.2.tail⟩ rev.tail
+    match rev.head with
       | .none => .node .none (.leaf none) (.leaf .none)
-      | .some (.Next ⟨ hl , hr⟩)=>
-       match headSeq data.2 with
-         | .inl _ =>
+      | .some (hl , hr)=>
+       match data.2.head with
+         | .Left =>
            .node (.some ⟨ hl, hr ⟩)
                  rest_tree
                  (.leaf (.some hr))
-         | .inr _ =>
+         | .Right =>
            .node (.some ⟨  hl, hr ⟩)
                  (.leaf (.some hl))
                  rest_tree
@@ -84,24 +83,24 @@ def build_chooser {ℍ : Type}{n : Nat}
   := match n with
     | .zero => .leaf ()
     | .succ _pn =>
-      let side_choose (s : Chooser.Side) (arg : ℍ × ℍ × ℍ)
+      let side_choose (s : Side) (arg : ℍ × ℍ × ℍ)
           : Option ChooserMoves :=
           have ⟨ ht ,  hl , hr ⟩ := arg
-          (headSeq chooser ⟨ ht, hl , hr ⟩).map
+          (chooser.head ⟨ ht, hl , hr ⟩).map
             (fun ch => match ch with
                        | .Now => .Now
                        | .Continue _ => .Continue s)
-      match headSeq data.2 with
-      | .inl _ =>
+      match data.2.head with
+      | .Left =>
         .node
           (side_choose .Left)
-          (build_chooser ⟨data.1 , Fin.tail data.2⟩ (Fin.tail chooser))
+          (build_chooser ⟨data.1 , data.2.tail⟩ chooser.tail)
           (.leaf ())
-      | .inr _ =>
+      | .Right =>
         .node
           (side_choose .Right)
           (.leaf ())
-          (build_chooser ⟨data.1 , Fin.tail data.2⟩ (Fin.tail chooser))
+          (build_chooser ⟨data.1 , data.2.tail⟩ chooser.tail)
 
 @[simp]
 def build_chooser' {ℍ : Type}{n : Nat}
@@ -117,17 +116,17 @@ def build_chooser' {ℍ : Type}{n : Nat}
           have ⟨ top_range, _next_range, decomp ⟩ := args
           -- top_range.1 == next_range.1 && next_range.2 == decomp.side
           match side with
-          | .inl _ => match headSeq chooser ⟨ top_range.2, decomp.1, decomp.2 ⟩ with
+          | .Left => match chooser.head ⟨ top_range.2, decomp.1, decomp.2 ⟩ with
                       | .some .Now => .some .Now
                       | .some (.Continue _) => .some $ .Continue .Left
                       | .none => .none
-          | .inr _ => match headSeq chooser ⟨ top_range.2, decomp.2, decomp.1 ⟩ with
+          | .Right => match chooser.head ⟨ top_range.2, decomp.2, decomp.1 ⟩ with
                       | .some .Now => .some .Now
                       | .some (.Continue _) => .some $ .Continue .Right
                       | .none => .none
-      match headSeq skl with
-      | .inl _ => .node (curr_check (.inl _)) (build_chooser' (Fin.tail skl) (Fin.tail chooser)) (.leaf ())
-      | .inr _ => .node (curr_check (.inr _)) (.leaf ()) (build_chooser' (Fin.tail skl) (Fin.tail chooser))
+      match skl.head with
+      | .Left => .node (curr_check .Left) (build_chooser' skl.tail chooser.tail) (.leaf ())
+      | .Right => .node (curr_check .Right) (.leaf ()) (build_chooser' skl.tail chooser.tail)
 
 
 def elem_in_tree_gen_tree {ℍ : Type}
@@ -190,7 +189,8 @@ theorem seq_equiv_tree {ℍ : Type}[BEq ℍ][HashMagma ℍ]
   -- Players
   (proposer : Sequence n (Option (PMoves ℍ)))
   (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
-  : elem_in_tree_backward da proposer chooser = elem_in_tree_gen_tree da proposer chooser
+  : elem_in_tree_backward da proposer chooser
+  = elem_in_tree_gen_tree da proposer chooser
   := by revert n
         intro n
         induction n with
@@ -200,37 +200,39 @@ theorem seq_equiv_tree {ℍ : Type}[BEq ℍ][HashMagma ℍ]
         | succ pn HInd =>
           intros da prop cho
           simp [elem_in_tree_backward, elem_in_tree_gen_tree ]
-          cases prop 0 with
+          have ⟨ propls, propln ⟩ := prop
+          cases propls.head _ with
           | none =>
             simp [treeCompArbGame]
-          | some proposed =>
-            cases proposed with
-            | End v => contradiction
-            | Next e =>
+          | some e =>
               simp
-              match HCho : cho 0 (da.mtree.2, e) with
+              have ⟨ chols, chop ⟩ := cho
+              match HCho : chols.head _ (da.mtree.2, e) with
               | none =>
                 simp [treeCompArbGame]
-                match da.data 0 with
-                | .inl _ => simp [treeCompArbGame]; rw [HCho]; simp
-                | .inr _ => simp [treeCompArbGame]; rw [HCho]; simp
+                have ⟨datals, datap ⟩ := da.data
+                cases datals.head _ with
+                | Left => simp [treeCompArbGame]; rw [HCho]; simp
+                | Right => simp [treeCompArbGame]; rw [HCho]; simp
               | some choosed =>
                 match choosed with
                 | .Now =>
                   simp [SingleMidStep]
-                  cases da.data 0 with
-                    | inl _ => simp [treeCompArbGame]; rw [HCho]; simp
-                    | inr _ => simp [treeCompArbGame]; rw [HCho]; simp
+                  have ⟨datals, datap ⟩ := da.data
+                  cases datals.head _ with
+                    | Left => simp [treeCompArbGame]; rw [HCho]; simp
+                    | Right => simp [treeCompArbGame]; rw [HCho]; simp
                 | .Continue _ =>
                   simp
-                  cases da.data 0 with
-                    | inl _ =>
+                  -- simp [SingleMidStep]
+                  have ⟨datals, datap ⟩ := da.data
+                  cases datals.head _ with
+                    | Left =>
                       simp [treeCompArbGame]
                       rw [HCho]; simp
                       apply HInd
-                    | inr _ =>
+                    | Right =>
                       simp [treeCompArbGame]
                       rw [HCho]; simp
                       apply HInd
-
 ----------------------------------------

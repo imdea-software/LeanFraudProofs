@@ -1,6 +1,6 @@
 import FraudProof.Games.GameDef -- Players, Winner
-import FraudProof.Games.Base.GenericTree -- Generic Games
-import FraudProof.Games.Base.FromBtoMTree -- Tree Arb Game Game trees
+import FraudProof.Games.GenericTree -- Generic Games
+import FraudProof.Games.FromBtoMTree -- Tree Arb Game Game trees
 
 inductive SimWinner where
  | Left | Right
@@ -77,7 +77,7 @@ theorem eq_sim_games {α ℍ : Type}
    -- Player 2 -- not symmetric game.
    (rplayer : ABTree Unit (Option (ℍ × ℍ)))
   : ( treeArbitrationGame
-         ⟨ pub.toB , lplayer_commit⟩ lplayer
+         ⟨ pub , lplayer_commit⟩ lplayer
          (rplayer.map id gen_to_chooser) = Player.Proposer
     ↔
     simultaneous_game pub lplayer lplayer_commit rplayer = .Left )
@@ -103,6 +103,10 @@ theorem eq_sim_games {α ℍ : Type}
             cases rplayer with
             | node _ _ _ =>
             simp [simultaneous_game]
+            simp [treeArbitrationGame, treeCompArbGame] at treeComp
+            apply And.intro
+            · exact treeComp.1
+            · symm; exact treeComp.2
             | leaf _ =>
                 simp [treeCompArbGame] at treeComp
                 simp [simultaneous_game]
@@ -128,9 +132,10 @@ theorem eq_sim_games {α ℍ : Type}
               case isFalse neq =>
                 split
                 case isTrue eq1 =>
-                 subst_eqs; simp at *
+                 -- subst_eqs; simp at *
+                 simp at *
                  apply HIndR
-                 have comp : some (if rpv = prop then ChooserPrimMoves.Now else if rpv.1 = prop.1 then ChooserPrimMoves.Continue Chooser.Side.Right else ChooserPrimMoves.Continue Chooser.Side.Left) = ChooserPrimMoves.Continue Chooser.Side.Right
+                 have comp : some (if rpv = prop then ChooserPrimMoves.Now else if rpv.1 = prop.1 then ChooserPrimMoves.Continue Side.Right else ChooserPrimMoves.Continue Side.Left) = ChooserPrimMoves.Continue Side.Right
                    := by {
                    clear HIndR HIndL; simp; rw [ite_eq_iff]
                    right
@@ -142,7 +147,7 @@ theorem eq_sim_games {α ℍ : Type}
                  assumption
                 case isFalse neq2 =>
                  apply HIndL
-                 have comp :some (if rpv = prop then ChooserPrimMoves.Now else if rpv.1 = prop.1 then ChooserPrimMoves.Continue Chooser.Side.Right else ChooserPrimMoves.Continue Chooser.Side.Left) = ChooserPrimMoves.Continue Chooser.Side.Left
+                 have comp :some (if rpv = prop then ChooserPrimMoves.Now else if rpv.1 = prop.1 then ChooserPrimMoves.Continue Side.Right else ChooserPrimMoves.Continue Side.Left) = ChooserPrimMoves.Continue Side.Left
                    := by {
                      simp; rw [ite_eq_iff]
                      right
@@ -217,6 +222,8 @@ theorem eq_sim_games {α ℍ : Type}
                   assumption
                   simp; intro pp; apply neq1; rw [pp]
                   simp; intro pp; apply hyp.1; rw [pp]
+              case h_3 x heq => sorry
+              case h_4 x heq => sorry
 
 -- Elemen In Tree
 def simultaneous_elemenin_game {α ℍ : Type}
@@ -235,7 +242,7 @@ def simultaneous_elemenin_game {α ℍ : Type}
        match lp with
        | .none => .Right
        | .some lp =>
-         if op_side side lplayer_commit.1 lp = lplayer_commit.2
+         if op_side side lplayer_commit.1 (o.mhash lp) = lplayer_commit.2
          then .Left else .Right
      | .node _ gl gr, .node lp ll lr, .node rp rl rr =>
        match lp, rp with
