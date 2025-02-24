@@ -10,8 +10,6 @@ import FraudProof.Extras.Nat
 --
 -- Game elements definitions (Players)
 import FraudProof.Games.GameDef
--- DA stuff (range, etc)
-import FraudProof.Games.RangeDAConditions
 -- Generic tree games
 import FraudProof.Games.GenericTree
 --
@@ -32,3 +30,6 @@ import FraudProof.Games.FromBtoMTree
 import FraudProof.Games.FMBC
 -- * Simultaneous Games (Tournaments)
 import FraudProof.Games.Simultaneous
+
+-- * L2
+--

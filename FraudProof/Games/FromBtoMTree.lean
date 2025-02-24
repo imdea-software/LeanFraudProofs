@@ -10,17 +10,43 @@ import FraudProof.Games.GenericTree -- Generic Game
 ----------------------------------------
 -- * BTree as hashes.
 -- We know the structure of the data plus the hashes of their leaves.
-structure ComputationTree (ℍ : Type) where
-  computation : BTree ℍ -- Btree in this case, in can be generalized
+structure ComputationTree (α ℍ : Type) where
+  computation : BTree α -- Btree in this case, in can be generalized
   res : ℍ
   -- {𝔸}, fold 𝔸_hash computation = res
   -- one binary operation and leafs (In this case, that's why BTree)
 ----------------------------------------
 
 @[simp]
+def data_challenge_game{α ℍ : Type}
+    [BEq α][BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+    (da : ComputationTree α ℍ)
+    --
+    (reveler : ABTree (Option α) (Option (ℍ × ℍ)) )
+    (chooser : ABTree Unit (ℍ × ℍ × ℍ -> Option ChooserMoves))
+    --
+    : Winner :=
+    @treeCompArbGame α α Unit ℍ
+      -- Leaf winning condition
+      (fun ha data res =>
+           -- (data == ha) ∧
+           (o.mhash ha == res))
+      -- Node winning condition
+      (fun _ r hl hr =>  m.comb hl hr == r)
+      -- DA
+      ⟨ da.computation , da.res ⟩
+      -- Revelear Strategy
+      reveler
+      -- Chooser Strategy
+      (ABTree.map
+        (fun _ => ())
+        (fun fhs ⟨hrs , hl , hr ⟩ => fhs ⟨ hrs, hl , hr ⟩)
+        chooser)
+
+@[simp]
 def treeArbitrationGame {α ℍ : Type}
     [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
-    (da : ComputationTree ℍ)
+    (da : ComputationTree ℍ ℍ)
     --
     (reveler : ABTree (Option α) (Option (ℍ × ℍ)) )
     (chooser : ABTree Unit (ℍ × ℍ × ℍ -> Option ChooserMoves))
