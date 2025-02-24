@@ -1,7 +1,7 @@
 import FraudProof.Games.GameDef -- Players, Winner
-import FraudProof.Games.Base.GenericTree -- Generic Game trees
-import FraudProof.Games.Base.ElemInTree -- Linear basic game definition
-import FraudProof.Games.Base.RangeDAConditions -- Range DAs
+import FraudProof.Games.GenericTree -- Generic Game trees
+import FraudProof.Games.ElemInTree -- Linear basic game definition
+import FraudProof.Games.RangeDAConditions -- Range DAs
 
 import FraudProof.DataStructures.Sequence
 

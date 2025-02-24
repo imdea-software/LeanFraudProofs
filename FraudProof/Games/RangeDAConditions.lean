@@ -1,5 +1,7 @@
 import FraudProof.Games.GameDef -- Players, Winner
 
+import FraudProof.DataStructures.Hash
+
 def Range (α : Type) := α × α
 
 -- Mech range union, without checking anything
