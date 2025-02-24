@@ -382,7 +382,7 @@ theorem range_chooser_wins {ℍ : Type}
           simp [knowing] at kcho
         | leaf ch =>
           simp [knowing] at kcho
-          simp [last_step]
+          -- simp [last_step]
           rw [<- kcho]
           cases sk with
           | Left =>

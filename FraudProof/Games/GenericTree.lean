@@ -4,7 +4,7 @@ import FraudProof.DataStructures.SeqBTree -- Sequence -> BTree
 
 import FraudProof.DataStructures.MTree -- Merkle-Tree
 
-import FraudProof.Games.Base.RangeDAConditions
+import FraudProof.Games.RangeDAConditions
 
 ----------------------------------------
 -- * DA
@@ -743,7 +743,7 @@ def spl_game {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
     simp_tree
       -- Splitting range into two ranges
       (fun (a,b) c => ((a,c),(c,b)))
-      (fun s h rh => condWProp $ @leaf_condition_length_one _ _ m s h rh)
+      (fun s h rh => winning_proposer $ @leaf_condition_length_one _ _ m s h rh)
       -- Chooser won't challenge these. Game is played until reaching a leaf.
       (fun _ _ _ => Player.Proposer)
       da proposer chooser
