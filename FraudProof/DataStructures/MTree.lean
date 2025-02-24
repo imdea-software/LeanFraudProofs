@@ -5,6 +5,7 @@ import FraudProof.DataStructures.Sequence
 ----------------------------------------
 -- Merkle Tree are hashes plus an implicit invariant.
 ----------------------------------------
+--
 
 abbrev MTree (ℍ : Type) := ℍ
 
@@ -51,6 +52,20 @@ abbrev Skeleton := List SkElem
 abbrev ISkeleton (n : Nat) := Sequence n SkElem
 --
 
+----------------------------------------
+-- ** Access
+def ABTree.access {α β : Type} (t : ABTree α β)(p : Skeleton) : Option (α ⊕ β)
+ := match t , p with
+   | .leaf a , .nil => .some $ .inl a
+   | .node b _ _ , .nil => .some $ .inr b
+   | .node _ bl _ , .cons .Left ps =>  bl.access ps
+   | .node _ _ br , .cons .Right ps => br.access ps
+   | _ , _ => .none
+
+def ABTree.iaccess {α β : Type}{n : Nat}(t : ABTree α β)(p : ISkeleton n) : Option (α ⊕ β)
+  := t.access $ sequence_forget p
+
+----------------------------------------
 -- @[simp]
 -- def SeqForget {ℍ : Type} { n : Nat } : (Sequence n (PathElem ℍ)) -> (Sequence n SkElem)
 -- := Sequence.map PathElem.forget
