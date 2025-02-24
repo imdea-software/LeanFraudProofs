@@ -5,8 +5,6 @@ import FraudProof.DataStructures.BTree -- Btree
 import FraudProof.DataStructures.MTree -- MTree
 import FraudProof.DataStructures.Hash -- hash classes
 
--- import FraudProof.Extras.BToMTree -- Indexing MMTrees
-
 import FraudProof.Games.GenericTree -- Generic Game
 
 ----------------------------------------
