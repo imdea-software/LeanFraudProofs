@@ -133,8 +133,8 @@ theorem proposer_winning_mod_forward {ℍ : Type} {lgn : Nat}
          rw [<- half_perfect_split_same]
          rw [<- perfect_split_constant]
          -- Half_split map
-         apply hind
-         _
+         -- apply hind
+         sorry
        · sorry
 
 -- * Chooser
