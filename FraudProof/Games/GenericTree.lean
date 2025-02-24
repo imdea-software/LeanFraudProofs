@@ -4,6 +4,8 @@ import FraudProof.DataStructures.SeqBTree -- Sequence -> BTree
 
 import FraudProof.DataStructures.MTree -- Merkle-Tree
 
+import FraudProof.Games.Base.RangeDAConditions
+
 ----------------------------------------
 -- * DA
 -- Folding data into res
@@ -719,3 +721,29 @@ theorem chooser_data_availability {α α' β γ : Type}
            case h_2 x heq => apply HIndL; exact win_ch.2.1; sorry
            case h_3 x heq => apply HIndR; exact win_ch.2.2; sorry
            case h_4 x heq => sorry -- heq is nonsense
+
+
+--
+--
+@[simp]
+def leaf_condition_length_one {ℍ : Type}[BEq ℍ][HashMagma ℍ]
+  : SkElem -> ℍ -> Range ℍ -> Bool
+  := (fun side prop ⟨ src , dst ⟩ => op_side side src prop == dst)
+
+-- Simpler game using splitter.
+def spl_game {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
+    -- DA provides last two sides.
+    (da : CompTree SkElem Unit (Range ℍ))
+    --
+    (proposer : ABTree (Option ℍ) (Option ℍ))
+    (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
+    --
+    : Winner
+    :=
+    simp_tree
+      -- Splitting range into two ranges
+      (fun (a,b) c => ((a,c),(c,b)))
+      (fun s h rh => condWProp $ @leaf_condition_length_one _ _ m s h rh)
+      -- Chooser won't challenge these. Game is played until reaching a leaf.
+      (fun _ _ _ => Player.Proposer)
+      da proposer chooser

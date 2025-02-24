@@ -20,9 +20,9 @@ import FraudProof.Games.Base.RangeDAConditions
 -- sense. At this point, the proposer need to revel the sibling hash (and side)
 -- completing the triplet.
 -- [a,b] -> side, c such that |op_side| side a c == b
-def leaf_condition_length_one {ℍ : Type}[BEq ℍ][HashMagma ℍ]
-  : SkElem -> ℍ -> Range ℍ -> Bool
-  := (fun side prop ⟨ src , dst ⟩ => op_side side src prop == dst)
+-- def leaf_condition_length_one {ℍ : Type}[BEq ℍ][HashMagma ℍ]
+--   : SkElem -> ℍ -> Range ℍ -> Bool
+--   := (fun side prop ⟨ src , dst ⟩ => op_side side src prop == dst)
 
 -- Leaf Triangle approach
 -- When checking the triangle
@@ -91,23 +91,6 @@ def tree_computation_triangle {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
       mid_condition_da_checking
       da proposer chooser
 
--- Simple game using splitter.
-def spl_game {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
-    -- DA provides last two sides.
-    (da : CompTree SkElem Unit (Range ℍ))
-    --
-    (proposer : ABTree (Option ℍ) (Option ℍ))
-    (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
-    --
-    : Winner
-    :=
-    simp_tree
-      -- Splitting range into two ranges
-      (fun (a,b) c => ((a,c),(c,b)))
-      (fun s h rh => condWProp $ @leaf_condition_length_one _ _ m s h rh)
-      -- Chooser won't challenge these. Game is played until reaching a leaf.
-      (fun _ _ _ => Player.Proposer)
-      da proposer chooser
 
 -- def reveler_spl_winning_condition {ℍ : Type}
 --     [BEq ℍ][m : HashMagma ℍ]

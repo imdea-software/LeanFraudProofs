@@ -359,10 +359,7 @@ theorem range_chooser_wins {ℍ : Type}
     (chooser : ABTree ℍ ℍ)
     -- Computation is fold plus invariants.
     (chooser_wise : knowing comp_skeleton chooser input_ch output)
-    : simp_tree (fun (l,r) mid => ((l,mid),(mid,r)))
-      last_step
-      -- No mid challenges
-      (fun _ _ _ => Player.Proposer)
+    : spl_game
       { data:= comp_skeleton , res := (input_rev , output) }
       reveler
       (gen_to_fun_chooser (ABTree.map .some .some chooser))
@@ -373,12 +370,12 @@ theorem range_chooser_wins {ℍ : Type}
   | leaf sk =>
     intros in_rev in_ch out hneq rev cho kcho
     cases HRev : rev with
-    | node _ _ _ => simp [simp_tree]
+    | node _ _ _ => simp [spl_game, simp_tree]
     | leaf p =>
       cases HP : p with
-      | none => simp [simp_tree]
+      | none => simp [spl_game, simp_tree]
       | some proposed =>
-        simp [gen_to_fun_chooser, simp_tree]
+        simp [gen_to_fun_chooser, spl_game, simp_tree]
         -- unfold knowing at kcho
         cases cho with
         | node _ _ _ =>
@@ -398,7 +395,7 @@ theorem range_chooser_wins {ℍ : Type}
             assumption
   | node _ game_left game_right HIndL HIndR =>
     intros in_rev in_ch out hneq rev cho kcho
-    simp
+    simp [spl_game, simp_tree]
     cases rev with
     | leaf _ => simp [simp_tree]
     | node may_mid rev_l rev_r =>
