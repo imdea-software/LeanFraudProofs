@@ -1,4 +1,3 @@
--- import FraudProof.DAssertions
 import FraudProof.Games.GameDef -- Players, Winner
 
 import FraudProof.DataStructures.BTree -- Btree
@@ -20,17 +19,17 @@ structure ComputationTree (α ℍ : Type) where
 @[simp]
 def data_challenge_game{α ℍ : Type}
     [BEq α][BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
-    (da : ComputationTree α ℍ)
+    (da : ComputationTree Unit ℍ)
     --
     (reveler : ABTree (Option α) (Option (ℍ × ℍ)) )
     (chooser : ABTree Unit (ℍ × ℍ × ℍ -> Option ChooserMoves))
     --
     : Winner :=
-    @treeCompArbGame α α Unit ℍ
+    @treeCompArbGame Unit α Unit ℍ
       -- Leaf winning condition
-      (fun ha data res =>
+      (fun _ha data res =>
            -- (data == ha) ∧
-           (o.mhash ha == res))
+           (o.mhash data == res))
       -- Node winning condition
       (fun _ r hl hr =>  m.comb hl hr == r)
       -- DA
@@ -89,3 +88,4 @@ def arbitrationTree {α ℍ : Type}
       reveler
       -- Chooser Strategy
       (ABTree.map (fun _ => ()) (fun fhs ⟨hrs , hl , hr ⟩ => fhs ⟨ hrs, hl , hr ⟩) chooser)
+

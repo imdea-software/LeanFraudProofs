@@ -31,6 +31,7 @@ theorem not_nil_len {α : Type} (ls : List α)(len_nz : 0 < ls.length) : ¬ ls =
 theorem seq_is_len {α : Type}{n : Nat} (s : Sequence n α) : s.1.length = n
   := s.2
 
+
 -- Head
 @[simp]
 def Sequence.head {α : Type}{ n : Nat } ( seq : Sequence n.succ α) : α
@@ -58,6 +59,11 @@ theorem Sequence.lmm_destruct {α : Type}{n : Nat}(s : Sequence n.succ α) :
     intro s; have ⟨ ls , ps ⟩ := s
     simp [Sequence.tail]
 
+
+def Sequence.pmatch {α : Type}{n : Nat}( s : Sequence n α ) : Sequence 0 α ⊕ (α × Sequence n.pred α)
+  := match n with
+    | .zero => .inl .nil
+    | .succ _ => .inr ( s.head, s.tail )
 
 def Sequence.destruct {α : Type}{n : Nat}(s : Sequence n.succ α) : (α × Sequence n α)
   := ( s.head, s.tail )

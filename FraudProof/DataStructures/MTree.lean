@@ -31,26 +31,35 @@ def hashM {α ℍ : Type}{m : Type -> Type}[Monad m]
 ----------------------------------------
 -- * Paths
 -- Path in Merkle Trees are hashes indicating its position.
--- abbrev PathElem (ℍ : Type) := Sum ℍ ℍ
--- @[simp]
--- def PathElem.forget {ℍ : Type}(h : PathElem ℍ) : SkElem
--- := match h with
---     | Sum.inl _ => Sum.inl ()
---     | Sum.inr _ => Sum.inr ()
 --
--- abbrev Path (ℍ : Type):= List (PathElem ℍ)
---
--- abbrev SkElem := Sum Unit Unit
--- @[simp]
--- def SkElem.Left : SkElem := .inl ()
--- @[simp]
--- def SkElem.Right : SkElem := .inr ()
 inductive SkElem : Type where | Left | Right
 
+def SkElem.destruct {α : Type}(s : SkElem) (l r : α) : α
+  := match s with | .Left => l | .Right => r
+
+-- Unbound paths
 abbrev Skeleton := List SkElem
---
+-- Bound paths
 abbrev ISkeleton (n : Nat) := Sequence n SkElem
 --
+
+def ABTree.find_left {α β : Type}(is : α -> Bool) : ABTree α  β -> Option (List (SkElem × (α ⊕ β)))
+ | .leaf v => if is v then .some .nil else .none
+ | .node _b bl br =>
+    match bl.find_left is with
+    | .none => (br.find_left is).map (fun ls => ls.append [(.Right, bl.getI' .inl .inr)])
+    | .some ls => .some $ ls.append [(.Left , br.getI' .inl .inr)]
+
+-- a -> spine, sib
+def ABTree.gen_path_elem_forward {α β γ : Type}{n : Nat}
+ (t : ABTree α β) (ag : α -> γ)(bg : β -> γ) (p : Sequence n SkElem) : Option (α × Sequence n (γ × γ))
+ := match n, t with
+   | .zero , .leaf v => .some (v , .nil)
+   | .succ _ , .node b bl br =>
+      p.head.destruct
+        ((bl.gen_path_elem_forward ag bg p.tail).map (fun (e, ls) => (e , ls.snoc (bg b, br.getI' ag bg))))
+        ((br.gen_path_elem_forward ag bg p.tail).map (fun (e, ls) => (e , ls.snoc (bg b, bl.getI' ag bg))))
+   | _ , _ => .none
 
 ----------------------------------------
 -- ** Access
@@ -81,7 +90,6 @@ def op_side {ℍ : Type}[mag : HashMagma ℍ](side : SkElem) (a b : ℍ) : ℍ
     | .Left => mag.comb a b
     | .Right => mag.comb b a
 
---
 
 theorem opHash_neqRight {ℍ : Type}[ HashMagma ℍ][lHStr : SLawFulHash ℍ] {hl hr : ℍ} {pl pr : ℍ}
 : ¬ (hl = hr) -> ¬ op_side .Right hl pl = op_side .Right hr pr
@@ -97,17 +105,6 @@ theorem opHash_neqLeft {ℍ : Type}[ HashMagma ℍ][lHStr : SLawFulHash ℍ]{hl 
       apply lHStr.neqLeft
       assumption
 
--- theorem opHash_neq {ℍ : Type}[ HashMagma ℍ][lHStr : SLawFulHash ℍ] {hl hr : ℍ} {path : PathElem ℍ}-- {el er : PathElem}
--- : ¬ (hl = hr) -> ¬ opHash hl path = opHash hr path
--- := by
--- intro hneq
--- unfold opHash
--- cases path with
--- | inl pl => simp; apply lHStr.neqRight; assumption
--- | inr pl => simp; apply lHStr.neqLeft ; assumption
-
--- Get the result of applying a path to a hash
--- Notice that the length of the path is very important
 @[simp]
 def listPathHashes {ℍ : Type}[HashMagma ℍ](h : ℍ) (path : List (SkElem × ℍ)) : ℍ
   := List.foldl (fun h (s , l) => op_side s h l) h path

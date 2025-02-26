@@ -41,6 +41,7 @@ def ABTree.hget {α : Type} : ABTree α α -> α
 
 def ABTree.getI {α β : Type} : ABTree (α × β) β -> β
  := ABTree.getI' (fun p => p.2) id
+
 ----------------------------------------
 
 ----------------------------------------
@@ -89,31 +90,6 @@ def abtree_zip_with {α β δ ε ρ η : Type}
 def ABTree.forget {α β : Type} : ABTree α β -> ABTree Unit Unit
  := ABTree.map (fun _ => ()) (fun _ => ())
 
--- -- Shortest path indexed trees.
--- inductive STree (α β : Type) : (n : Nat) -> Type where
---   | leaf (v : α) (i : β) : STree α β 0
---   -- Arbitrary decision of using leq here (and not on NodeR)
---   | nodeL {n m : Nat} (i : β) (nLeqm : n ≤ m) ( bL : STree α β n )( bR : STree α β m ) : STree α β n.succ
---   | nodeR {n m : Nat} (i : β) (mLTn : m < n) ( bL : STree α β n )( bR : STree α β m ) : STree α β m.succ
-
--- inductive MMTree (α β : Type) : (_s _l : Nat) -> Type where
---   | leaf (v : α) (i : β) : MMTree α β 0 0
---   | node {s1 s2 l1 l2 s l : Nat} (i : β) (sBot : min s1 s2 = s) (lTop : max l1 l2 = l) ( bL : MMTree α β s1 l1 )( bR : MMTree α β s2 l2 ) : MMTree α β s.succ l.succ
-
--- def MMTree.getI {α β : Type} {s l : Nat} : MMTree α β s l -> β
---  | .leaf _ i => i
---  | .node i _ _ _ _ => i
-
--- abbrev LeafITree (α : Type)(s l : Nat) := MMTree α Unit s l
-
--- -- Index by shortest path tree without information
--- abbrev ITree (α : Type)(n : Nat) := STree α Unit n
-
--- def STree.getI {α β : Type} {n : Nat} (t : STree α β n) : β
---  := match t with
---  | .leaf _ i => i
---  | .nodeL i _ _ _ => i
---  | .nodeR i _ _ _ => i
 ----------------------------------------
 
 ----------------------------------------
