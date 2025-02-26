@@ -192,6 +192,16 @@ def elem_in_tree_forward {ℍ : Type}[BEq ℍ][HashMagma ℍ]
                 proposer.tail
                 chooser.tail
 
+def elem_in_forward {α ℍ : Type}{n : Nat}
+    [BEq ℍ]
+    [o : Hash α ℍ][m : HashMagma ℍ]
+    (path : ISkeleton n)
+    (elem : α)(top : ℍ)
+    (proposer : Sequence n (Option (ℍ × ℍ)))
+    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+    : Winner
+    := elem_in_tree_forward ⟨ path, (o.mhash elem, top)⟩ proposer chooser
+
 ----
 -- * Winning conditions
 -- We did this on first poc.

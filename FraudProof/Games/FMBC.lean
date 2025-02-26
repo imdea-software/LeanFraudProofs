@@ -34,7 +34,7 @@ theorem winning_prop_hashes {ℍ α : Type}
 def gen_chooser_opt {ℍ : Type}
    -- [DecidableEq ℍ]
    [BEq ℍ]
-   ( data : Option (ℍ × ℍ) )
+   (data : Option (ℍ × ℍ) )
    (proposed : ℍ × ℍ × ℍ)
    : Option ChooserMoves
    := data.map ( fun (l , r) =>
