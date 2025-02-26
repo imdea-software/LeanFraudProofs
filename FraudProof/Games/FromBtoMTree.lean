@@ -18,7 +18,7 @@ structure ComputationTree (α ℍ : Type) where
 
 @[simp]
 def data_challenge_game{α ℍ : Type}
-    [BEq α][BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+    [BEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
     (da : ComputationTree Unit ℍ)
     --
     (reveler : ABTree (Option α) (Option (ℍ × ℍ)) )
