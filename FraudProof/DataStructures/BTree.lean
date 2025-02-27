@@ -58,6 +58,13 @@ def ABTree.map {α₁ α₂ β₁ β₂ : Type }
    | .leaf v => .leaf $ f v
    | .node i bl br => .node (g i) (bl.map f g) (br.map f g)
 
+theorem abtree_map_compose {α₁ α₂ α₃ β₁ β₂ β₃ : Type }
+  (f : α₁ -> α₂) (f' : α₂ -> α₃)
+  (g : β₁ -> β₂) (g' : β₂ -> β₃)
+  (t : ABTree α₁ β₁)
+  : ABTree.map f' g' (ABTree.map f g t) = ABTree.map (f' ∘ f) (g' ∘ g) t
+  := sorry
+
 instance : Bifunctor ABTree where
  bimap := ABTree.map
 
