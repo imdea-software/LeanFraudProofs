@@ -5,8 +5,10 @@ import FraudProof.DataStructures.Hash -- hash classes
 import FraudProof.DataStructures.Sequence
 
 import FraudProof.Games.GameDef
-import FraudProof.Games.FromBtoMTree
+import FraudProof.Games.FromBtoMTree -- DAC
 import FraudProof.Games.ElemInTree
+
+-- import FraudProof.Games.FMBC
 
 
 -- * Linear L2
@@ -36,7 +38,7 @@ inductive P2_Actions (α ℍ : Type)  : Type
 -- world behaves.
 def linear_l2_protocol{α ℍ : Type}
   -- [BEq α]
-  [BEq ℍ][Hash α ℍ][HashMagma ℍ]
+  [BEq ℍ][o : Hash α ℍ][HashMagma ℍ]
    (val_fun : α -> Bool)
    --
    (playerOne : P1_Actions α ℍ)
@@ -63,7 +65,9 @@ def linear_l2_protocol{α ℍ : Type}
             | _ => true
          | .DAC ch_str =>
             -- Challenging Sequencer (Merkle tree is not correct)
-            match data_challenge_game ⟨ playerOne.da.fst.map (fun _ => ()) , playerOne.da.snd ⟩ playerOne.dac_str ch_str with
+            match data_challenge_game
+                ⟨ playerOne.da.fst.map o.mhash , playerOne.da.snd ⟩
+                playerOne.dac_str ch_str with
             | .Proposer => true
             | .Chooser => false
 
@@ -139,7 +143,7 @@ def generate_merkle_tree {α ℍ : Type}
           have br' := generate_merkle_tree br
           .node (m.comb (bl'.getI' o.mhash id) (br'.getI' o.mhash id)) bl' br'
 
-def gen_chooser_opt {ℍ : Type}
+def gen_chooser_opt' {ℍ : Type}
    [BEq ℍ]
    (data : ℍ × ℍ )
    (proposed : ℍ × ℍ × ℍ)
@@ -172,7 +176,18 @@ def honest_chooser {α ℍ : Type}
            -- Naive Strategy. (We will need more info for the logarithmic game.)
            ( ph.pathInfo.map (fun i (s1,s2,t) => .some $ if op_side i.side s1 s2 == t then .Continue () else .Now) )
  -- challenge merkle tree with strategy
- else .DAC ((generate_honest_chooser public_data).map (fun _ => ()) gen_chooser_opt)
+ else .DAC ((generate_honest_chooser public_data).map (fun _ => ()) gen_chooser_opt')
+
+lemma const_comp {α β γ : Type}
+ (f : α -> β) (g : γ) : (fun _ => g) ∘ f = (fun _ => g)
+ := by apply funext; intro _; simp
+
+lemma gen_chooser_opt_some {ℍ : Type} [BEq ℍ]:
+  (((fun fhs x ↦ fhs x) ∘ gen_chooser_opt) ∘ some) = (fun fhs x ↦ fhs x) ∘ (@gen_chooser_opt' ℍ _)
+  := by
+  apply funext
+  intro x; simp; apply funext; intro y
+  simp [gen_chooser_opt, gen_chooser_opt']
 
 theorem honest_chooser_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
@@ -207,6 +222,31 @@ theorem honest_chooser_valid {α ℍ}
          · simp
      case false =>
        simp
+       have w_cho :=
+         @dac_winning_gen_chooser α ℍ _ _ _ _
+                                  (da.1.map  o.mhash )
+                                  -- Rev info
+                                  dac_str da.2
+                                  -- Chooser Info
+                                  ((generate_honest_chooser da.fst).map .some .some)
+                                  (ABTree.fold o.mhash (fun _ => m.comb) da.fst)
+       simp [generate_honest_chooser] at w_cho
+       rw [abtree_map_compose] at w_cho
+       rw [abtree_map_compose] at w_cho
+       rw [abtree_map_compose]
+       rw [const_comp ] at w_cho
+       rw [const_comp ] at w_cho
+       rw [const_comp]
+       rw [<- gen_chooser_opt_some ]
+       simp at Hm
+       have ass :=
+            w_cho
+            sorry -- TODO Honest chooser is honest.
+            Hm
+       rw [ass]
+       simp
 
 
-   · _
+       -- have winning_gen_chooser :=
+       --   winning_gen_chooser' da.1 dac_str _
+   · sorry
