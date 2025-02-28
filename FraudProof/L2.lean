@@ -11,13 +11,41 @@ import FraudProof.Games.ElemInTree
 -- import FraudProof.Games.FMBC
 
 
+-- * Generate Honest HashTree
+def generate_honest_hashtree {α ℍ : Type}
+    [o : Hash α ℍ][m : HashMagma ℍ]
+    (data : BTree α)
+    : ABTree α (ℍ × ℍ)
+    := match data with
+       | .leaf v => .leaf v
+       | .node bl br =>
+          have bl' := generate_honest_hashtree bl
+          have br' := generate_honest_hashtree br
+          .node (bl'.getI' o.mhash (fun (l,r) => m.comb l r)
+                ,br'.getI' o.mhash (fun (l,r) => m.comb l r) ) bl' br'
+
+-- lemma generate_honest_hashtree = ABTree.hash_SubTree
+
 -- * Linear L2
 
 structure P1_Actions (α ℍ : Type) : Type
  where
  da : BTree α × ℍ
  dac_str : ABTree (Option α) (Option (ℍ × ℍ))
- gen_elem_str : {n : Nat} -> ISkeleton n -> Sequence n (Option (ℍ × ℍ))
+ gen_elem_str : {n : Nat} -> ISkeleton n -> (Sequence n (Option (ℍ × ℍ)) × Option α)
+
+def honest_playerOne {α ℍ : Type}
+  [Hash α ℍ][HashMagma ℍ]
+  (val_fun : α -> Bool)
+  (raw : BTree α)
+  : Option (P1_Actions α ℍ)
+  := if raw.fold val_fun and
+     then .none
+     else .some $
+          { da := (raw , raw.hash_BTree)
+          , dac_str := (generate_honest_hashtree raw).map .some .some
+          , gen_elem_str := sorry -- all possible element challenges.
+          }
 
 def valid_da {α ℍ : Type} [Hash α ℍ][HashMagma ℍ]
   (da : BTree α × ℍ)(val_fun : α -> Bool)
@@ -47,18 +75,23 @@ def linear_l2_protocol{α ℍ : Type}
    : Bool
    := match playerTwo playerOne.da with
          | .Ok => true
-         | .Invalid e ph str => -- Merkle tree is correct, but there is an invalid element in it.
+         | .Invalid _e ph str => -- Merkle tree is correct, but there is an invalid element in it.
             -- Path is valid. I think in Arb is just the position. (0 <= pos < n)? play : invalid.
             match playerOne.da.fst.iaccess ph with
             | .some (.inl _) =>
-                match elem_in_forward ph e playerOne.da.snd
-                                (playerOne.gen_elem_str ph)
-                                str
+                match elem_in_backward_rev
+                       ph
+                         playerOne.da.snd
+                         (playerOne.gen_elem_str ph)
+                         str
                 with
-                | .Proposer =>
+                | (.Proposer , .some v) => -- v has to be e (_e now)
                   -- Proposer wins showing the element is there.
-                  val_fun e
-                | .Chooser =>
+                  val_fun v
+                | (.Proposer , .none) =>
+                  -- Proposer wins bc challenger lost
+                  true
+                | (.Chooser , _) =>
                   -- Proposer fails to provide hashes?
                   false
             -- Path is not valid.
@@ -178,19 +211,6 @@ theorem find_invalid_path_accessed {α ℍ : Type}
      assumption
 
 
--- Gen chooser.
-def generate_honest_chooser {α ℍ : Type}
-    [o : Hash α ℍ][m : HashMagma ℍ]
-    (data : BTree α)
-    : ABTree α (ℍ × ℍ)
-    := match data with
-       | .leaf v => .leaf v
-       | .node bl br =>
-          have bl' := generate_honest_chooser bl
-          have br' := generate_honest_chooser br
-          .node (bl'.getI' o.mhash (fun (l,r) => m.comb l r)
-                ,br'.getI' o.mhash (fun (l,r) => m.comb l r) ) bl' br'
-
 def generate_merkle_tree {α ℍ : Type}
    [o : Hash α ℍ][m : HashMagma ℍ]
    (data : BTree α) : ABTree α ℍ
@@ -214,7 +234,7 @@ def gen_chooser_opt' {ℍ : Type}
           else .Continue .Right
 
 def honest_chooser {α ℍ : Type}
-  [BEq ℍ][Hash α ℍ][HashMagma ℍ]
+  [BEq ℍ][Hash α ℍ][m : HashMagma ℍ]
   (val_fun : α -> Bool)
   (public_data : BTree α) (da_mtree : ℍ)
   : P2_Actions α ℍ
@@ -231,10 +251,11 @@ def honest_chooser {α ℍ : Type}
         .Invalid
            ph.src
            (ph.pathInfo.map (fun p => p.side) )
+           -- From top to element.
+           (.constant ( fun (top, hl , hr) => .some $ if m.comb hl hr == top then .Continue () else .Now))
            -- Naive Strategy. (We will need more info for the logarithmic game.)
-           ( ph.pathInfo.map (fun i (s1,s2,t) => .some $ if op_side i.side s1 s2 == t then .Continue () else .Now) )
  -- challenge merkle tree with strategy
- else .DAC ((generate_honest_chooser public_data).map (fun _ => ()) gen_chooser_opt')
+ else .DAC ((generate_honest_hashtree public_data).map (fun _ => ()) gen_chooser_opt')
 
 lemma const_comp {α β γ : Type}
  (f : α -> β) (g : γ) : (fun _ => g) ∘ f = (fun _ => g)
@@ -251,13 +272,12 @@ lemma fold_getI_hash { α ℍ : Type }
   [o : Hash α ℍ][m : HashMagma ℍ]
   (b : ABTree α Unit)
   : ABTree.fold o.mhash (fun _ ↦ m.comb) b
-  = ABTree.getI' o.mhash (fun x ↦ m.comb x.1 x.2) (generate_honest_chooser b)
+  = ABTree.getI' o.mhash (fun x ↦ m.comb x.1 x.2) (generate_honest_hashtree b)
  := by induction b with
-   | leaf v => simp [generate_honest_chooser, ABTree.getI']
+   | leaf v => simp [generate_honest_hashtree, ABTree.getI']
    | node _ bl br HL HR =>
-     unfold generate_honest_chooser
-     simp; rw [HL, HR]
-     unfold ABTree.getI';simp
+     unfold generate_honest_hashtree
+     simp [ABTree.getI']; congr
 
 lemma honest_chooser_wins {α ℍ : Type}
    [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ] [m : HashMagma ℍ]
@@ -265,14 +285,14 @@ lemma honest_chooser_wins {α ℍ : Type}
     : winning_condition_player (fun hc a h ↦ dac_leaf_winning_condition hc a h = true)
         (fun _x x res ↦ dac_node_winning_condition res x.1 x.2 = true) (fun _x ↦ id)
         { data := ABTree.map o.mhash id da, res := ABTree.fold o.mhash (fun _x ↦ m.comb) da }
-        (ABTree.map some some (generate_honest_chooser da))
+        (ABTree.map some some (generate_honest_hashtree da))
     := by
     induction da with
     | leaf v =>
       simp
-      simp [generate_honest_chooser, winning_condition_player, dac_leaf_winning_condition]
+      simp [generate_honest_hashtree, winning_condition_player, dac_leaf_winning_condition]
     | node _ bl br HL HR =>
-      simp [generate_honest_chooser, winning_condition_player]
+      simp [generate_honest_hashtree , winning_condition_player]
       simp at *
       apply And.intro
       · simp [dac_node_winning_condition]
@@ -325,8 +345,11 @@ theorem honest_chooser_valid {α ℍ}
          unfold Sequence.map at fres
          rw [fres.1]
          simp
-         rw [fres.2]
-         split; all_goals simp
+         -- This step is something weird.
+         -- I think protocols assumes that the result is good?
+         -- rw [fres.2]
+         -- split; all_goals simp
+         sorry
      case false =>
        simp
        have w_cho :=
@@ -335,9 +358,9 @@ theorem honest_chooser_valid {α ℍ}
                                   -- Rev info
                                   dac_str da.2
                                   -- Chooser Info
-                                  ((generate_honest_chooser da.fst).map .some .some)
+                                  ((generate_honest_hashtree da.fst).map .some .some)
                                   (ABTree.fold o.mhash (fun _ => m.comb) da.fst)
-       simp [generate_honest_chooser] at w_cho
+       simp [generate_honest_hashtree] at w_cho
        rw [abtree_map_compose] at w_cho
        rw [abtree_map_compose] at w_cho
        rw [abtree_map_compose]

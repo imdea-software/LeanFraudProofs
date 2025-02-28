@@ -18,6 +18,19 @@ def BTree.hash_BTree { α ℍ : Type}
   [o : Hash α ℍ][HashMagma ℍ] : BTree α -> MTree ℍ
   := fun t => t.fold o.mhash comb_MTree
 
+-- @[simp]
+def ABTree.hash_Tree {α ℍ : Type}
+  [o : Hash α ℍ][m : HashMagma ℍ] : BTree α -> ABTree α ℍ
+  := ABTree.fold .leaf (fun _ sl sr => .node ( m.comb (sl.getI' o.mhash id) (sr.getI' o.mhash id)) sl sr)
+
+-- @[simp]
+def ABTree.hash_SubTree {α ℍ : Type}
+  [o : Hash α ℍ][m : HashMagma ℍ] : BTree α -> ABTree α (ℍ × ℍ)
+  := ABTree.fold .leaf ( fun _ sl sr =>
+                               .node ( sl.getI' o.mhash (fun (l,r) => m.comb l r)
+                                     , sr.getI' o.mhash (fun (l,r) => m.comb l r) )
+                                     sl sr )
+
 -- Eff HashingTree
 def hashM {α ℍ : Type}{m : Type -> Type}[Monad m]
     (hL : α -> m ℍ)(hC : ℍ -> ℍ -> m ℍ)(t : BTree α) : m (MTree ℍ)
