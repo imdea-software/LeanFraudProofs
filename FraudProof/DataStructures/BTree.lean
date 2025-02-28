@@ -63,7 +63,10 @@ theorem abtree_map_compose {α₁ α₂ α₃ β₁ β₂ β₃ : Type }
   (g : β₁ -> β₂) (g' : β₂ -> β₃)
   (t : ABTree α₁ β₁)
   : ABTree.map f' g' (ABTree.map f g t) = ABTree.map (f' ∘ f) (g' ∘ g) t
-  := sorry
+  := by
+  induction t with
+  | leaf v =>  simp
+  | node b bl br HL HR => simp; apply And.intro; all_goals { assumption }
 
 instance : Bifunctor ABTree where
  bimap := ABTree.map

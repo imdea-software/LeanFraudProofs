@@ -97,15 +97,24 @@ def find_left_invalid_path {α ℍ: Type}
   | .node bl br =>
     match find_left_invalid_path val bl with
     | .none => (find_left_invalid_path val br).map
-     (fun ⟨ n , ls , e , t⟩ => ⟨ n.succ, ls.snoc {side := .Right ,  spine := t, sib := bl.hash_BTree}, e , m.comb bl.hash_BTree t⟩ )
-    | .some ⟨ n , ls , e, t⟩ => .some $ ⟨ n.succ, ls.snoc { side := .Left , spine := t , sib := br.hash_BTree}, e, m.comb t br.hash_BTree⟩
+     (fun ⟨ n , ls , e , t⟩ => ⟨ n.succ, ls.cons {side := .Right ,  spine := t, sib := bl.hash_BTree}, e , m.comb bl.hash_BTree t⟩ )
+    | .some ⟨ n , ls , e, t⟩ => .some $ ⟨ n.succ, ls.cons { side := .Left , spine := t , sib := br.hash_BTree}, e, m.comb t br.hash_BTree⟩
 
 theorem find_nothing_is_valid {α ℍ : Type}
   [o : Hash α ℍ][m : HashMagma ℍ]
   (val : α -> Bool)
   ( t : BTree α )
   : @find_left_invalid_path _ _ o m val t = .none -> t.fold val and = true
-  := sorry
+  := by
+  induction t with
+  | leaf v => simp [find_left_invalid_path]
+  | node b bl br HL HR =>
+    simp [find_left_invalid_path]
+    split
+    case h_1 x heq =>
+      simp; intro hr; replace heq := HL heq; replace hr := HR hr; apply And.intro; all_goals { assumption }
+    case h_2 x heq => simp
+
 
 theorem find_invalid_path_accessed {α ℍ : Type}
   [o : Hash α ℍ][m : HashMagma ℍ]
@@ -115,10 +124,41 @@ theorem find_invalid_path_accessed {α ℍ : Type}
   : @find_left_invalid_path _ _ o m val t = .some wit
     -> t.iaccess (wit.pathInfo.map (fun f => f.side)) = .some (.inl wit.src)
     ∧ val wit.src = false
-    ∧ True -- (Sequence.head wit.pathInfo).spine = o.mhash wit.src
-    ∧ True -- fold is dst
-    ∧ True -- all mid matches.
-  := sorry
+    -- This is required for more intelligent exporations (like log)
+    -- ∧ True (Sequence.head wit.pathInfo).spine = o.mhash wit.src
+    -- ∧ True fold is dst
+    -- ∧ True all mid matches.
+  := by
+  revert wit
+  induction t with
+  | leaf v =>
+    simp [find_left_invalid_path]
+    intro vF
+    simp [ABTree.iaccess, sequence_forget ]
+    simp [ABTree.access]
+    assumption
+  | node _ bl br HL HR =>
+    intro wit
+    simp [find_left_invalid_path]
+    split
+    case h_1 x heq =>
+         simp
+         intro x hr witD
+         replace hr := HR x hr
+         rw [<- witD]
+         simp [ABTree.iaccess, sequence_forget, ABTree.access]
+         simp [ABTree.iaccess, sequence_forget] at hr
+         assumption
+    case h_2 x n ls e H heq =>
+     simp
+     intro witD
+     rw [<- witD]
+     simp [ ABTree.iaccess, sequence_forget, ABTree.access ]
+     simp [ ABTree.iaccess, sequence_forget] at HL
+     have hl := HL _ heq
+     simp at hl
+     assumption
+
 
 -- Gen chooser.
 def generate_honest_chooser {α ℍ : Type}
@@ -189,6 +229,41 @@ lemma gen_chooser_opt_some {ℍ : Type} [BEq ℍ]:
   intro x; simp; apply funext; intro y
   simp [gen_chooser_opt, gen_chooser_opt']
 
+lemma fold_getI_hash { α ℍ : Type }
+  [o : Hash α ℍ][m : HashMagma ℍ]
+  (b : ABTree α Unit)
+  : ABTree.fold o.mhash (fun _ ↦ m.comb) b
+  = ABTree.getI' o.mhash (fun x ↦ m.comb x.1 x.2) (generate_honest_chooser b)
+ := by induction b with
+   | leaf v => simp [generate_honest_chooser, ABTree.getI']
+   | node _ bl br HL HR =>
+     unfold generate_honest_chooser
+     simp; rw [HL, HR]
+     unfold ABTree.getI';simp
+
+lemma honest_chooser_wins {α ℍ : Type}
+   [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ] [m : HashMagma ℍ]
+   (da : BTree α)
+    : winning_condition_player (fun hc a h ↦ dac_leaf_winning_condition hc a h = true)
+        (fun _x x res ↦ dac_node_winning_condition res x.1 x.2 = true) (fun _x ↦ id)
+        { data := ABTree.map o.mhash id da, res := ABTree.fold o.mhash (fun _x ↦ m.comb) da }
+        (ABTree.map some some (generate_honest_chooser da))
+    := by
+    induction da with
+    | leaf v =>
+      simp
+      simp [generate_honest_chooser, winning_condition_player, dac_leaf_winning_condition]
+    | node _ bl br HL HR =>
+      simp [generate_honest_chooser, winning_condition_player]
+      simp at *
+      apply And.intro
+      · simp [dac_node_winning_condition]
+        rw [<- fold_getI_hash, <- fold_getI_hash]
+      · apply And.intro; all_goals {
+              rw [<- fold_getI_hash]
+              assumption
+        }
+
 theorem honest_chooser_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
    (val_fun : α -> Bool)
@@ -216,10 +291,8 @@ theorem honest_chooser_valid {α ℍ}
          unfold Sequence.map at fres
          rw [fres.1]
          simp
-         rw [fres.2.1]
-         split
-         · simp
-         · simp
+         rw [fres.2]
+         split; all_goals simp
      case false =>
        simp
        have w_cho :=
@@ -241,12 +314,10 @@ theorem honest_chooser_valid {α ℍ}
        simp at Hm
        have ass :=
             w_cho
-            sorry -- TODO Honest chooser is honest.
+            (honest_chooser_wins _)
             Hm
        rw [ass]
        simp
-
-
        -- have winning_gen_chooser :=
        --   winning_gen_chooser' da.1 dac_str _
    · sorry
