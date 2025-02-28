@@ -100,6 +100,24 @@ def find_left_invalid_path {α ℍ: Type}
      (fun ⟨ n , ls , e , t⟩ => ⟨ n.succ, ls.cons {side := .Right ,  spine := t, sib := bl.hash_BTree}, e , m.comb bl.hash_BTree t⟩ )
     | .some ⟨ n , ls , e, t⟩ => .some $ ⟨ n.succ, ls.cons { side := .Left , spine := t , sib := br.hash_BTree}, e, m.comb t br.hash_BTree⟩
 
+theorem find_valid_nothing {α ℍ : Type}
+  [o : Hash α ℍ][m : HashMagma ℍ]
+  (val : α -> Bool)
+  ( t : BTree α )
+  (valid : t.fold val and = true)
+  : @find_left_invalid_path _ _ o m val t = .none
+  := by
+  revert valid
+  induction t with
+  | leaf v =>
+    simp [find_left_invalid_path]
+  | node _ bl br HL HR =>
+    simp; intros lT rT
+    simp [find_left_invalid_path]
+    replace HL := HL lT
+    rw [HL]; simp
+    apply HR; assumption
+
 theorem find_nothing_is_valid {α ℍ : Type}
   [o : Hash α ℍ][m : HashMagma ℍ]
   (val : α -> Bool)
@@ -264,6 +282,22 @@ lemma honest_chooser_wins {α ℍ : Type}
               assumption
         }
 
+lemma honest_chooser_accepts_valid {α ℍ : Type}
+   [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+   (val_fun : α -> Bool)
+   (data : BTree α)( mk : ℍ )
+   ( da_valid : valid_da (data, mk) val_fun)
+   : honest_chooser val_fun data mk = .Ok
+   := by
+   simp [honest_chooser]
+   have none := @find_valid_nothing _ _ o m val_fun data da_valid.2
+   rw [none]
+   simp
+   have ⟨ hash , _ ⟩ := da_valid
+   simp at hash
+   symm; assumption
+
+
 theorem honest_chooser_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
    (val_fun : α -> Bool)
@@ -318,6 +352,9 @@ theorem honest_chooser_valid {α ℍ}
             Hm
        rw [ass]
        simp
-       -- have winning_gen_chooser :=
-       --   winning_gen_chooser' da.1 dac_str _
-   · sorry
+   · simp
+     have ⟨ da , dac_str , gen_elem_str ⟩ := p1
+     simp; intro vDa
+     simp [linear_l2_protocol]
+     have hcho := honest_chooser_accepts_valid val_fun da.1 da.2 vDa
+     rw [hcho]
