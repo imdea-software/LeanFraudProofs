@@ -51,6 +51,13 @@ def ABTree.fold {α β γ: Type} (l : α -> γ) (n : β -> γ -> γ -> γ) : ABT
   | .leaf v => l v
   | .node b tl tr => n b (tl.fold l n) (tr.fold l n)
 
+lemma ABTree.fold_node {α β γ: Type}{l : α -> γ} {n : β -> γ -> γ -> γ}
+  (bl : ABTree α β)
+  (br : ABTree α β)
+  (b : β)
+  : ABTree.fold  l n (.node b bl br) = n b (bl.fold l n) (br.fold l n)
+  := by simp
+
 @[simp]
 def ABTree.map {α₁ α₂ β₁ β₂ : Type }
    (f : α₁ -> α₂) (g : β₁ -> β₂)

@@ -2,6 +2,7 @@ import FraudProof.Games.GameDef -- Players, Winner
 import FraudProof.Games.GenericTree -- Generic Game trees
 
 import FraudProof.DataStructures.Sequence
+import FraudProof.DataStructures.MTree -- SkElem dsetrtuct
 
 import Mathlib.Data.Fin.Tuple.Basic
 
@@ -201,6 +202,40 @@ def elem_in_forward {α ℍ : Type}{n : Nat}
     (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
     : Winner
     := elem_in_tree_forward ⟨ path, (o.mhash elem, top)⟩ proposer chooser
+
+-- From MkTree to element (backward), element is a maybe provided by proposer.
+def elem_in_backward_rev {α ℍ : Type}{n : Nat}
+    [BEq ℍ]
+    [o : Hash α ℍ][m : HashMagma ℍ]
+    (path : ISkeleton n)
+    (top : ℍ)
+    (proposer : Sequence n (Option (ℍ × ℍ)) × Option α)
+    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+    : Winner × Option α
+    := match n with
+      | .zero => match proposer.snd with
+                | .none => (Player.Chooser , .none)
+                | .some v =>
+                  if o.mhash v == top
+                  then (Player.Proposer, .some v)
+                  else (Player.Chooser, .none)
+      | .succ _ =>
+        match proposer.fst.head with
+        | .none => (Player.Chooser, .none)
+        | .some proposed => match chooser.head ⟨ top , proposed ⟩ with
+          | .none => (Player.Proposer, .none)
+          | .some .Now =>
+            if  m.comb proposed.1 proposed.2 == top
+            then (Player.Proposer , .none)
+            else (Player.Chooser, .none)
+            -- forward_mid_step_condition path.head (top, proposed.2) proposed.1
+          | .some (.Continue _) =>
+            @elem_in_backward_rev _ _ _ _ o m
+              path.tail (path.head.destruct proposed.1 proposed.2)
+              -- Players
+              ( proposer.fst.tail , proposer.snd ) chooser.tail
+
+
 
 ----
 -- * Winning conditions
