@@ -16,6 +16,15 @@ abbrev Sequence (n : Nat) (α : Type) := { t : List α // t.length = n}
 def Sequence.nil {γ : Type} : Sequence 0 γ
  := ⟨ [] , by simp ⟩
 
+lemma nil_equiv {α : Type}{t : Sequence 0 α}
+   : t = .nil
+   := by
+   have ⟨ ls , lslen ⟩ := t
+   simp
+   cases ls with
+   | nil => simp
+   | cons _ _ => simp at lslen
+
 @[simp]
 def Sequence.single {α : Type} (a : α) : Sequence 1 α
  := .mk [a] $ by simp

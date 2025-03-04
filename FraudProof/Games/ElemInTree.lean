@@ -235,7 +235,93 @@ def elem_in_backward_rev {α ℍ : Type}{n : Nat}
               -- Players
               ( proposer.fst.tail , proposer.snd ) chooser.tail
 
+-- * Naive Honest Player Two
+-- Linear
+def naive_lin_forward_test {ℍ : Type}[m : HashMagma ℍ][BEq ℍ]
+  : ℍ × ℍ × ℍ -> Option ChooserSmp
+  := fun (top, hl , hr) => .some $ if m.comb hl hr == top then .Continue () else .Now
 
+def naive_lin_forward {ℍ : Type}{n : Nat}[ HashMagma ℍ][BEq ℍ]
+  : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp)
+  := .constant naive_lin_forward_test
+
+-- * Winning Lemmas
+--
+lemma elem_back_rev_honest_two {α ℍ : Type}{n : Nat}
+  [DecidableEq α] [BEq ℍ][LawfulBEq ℍ][H : Hash α ℍ][Mag : HashMagma ℍ]
+  [ injH : @InjectiveHash α ℍ H][injM : @InjectiveMagma ℍ Mag]
+  {ph : ISkeleton n}{mk : ℍ}{e : α}
+  {proposer : Sequence n (Option (ℍ × ℍ)) × Option α}
+  --
+  {data : BTree α}
+  (HMkTree : data.hash_BTree = mk)
+  (HElem : data.iaccess ph = .some (.inl e))
+  -- Proposer plays to the end and wins showing that element |e| is in the tree
+  : elem_in_backward_rev ph mk proposer naive_lin_forward = (Player.Proposer , .some e)
+  -- Proposer abandons and Chooser wins.
+  ∨ elem_in_backward_rev ph mk proposer naive_lin_forward = (Player.Chooser , .none)
+ := by
+    revert mk proposer data HElem HMkTree e
+    induction n with
+    | zero =>
+      intros mk e prop
+      intros data HMkTree HElem
+      unfold elem_in_backward_rev
+      cases HProp : prop.2 with
+      | none => simp
+      | some v =>
+        have ph_nil := @nil_equiv _ ph
+        rw [ph_nil, nil_access data] at HElem
+        subst_eqs
+        simp
+        split
+        case isTrue h =>
+          simp at *
+          apply injH.inject at h
+          left; assumption
+        case isFalse h =>
+          simp at *; assumption
+    | succ _pn HInd =>
+      intros mk e prop
+      intros data HMkTree HElem
+      simp [elem_in_backward_rev]
+      have ⟨ propSeq, propV ⟩ := prop
+      cases HHead : propSeq.head with
+      | none => simp at HHead; simp; rw [HHead]; simp
+      | some proposed =>
+        simp at HHead; simp; rw [HHead];simp
+        simp [naive_lin_forward, naive_lin_forward_test]
+        cases HComb : Mag.comb proposed.1 proposed.2 == mk
+        case false => simp
+        case true =>
+           simp
+           have ⟨ seqLs, seqLen ⟩ := ph
+           cases data with
+           | leaf _ =>
+             simp [ABTree.iaccess, sequence_forget] at HElem
+             cases seqLs with
+             | nil => simp at seqLen
+             | cons head tail => simp [ABTree.access] at HElem
+           | node iunit bL bR =>
+            -- have Hind := @HInd ph.tail (ph.head.destruct proposed.1 proposed.2) e (prop.1.tail, prop.2) (ph.head.destruct bL bR)
+            simp at HMkTree
+            simp at HComb; rw [<- HComb] at HMkTree
+            -- simp at Hind
+            cases HSide : seqLs.head _ with
+            | Left =>
+              simp [SkElem.destruct]
+              apply injM.injectL at HMkTree
+              apply HInd
+              simp; exact HMkTree
+              apply ABTree.iaccess_head_left at HElem; assumption
+              simp; assumption
+            | Right =>
+              simp [SkElem.destruct]
+              apply injM.injectR at HMkTree
+              apply HInd
+              simp; exact HMkTree
+              apply ABTree.iaccess_head_right at HElem; assumption
+              simp; assumption
 
 ----
 -- * Winning conditions
