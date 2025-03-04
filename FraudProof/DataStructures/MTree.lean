@@ -87,6 +87,38 @@ def ABTree.access {α β : Type} (t : ABTree α β)(p : Skeleton) : Option (α �
 def ABTree.iaccess {α β : Type}{n : Nat}(t : ABTree α β)(p : ISkeleton n) : Option (α ⊕ β)
   := t.access $ sequence_forget p
 
+lemma ABTree.iaccess_head_left {α β : Type}{n : Nat}{bl br : ABTree α β}{b : β}{p : ISkeleton n.succ} {res : Option (α ⊕ β)}
+  : p.head = .Left -> (ABTree.node b bl br).iaccess p = res -> bl.iaccess p.tail = res
+  := by
+   simp [ABTree.iaccess, sequence_forget]
+   have ⟨ pls, plen ⟩ := p
+   simp; cases pls
+   case nil => simp at plen
+   case cons x xs =>
+     simp; intro XL; rw [XL]
+     simp [Sequence.tail, ABTree.access]
+
+lemma ABTree.iaccess_head_right {α β : Type}{n : Nat}{bl br : ABTree α β}{b : β}{p : ISkeleton n.succ} {res : Option (α ⊕ β)}
+  : p.head = .Right -> (ABTree.node b bl br).iaccess p = res -> br.iaccess p.tail = res
+  := by
+   simp [ABTree.iaccess, sequence_forget]
+   have ⟨ pls, plen ⟩ := p
+   simp; cases pls
+   case nil => simp at plen
+   case cons x xs =>
+     simp; intro XL; rw [XL]
+     simp [Sequence.tail, ABTree.access]
+
+lemma nil_access {α β : Type}(t : ABTree α β)(a : α)
+  : t.iaccess .nil = .some (.inl a) ↔ t = .leaf a
+  := by
+  apply Iff.intro
+  · intro Hip; simp [ABTree.iaccess, sequence_forget, ABTree.access ] at Hip
+    cases t with
+    | leaf w => simp [ABTree.access] at Hip; congr
+    | node _ _ _ => simp [ABTree.access] at Hip
+  · intro Hip; rw [Hip]; simp [ABTree.iaccess, sequence_forget, ABTree.access]
+
 ----------------------------------------
 -- @[simp]
 -- def SeqForget {ℍ : Type} { n : Nat } : (Sequence n (PathElem ℍ)) -> (Sequence n SkElem)

@@ -8,9 +8,6 @@ import FraudProof.Games.GameDef
 import FraudProof.Games.FromBtoMTree -- DAC
 import FraudProof.Games.ElemInTree
 
--- import FraudProof.Games.FMBC
-
-
 -- * Generate Honest HashTree
 def generate_honest_hashtree {α ℍ : Type}
     [o : Hash α ℍ][m : HashMagma ℍ]
@@ -75,13 +72,15 @@ def linear_l2_protocol{α ℍ : Type}
    : Bool
    := match playerTwo playerOne.da with
          | .Ok => true
-         | .Invalid _e ph str => -- Merkle tree is correct, but there is an invalid element in it.
+         | .Invalid _e ph str =>
+            -- Merkle tree is correct, but there is an invalid element in it.
             -- Path is valid. I think in Arb is just the position. (0 <= pos < n)? play : invalid.
             match playerOne.da.fst.iaccess ph with
             | .some (.inl _) =>
                 match elem_in_backward_rev
-                       ph
-                         playerOne.da.snd
+                         ph -- Path provided by the player 2
+                         playerOne.da.snd -- Consented hash (provided by the player 1)
+                         -- Strategies.
                          (playerOne.gen_elem_str ph)
                          str
                 with
@@ -252,7 +251,7 @@ def honest_chooser {α ℍ : Type}
            ph.src
            (ph.pathInfo.map (fun p => p.side) )
            -- From top to element.
-           (.constant ( fun (top, hl , hr) => .some $ if m.comb hl hr == top then .Continue () else .Now))
+           naive_lin_forward
            -- Naive Strategy. (We will need more info for the logarithmic game.)
  -- challenge merkle tree with strategy
  else .DAC ((generate_honest_hashtree public_data).map (fun _ => ()) gen_chooser_opt')
@@ -319,7 +318,8 @@ lemma honest_chooser_accepts_valid {α ℍ : Type}
 
 
 theorem honest_chooser_valid {α ℍ}
-   [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+   [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ]
    (val_fun : α -> Bool)
    (p1 : P1_Actions α ℍ)
    : linear_l2_protocol val_fun p1 ( fun (t, mt) => honest_chooser val_fun t mt)
@@ -345,11 +345,17 @@ theorem honest_chooser_valid {α ℍ}
          unfold Sequence.map at fres
          rw [fres.1]
          simp
-         -- This step is something weird.
-         -- I think protocols assumes that the result is good?
-         -- rw [fres.2]
-         -- split; all_goals simp
-         sorry
+         symm at Hm
+         have HEle := @elem_back_rev_honest_two _ _ _ _ _ _ _ _ _ _
+                                                da.2 wit.src (gen_elem_str (wit.pathInfo.map (fun p => p.side)))
+                                                da.1 Hm fres.1
+         cases HEle with
+         | inl HE =>
+           simp [Sequence.map] at HE; rw [HE]; simp
+           intro wit_val
+           replace fres := fres.2
+           rw [fres] at wit_val; simp at wit_val
+         | inr HE => simp [Sequence.map] at HE; rw [HE]; simp
      case false =>
        simp
        have w_cho :=
