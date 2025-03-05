@@ -47,6 +47,20 @@ def hashM {α ℍ : Type}{m : Type -> Type}[Monad m]
 --
 inductive SkElem : Type where | Left | Right
 
+instance : BEq SkElem where
+  beq l r :=
+    match l, r with
+    | .Left, .Left => true
+    | .Right, .Right => true
+    | _ , _ => false
+
+instance : LawfulBEq SkElem where
+  eq_of_beq := by
+    intros a b
+    cases a
+    all_goals { cases b ; all_goals {simp}}
+  rfl := by intro a; cases a <;> decide
+
 def SkElem.destruct {α : Type}(s : SkElem) (l r : α) : α
   := match s with | .Left => l | .Right => r
 
@@ -118,6 +132,22 @@ lemma nil_access {α β : Type}(t : ABTree α β)(a : α)
     | leaf w => simp [ABTree.access] at Hip; congr
     | node _ _ _ => simp [ABTree.access] at Hip
   · intro Hip; rw [Hip]; simp [ABTree.iaccess, sequence_forget, ABTree.access]
+
+
+-- Access dups
+--
+def no_dup_elements {α : Type}[DecidableEq α](t : BTree α)
+ : Prop :=
+ forall (p q : Skeleton)(p_v q_v : α),
+    ¬ p = q -> t.access p = .some (.inl p_v) -> t.access q = .some (.inl q_v) -> ¬ p_v = q_v
+
+def no_dup_elements_indexed {α : Type}[DecidableEq α](t : BTree α)
+ : Prop :=
+ forall {n : Nat}(p q : ISkeleton n)(p_v q_v : α),
+    ¬ p = q -> t.iaccess p = .some (.inl p_v) -> t.iaccess q = .some (.inl q_v) -> ¬ p_v = q_v
+ ∧
+ forall {n m : Nat}(p : ISkeleton n)(q : ISkeleton m)(p_v q_v : α),
+    ¬ n = m -> t.iaccess p = .some (.inl p_v) -> t.iaccess q = .some (.inl q_v) -> ¬ p_v = q_v
 
 ----------------------------------------
 -- @[simp]

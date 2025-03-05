@@ -44,25 +44,39 @@ def honest_playerOne {α ℍ : Type}
           , gen_elem_str := sorry -- all possible element challenges.
           }
 
-def valid_da {α ℍ : Type} [Hash α ℍ][HashMagma ℍ]
-  (da : BTree α × ℍ)(val_fun : α -> Bool)
- : Prop
- -- Merkle Tree is correct
- := da.fst.hash_BTree = da.snd
- -- All elements are |val_fun| valid
- ∧ (da.fst.fold val_fun and)
+structure Valid_DA {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
+          (data : BTree α)(mk : ℍ)(val_fun : α -> Bool)
+  where
+  MkTree : data.hash_BTree = mk
+  ValidElems : data.fold val_fun and = true
+  NoDup : no_dup_elements_indexed data
+
+-- def valid_da {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
+--   (da : BTree α × ℍ)(val_fun : α -> Bool)
+--  : Prop
+--  -- Merkle Tree is correct
+--  := da.fst.hash_BTree = da.snd
+--  -- All elements are |val_fun| valid
+--  ∧ (da.fst.fold val_fun and)
+--  ∧ no_dup_elements_indexed da.fst
 
 inductive P2_Actions (α ℍ : Type)  : Type
   where
    | DAC (str : ABTree Unit ((ℍ × ℍ × ℍ) -> Option ChooserMoves))
    | Invalid {n : Nat} (p : α) (seq : ISkeleton n) (str : Sequence n ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+   | Duplicate (n m : Nat)
+      -- There are two paths
+      (path_p : ISkeleton n) (path_q : ISkeleton m)
+      -- Strategies to force proposer to show elements.
+      (str_p : Sequence n ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+      (str_q : Sequence m ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
    | Ok
 
 -- Simple linear protocol, no time. Assuming no player play to lose.
 -- If chooser wins, the proposed block is discarded. This is not how the real
 -- world behaves.
 def linear_l2_protocol{α ℍ : Type}
-  -- [BEq α]
+  [BEq α] -- Checking dup
   [BEq ℍ][o : Hash α ℍ][HashMagma ℍ]
    (val_fun : α -> Bool)
    --
@@ -72,11 +86,19 @@ def linear_l2_protocol{α ℍ : Type}
    : Bool
    := match playerTwo playerOne.da with
          | .Ok => true
+         | .DAC ch_str =>
+            -- Challenging Sequencer (Merkle tree is not correct)
+            match data_challenge_game
+                ⟨ playerOne.da.fst.map o.mhash , playerOne.da.snd ⟩
+                playerOne.dac_str ch_str with
+            | .Proposer => true
+            | .Chooser => false
          | .Invalid _e ph str =>
             -- Merkle tree is correct, but there is an invalid element in it.
             -- Path is valid. I think in Arb is just the position. (0 <= pos < n)? play : invalid.
             match playerOne.da.fst.iaccess ph with
             | .some (.inl _) =>
+                -- we can check element e validity if we wanna.
                 match elem_in_backward_rev
                          ph -- Path provided by the player 2
                          playerOne.da.snd -- Consented hash (provided by the player 1)
@@ -95,13 +117,34 @@ def linear_l2_protocol{α ℍ : Type}
                   false
             -- Path is not valid.
             | _ => true
-         | .DAC ch_str =>
-            -- Challenging Sequencer (Merkle tree is not correct)
-            match data_challenge_game
-                ⟨ playerOne.da.fst.map o.mhash , playerOne.da.snd ⟩
-                playerOne.dac_str ch_str with
-            | .Proposer => true
-            | .Chooser => false
+         | .Duplicate lp lq path_p path_q str_p str_q =>
+            -- Simbolic game (executed when needed)
+            have res :=
+                match elem_in_backward_rev
+                         path_p
+                         playerOne.da.snd -- Consented hash (provided by the player 1)
+                         -- Strategies.
+                         (playerOne.gen_elem_str path_p)
+                         str_p
+                      , elem_in_backward_rev
+                         path_q
+                         playerOne.da.snd -- Consented hash (provided by the player 1)
+                         -- Strategies.
+                         (playerOne.gen_elem_str path_q)
+                         str_q with
+                 | (.Proposer, .some v_1) , (.Proposer , .some v_2) => v_1 != v_2
+                 | (.Proposer, .none) , _ => true -- Chooser lost |path_p| challenge
+                 | _ , (.Proposer, .none) => true -- Chooser lost |path_q| challenge
+                 -- Chooser wins. I write all cases to be sure I am not missing anything.
+                 | (.Chooser , _ ) , _ => false
+                 | _ , (.Chooser , _ ) => false
+            -- L1 checks paths are diff and trigger two elem in and check they differ.
+            if HSlen : lp == lq -- Diff len, diff paths.
+            then if path_p == (sequence_coerce (by simp at HSlen; symm; assumption) path_q)
+                 then true -- Valid blocks.
+                 else res
+            else res
+
 
 -- ** Crafting Honest Players.
 -- *** Honest Player One. -- Proposer
@@ -244,7 +287,7 @@ def honest_chooser {α ℍ : Type}
  then
     match @find_left_invalid_path α ℍ _ _ val_fun public_data with
       -- all valid elements, ok
-      | .none => .Ok
+      | .none => .Ok -- Check for dups.
       -- return where the invalid element is
       | .some ph =>
         .Invalid
@@ -302,24 +345,22 @@ lemma honest_chooser_wins {α ℍ : Type}
         }
 
 lemma honest_chooser_accepts_valid {α ℍ : Type}
+   [DecidableEq α]
    [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
    (val_fun : α -> Bool)
    (data : BTree α)( mk : ℍ )
-   ( da_valid : valid_da (data, mk) val_fun)
+   ( da_valid : Valid_DA data mk val_fun)
    : honest_chooser val_fun data mk = .Ok
    := by
    simp [honest_chooser]
-   have none := @find_valid_nothing _ _ o m val_fun data da_valid.2
+   have none := @find_valid_nothing _ _ o m val_fun data da_valid.ValidElems
    rw [none]
    simp
-   have ⟨ hash , _ ⟩ := da_valid
-   simp at hash
-   symm; assumption
-
+   symm; exact da_valid.MkTree
 
 theorem honest_chooser_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
-   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
    (val_fun : α -> Bool)
    (p1 : P1_Actions α ℍ)
    : linear_l2_protocol val_fun p1 ( fun (t, mt) => honest_chooser val_fun t mt)
@@ -346,7 +387,8 @@ theorem honest_chooser_valid {α ℍ}
          rw [fres.1]
          simp
          symm at Hm
-         have HEle := @elem_back_rev_honest_two _ _ _ _ _ _ _ _ _ _
+         have HEle := @elem_back_rev_honest_two α ℍ _ _ _ _ _ _ _ _
+                                                _ -- (wit.pathInfo.map (fun p => p.side))
                                                 da.2 wit.src (gen_elem_str (wit.pathInfo.map (fun p => p.side)))
                                                 da.1 Hm fres.1
          cases HEle with
