@@ -10,6 +10,10 @@ import Mathlib.Data.List.FinRange
 -- Proof Carrying code.
 abbrev Sequence (n : Nat) (α : Type) := { t : List α // t.length = n}
 
+instance seq_b {α : Type}{n : Nat}[BEq α] : BEq (Sequence n α) where
+  -- if their list are the same
+  beq l r := l.1 == r.1
+
 -- ** Basic API
 -- Nil Sequence
 @[simp]

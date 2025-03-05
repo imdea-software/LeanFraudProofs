@@ -188,13 +188,8 @@ def List.fromList' {α : Type}(ls : List (BTree α)) : Option (BTree α)
 def List.fromList {α : Type}(ls : List α) : Option (BTree α)
  := (ls.map BTree.leaf).fromList'
 
--- Next fromListOne, but need to prove stuff.
-
--- Element path?
--- abbrev TreePathElem ( α : Type ):=  Sum (BTree α) (BTree α)
-abbrev TreePath (α : Type ):= List (Sum (BTree α) (BTree α))
-
 section BTree
+    abbrev TreePath (α : Type ):= List (Sum (BTree α) (BTree α))
     -- Define implicit type variable.
     --
     variable {α : Type}
@@ -363,5 +358,4 @@ def complete_tree_skeleton ( lvl : Nat ) : ABTreeSkeleton
   := match lvl with
      | .zero => .leaf ()
      | .succ plvl =>
-        -- I don't about using |have|.
-        .node () (complete_tree_skeleton plvl) (complete_tree_skeleton plvl)
+      have sbtree := complete_tree_skeleton plvl; .node () sbtree sbtree

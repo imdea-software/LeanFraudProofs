@@ -273,6 +273,14 @@ Since we have data behind Choosers now (and we generate functions based on that)
 At each step, both players reveal information and based on that the game progresses.
 I think they are equivalent, but I am leaving the proof of that to after FMBC.
 
+*** Simulatneous games -- Always sectioning games
+The BoLD paper describes an optimization over the k-sectioning arbitration game.
+It says that when the player choosing a side on a k-sectioning, it also provides
+the ranges and the next sectioning, and roles are swapped.
+I do not fully understand how it works, but the idea is that sectioning happens at each move.
+The only similar game I have is what I call simultaneous games, but I am not sure what they do yet.
+**** TODO Ask Marga what's her take
+
 * To build the whole project
 #+begin_src sh :noeval
 lake build
