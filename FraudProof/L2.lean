@@ -64,7 +64,19 @@ def valid_da {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
 theorem struct_and_iff_valid {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
         (data : BTree α)(mk : ℍ)(val_fun : α -> Bool)
         : Valid_DA data mk val_fun ↔ valid_da (data , mk) val_fun
-        := sorry
+        := by
+ apply Iff.intro
+ · intro v_D; simp [valid_da]
+   apply And.intro
+   · exact v_D.MkTree
+   · apply And.intro
+     · exact v_D.ValidElems
+     · exact v_D.NoDup
+ · intro valid; simp [valid_da] at valid
+   exact { MkTree := valid.1
+         , ValidElems := valid.2.1
+         , NoDup := (valid.2).2
+         }
 
 inductive P2_Actions (α ℍ : Type)  : Type
   where
