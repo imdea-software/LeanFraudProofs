@@ -252,7 +252,7 @@ lemma elem_back_rev_honest_two {α ℍ : Type}{n : Nat}
   [DecidableEq α] [BEq ℍ][LawfulBEq ℍ][H : Hash α ℍ][Mag : HashMagma ℍ]
   [ injH : @InjectiveHash α ℍ H][injM : @InjectiveMagma ℍ Mag]
   {ph : ISkeleton n}{mk : ℍ}{e : α}
-  {proposer : Sequence n (Option (ℍ × ℍ)) × Option α}
+  (proposer : Sequence n (Option (ℍ × ℍ)) × Option α)
   --
   {data : BTree α}
   (HMkTree : data.hash_BTree = mk)
