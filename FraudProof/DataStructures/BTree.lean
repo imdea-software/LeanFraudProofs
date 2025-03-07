@@ -126,6 +126,9 @@ def BTree.map {α β : Type}(f : α -> β) : BTree α -> BTree β
 def BTree.fold {α γ: Type}(l : α -> γ)(n : γ -> γ -> γ) : BTree α -> γ
   := ABTree.fold l (fun _ => n)
 
+def BTree.toList {α : Type} : BTree α -> List α
+  := BTree.fold List.singleton List.append
+
 instance : Functor BTree where
  map := BTree.map
 
