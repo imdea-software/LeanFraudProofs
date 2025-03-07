@@ -123,7 +123,7 @@ def linear_l2_protocol{α ℍ : Type}
                   false
             -- Path is not valid.
             | _ => true
-         | .Duplicate lp lq path_p path_q str_p str_q =>
+         | .Duplicate _lp _lq path_p path_q str_p str_q =>
             -- Simbolic game (executed when needed)
             have res :=
                 match elem_in_backward_rev
@@ -140,17 +140,14 @@ def linear_l2_protocol{α ℍ : Type}
                          str_q with
                  | (.Proposer, .some v_1) , (.Proposer , .some v_2) => v_1 != v_2
                  | (.Proposer, .none) , _ => true -- Chooser lost |path_p| challenge
-                 | _ , (.Proposer, .none) => true -- Chooser lost |path_q| challenge
+                 | (.Proposer, _) , (.Proposer, .none) => true -- Chooser lost |path_q| challenge
                  -- Chooser wins. I write all cases to be sure I am not missing anything.
                  | (.Chooser , _ ) , _ => false
                  | _ , (.Chooser , _ ) => false
             -- L1 checks paths are diff and trigger two elem in and check they differ.
-            if HSlen : lp == lq -- Diff len, diff paths.
-            then if path_p == (sequence_coerce (by simp at HSlen; symm; assumption) path_q)
-                 then true -- Valid blocks.
-                 else res
+            if path_p.1 == path_q.1
+            then true
             else res
-
 
 -- ** Crafting Honest Players.
 -- *** Honest Player One. -- Proposer
@@ -403,12 +400,52 @@ theorem honest_chooser_valid {α ℍ}
        | none =>
          simp at *
          -- Find dups!
-         sorry
-         -- apply And.intro
-         -- · symm; assumption
-         -- · apply @find_nothing_is_valid α ℍ o m val_fun at Hval
-         --   apply And.intro; assumption
-         --   sorry -- NO dup?
+         cases Hdups : find_dups (·.snd) da.1.toPaths_elems with
+         | none =>
+            simp
+            apply And.intro
+            · symm; assumption
+            · apply @find_nothing_is_valid α ℍ o m val_fun at Hval
+              apply And.intro
+              · assumption
+              · apply finds_no_dup at Hdups
+                rw [toPath_elems] at Hdups
+                assumption
+         | some witness =>
+           have ( pred, e_1, mid, e_2, succs ) := witness
+           -- Here is where all the magic happens.
+           have ⟨ Hpath_1, Hpath_2, neq_paths , same_elems⟩ := finds_dups_law_elem_sk da.1 _ _ Hdups
+           -- finds_dups is programmed/verified to do exactly what we want.
+           rw [access_iaccess] at Hpath_1; simp [sequence_lift] at Hpath_1
+           rw [access_iaccess] at Hpath_2; simp [sequence_lift] at Hpath_2
+           simp
+           -- We play to win both games.
+           have HE_1 := elem_back_rev_honest_two (gen_elem_str (sequence_lift e_1.1 ))
+                        (by symm at Hm; exact Hm)
+                        Hpath_1
+           have HE_2 := elem_back_rev_honest_two (gen_elem_str (sequence_lift e_2.1 ))
+                        (by symm at Hm; exact Hm)
+                        Hpath_2
+           cases HE_1
+           -- Proposer wins first game
+           case inl x =>
+             cases HE_2
+             -- and Proposer wins second game
+             case inl y =>
+               simp [sequence_lift] at y; rw [y]
+               simp [sequence_lift] at x; rw [x]
+               simp
+               rw [same_elems]; simp
+               intro ff; contradiction
+             -- but quits second game
+             case inr y =>
+               simp [sequence_lift] at y; rw [y]
+               simp [sequence_lift] at x; rw [x]
+               simp; intro ff; contradiction
+           -- Proposer quits first game
+           case inr x =>
+             simp [sequence_lift] at x; rw [x]
+             simp; intro ff; contradiction
        | some wit =>
          simp at *
          have fres := find_invalid_path_accessed val_fun da.1 wit Hval
