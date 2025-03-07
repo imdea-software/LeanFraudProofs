@@ -3,6 +3,7 @@ import FraudProof.Games.GenericTree -- Generic Game trees
 
 import FraudProof.DataStructures.Sequence
 import FraudProof.DataStructures.MTree -- SkElem dsetrtuct
+import FraudProof.DataStructures.TreeAccess -- ABTree.access
 
 import Mathlib.Data.Fin.Tuple.Basic
 

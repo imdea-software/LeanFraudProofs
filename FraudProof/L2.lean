@@ -3,6 +3,7 @@ import FraudProof.DataStructures.BTree -- Btree
 import FraudProof.DataStructures.MTree -- MTree
 import FraudProof.DataStructures.Hash -- hash classes
 import FraudProof.DataStructures.Sequence
+import FraudProof.DataStructures.TreeAccess -- Access
 
 import FraudProof.Games.GameDef
 import FraudProof.Games.FromBtoMTree -- DAC
@@ -49,16 +50,21 @@ structure Valid_DA {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
   where
   MkTree : data.hash_BTree = mk
   ValidElems : data.fold val_fun and = true
-  NoDup : no_dup_elements_indexed data
+  NoDup : List.Nodup data.toList
 
--- def valid_da {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
---   (da : BTree α × ℍ)(val_fun : α -> Bool)
---  : Prop
---  -- Merkle Tree is correct
---  := da.fst.hash_BTree = da.snd
---  -- All elements are |val_fun| valid
---  ∧ (da.fst.fold val_fun and)
---  ∧ no_dup_elements_indexed da.fst
+def valid_da {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
+  (da : BTree α × ℍ)(val_fun : α -> Bool)
+ : Prop
+ -- Merkle Tree is correct
+ := da.fst.hash_BTree = da.snd
+ -- All elements are |val_fun| valid
+ ∧ (da.fst.fold val_fun and)
+ ∧ List.Nodup da.fst.toList
+
+theorem struct_and_iff_valid {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
+        (data : BTree α)(mk : ℍ)(val_fun : α -> Bool)
+        : Valid_DA data mk val_fun ↔ valid_da (data , mk) val_fun
+        := sorry
 
 inductive P2_Actions (α ℍ : Type)  : Type
   where
@@ -276,6 +282,7 @@ def gen_chooser_opt' {ℍ : Type}
           else .Continue .Right
 
 def honest_chooser {α ℍ : Type}
+  [DecidableEq α]
   [BEq ℍ][Hash α ℍ][m : HashMagma ℍ]
   (val_fun : α -> Bool)
   (public_data : BTree α) (da_mtree : ℍ)
@@ -287,7 +294,17 @@ def honest_chooser {α ℍ : Type}
  then
     match @find_left_invalid_path α ℍ _ _ val_fun public_data with
       -- all valid elements, ok
-      | .none => .Ok -- Check for dups.
+      | .none =>
+      -- Check for dups.
+        match find_dups (·.snd) public_data.toPaths_elems with
+        | .none => .Ok
+        | .some (_pred, e_1, _mid, e_2, _succs) =>
+          .Duplicate
+            e_1.1.length e_2.1.length ⟨ e_1.1 , rfl ⟩ ⟨ e_2.1 , rfl ⟩
+            -- Since we are playing the linear game. this is okay
+            -- TODO check backward/forward compatibility.
+            naive_lin_forward
+            naive_lin_forward
       -- return where the invalid element is
       | .some ph =>
         .Invalid
@@ -353,10 +370,18 @@ lemma honest_chooser_accepts_valid {α ℍ : Type}
    : honest_chooser val_fun data mk = .Ok
    := by
    simp [honest_chooser]
+   -- its valid so hashes matches.
+   have Hmatch := da_valid.MkTree; simp [BTree.hash_BTree] at Hmatch
+   rw [Hmatch]; simp
+   -- its valid so all elements should be valid
    have none := @find_valid_nothing _ _ o m val_fun data da_valid.ValidElems
    rw [none]
    simp
-   symm; exact da_valid.MkTree
+   -- its valid so no dups.
+   have elnodups := da_valid.NoDup
+   rw [<- toPath_elems] at elnodups
+   have nodups := no_dups_finds_none (·.snd) data.toPaths_elems elnodups
+   rw [nodups]
 
 theorem honest_chooser_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
@@ -377,9 +402,13 @@ theorem honest_chooser_valid {α ℍ}
        cases Hval : @find_left_invalid_path α ℍ _ _ val_fun da.1 with
        | none =>
          simp at *
-         apply And.intro
-         · symm; assumption
-         · apply @find_nothing_is_valid α ℍ o m val_fun; assumption
+         -- Find dups!
+         sorry
+         -- apply And.intro
+         -- · symm; assumption
+         -- · apply @find_nothing_is_valid α ℍ o m val_fun at Hval
+         --   apply And.intro; assumption
+         --   sorry -- NO dup?
        | some wit =>
          simp at *
          have fres := find_invalid_path_accessed val_fun da.1 wit Hval
@@ -427,5 +456,5 @@ theorem honest_chooser_valid {α ℍ}
      have ⟨ da , dac_str , gen_elem_str ⟩ := p1
      simp; intro vDa
      simp [linear_l2_protocol]
-     have hcho := honest_chooser_accepts_valid val_fun da.1 da.2 vDa
+     have hcho := honest_chooser_accepts_valid val_fun da.1 da.2 (by rw [struct_and_iff_valid]; simpa)
      rw [hcho]
