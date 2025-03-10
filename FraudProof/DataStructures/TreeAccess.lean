@@ -240,6 +240,7 @@ lemma path_elems_eq {α : Type}(t : BTree α)
   : List.filterMap (fun (p, e) => match e with | .inl v => some (p,v) | .inr _ => none ) t.toPaths
   = t.toPaths_elems
   := sorry
+
 lemma paths_elems_are_paths {α : Type}(t : BTree α )(p : Skeleton)(a : α)
   : (p, .inl a) ∈ t.toPaths <-> (p, a) ∈ t.toPaths_elems
   := sorry
@@ -455,7 +456,12 @@ lemma finds_no_dup {α β : Type}[DecidableEq β]
    (f : α -> β)(elems : List α)
    (no_dups_found : find_dups f elems = .none)
    : List.Nodup (elems.map f)
-   := sorry
+   := by
+   induction elems with
+   | nil => simp
+   | cons e els HI =>
+     simp; simp [find_dups, find_dups_acc] at no_dups_found
+     sorry
 
 lemma no_dups_finds_none {α β : Type}[DecidableEq β]
   (f : α -> β)(elems : List α )
