@@ -112,6 +112,9 @@ def ABTree.forget {α β : Type} : ABTree α β -> ABTree Unit Unit
 ----------------------------------------
 -- * BTree (data only in leaves)
 abbrev BTree (α : Type) := ABTree α Unit
+@[simp]
+def BTree.toAB {α : Type} : BTree α -> ABTree α Unit
+ := id
 
 @[simp]
 def BTree.leaf {α : Type} : α -> BTree α := .leaf
@@ -128,6 +131,10 @@ def BTree.fold {α γ: Type}(l : α -> γ)(n : γ -> γ -> γ) : BTree α -> γ
 
 def BTree.toList {α : Type} : BTree α -> List α
   := BTree.fold List.singleton List.append
+
+lemma abfold_bfold {α γ : Type}(l : α -> γ)(n : γ -> γ -> γ) (t : BTree α)
+  : t.fold l n = ABTree.fold l (fun _x => n) t
+  := sorry
 
 instance : Functor BTree where
  map := BTree.map
