@@ -619,12 +619,28 @@ lemma finds_no_dup {α β : Type}[DecidableEq β]
        simp
      case h_2 x pred e_2 sccs heq => simp at no_dups_found
 
+lemma no_find_dups_head {α β : Type}[DecidableEq β]
+  (f : α -> β)(a :α)(elems : List α )
+  (h_nodups : List.Nodup (elems.map f))
+  (h_no_a : ∀ e ∈ elems, ¬ f e = f a)
+  : find_dups f (a :: elems) = .none
+  := sorry
 
--- lemma no_dups_finds_none {α β : Type}[DecidableEq β]
---   (f : α -> β)(elems : List α )
---   (h_nodups : List.Nodup (elems.map f))
---   : find_dups f elems = .none
---   := sorry
+lemma no_dups_finds_none {α β : Type}[DecidableEq β]
+  (f : α -> β)(elems : List α )
+  (h_nodups : List.Nodup (elems.map f))
+  : find_dups f elems = .none
+  := by
+  induction elems with
+  | nil => simp [find_dups,find_dups_acc]
+  | cons hd tl HInd =>
+    simp at *
+    have ⟨ hl , Htl ⟩ := h_nodups
+    -- have lthm : find_dups f tl = .none ∧ ( ∀ x ∈ tl, ¬f x = f hd) -> find_dups f (hd :: tl) = .none := sorry
+    apply no_find_dups_head <;> assumption
+    -- apply lthm; apply And.intro
+    -- · apply HInd; assumption
+    -- · assumption
 
 lemma finds_no_dup_inj {α β : Type}
      [DecidableEq β]
