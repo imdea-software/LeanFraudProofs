@@ -2,6 +2,7 @@ import FraudProof.DataStructures.BTree
 import FraudProof.DataStructures.MTree
 import FraudProof.DataStructures.Sequence
 
+import Mathlib.Data.List.Lattice
 
 ----------------------------------------
 -- ** Access
@@ -232,18 +233,32 @@ theorem toPath_are_paths {α β : Type}(t : ABTree α β)
             apply path_toPaths' at h
             apply HindR; unfold ABTree.toPaths; assumption
 
-def BTree.toPaths_elems {α : Type}(t : BTree α)
-  : List (Skeleton × α)
-  := (t.toPaths.foldr (fun (skl, e) rs => match e with | .inl v => (skl, v) :: rs | .inr _ => rs) .nil)
-
-lemma path_elems_eq {α : Type}(t : BTree α)
-  : List.filterMap (fun (p, e) => match e with | .inl v => some (p,v) | .inr _ => none ) t.toPaths
-  = t.toPaths_elems
-  := sorry
+def BTree.toPaths_elems {α : Type}
+  : BTree α -> List (Skeleton × α)
+  := List.filterMap
+      (fun (x : Skeleton × (α ⊕ Unit))
+       => match x.snd with
+               | .inl v => .some (x.fst, v)
+               | .inr _ => none)
+      ∘ ABTree.toPaths
+  -- (t.toPaths.foldr (fun (skl, e) rs => match e with | .inl v => (skl, v) :: rs | .inr _ => rs) .nil)
 
 lemma paths_elems_are_paths {α : Type}(t : BTree α )(p : Skeleton)(a : α)
   : (p, .inl a) ∈ t.toPaths <-> (p, a) ∈ t.toPaths_elems
-  := sorry
+  := by cases t with
+  | leaf v => simp [ABTree.toPaths,BTree.toPaths_elems]
+  | node _ bl br=> simp [ABTree.toPaths, BTree.toPaths_elems]
+
+lemma paths_elems_acc_irreverent {α β : Type}( t : ABTree α β) (al bl : Skeleton)
+  : (t.toPaths' al).map (·.snd) = (t.toPaths' bl).map (·.snd)
+  := by
+  revert al bl
+  induction t with
+  | leaf v => simp
+  | node b tl tr HL HR =>
+    intros al bl
+    simp
+    rw [HL]; rw [HR]
 
 theorem toPath_elems {α : Type}(t : BTree α)
   : List.map (·.snd) t.toPaths_elems
@@ -258,17 +273,44 @@ theorem toPath_elems {α : Type}(t : BTree α)
     rw [abfold_bfold _ _ br] at HR
     rw [<- HL, <- HR]
     rw [<- List.map_append]
-    congr
+    -- congr
     unfold BTree.toPaths_elems
-    simp
-    rw [<- List.foldr_append]
-    sorry
+    have lemappend : forall {γ: Type}(y : γ), List.cons y .nil = ([y] ++ List.nil)
+        := by simp
+    rw [lemappend]; rw [toPaths_append];simp; rw [List.map_filterMap]; simp
+    rw [lemappend]; rw [toPaths_append];simp; rw [List.map_filterMap]; simp
+    rw [List.map_filterMap]; rw [List.map_filterMap]
+    have ft : forall (f : Skeleton -> Skeleton),
+      (fun (x : Skeleton × (α ⊕ Unit)) => Option.map (fun x ↦ x.snd)
+                (match x.2 with
+                | Sum.inl v => some $ (f x.1, v)
+                | Sum.inr val => none)) =
+        fun x => match x.2 with
+         | Sum.inl v => some v
+         | Sum.inr _ => none
+            := by intro f; funext; rename_i x; cases x.2; all_goals {simp}
+    rw [ft]; rw [ft]
+    unfold ABTree.toPaths
+    have ftid := ft id; simp at ftid
+    rw [ftid]
 
 lemma proj_comp {α β γ : Type}
      (f : α -> γ)
      : (fun (x : γ × β) => x.1) ∘ (fun ((a,b) : α × β) => (f a, b))
      = fun x => f x.1
      := by funext; simp
+lemma List.Disjoint.list_cons {α : Type}
+      (x y : α)(neq : ¬ x = y)
+      (ls rs : List (List α))
+      : (List.map (List.cons x) ls).Disjoint (List.map (List.cons y) rs)
+      := by
+ induction ls with
+ | nil => simp
+ | cons ls lss HI =>
+   simp
+   apply And.intro
+   · intro _; intro cong; symm at cong; contradiction
+   · assumption
 
 lemma diff_head_nodup {α: Type}
      (l_1 l_2 : List (List α))(e_1 e_2 : α)
@@ -276,10 +318,17 @@ lemma diff_head_nodup {α: Type}
      (hneq : ¬ e_1 = e_2)
      : (List.map (List.cons e_1) l_1 ++
       List.map (List.cons e_2) l_2).Nodup
- := sorry
+ := by
+ apply List.Nodup.append
+ · apply List.Nodup.map_on
+   simp; assumption
+ · apply List.Nodup.map_on
+   simp; assumption
+ · apply List.Disjoint.list_cons
+   assumption
 
 theorem path_different {α β : Type}(t : ABTree α β)
-  : List.Nodup (t.toPaths.map (fun (p,e) => p))
+  : List.Nodup (t.toPaths.map (·.fst))
   := by
   induction t with
   | leaf v => simp [ABTree.toPaths]
@@ -308,7 +357,8 @@ theorem path_different {α β : Type}(t : ABTree α β)
      rw [proj_comp]
      rw [proj_comp]
      simp at HL; simp at HR
-     have f : forall {γ : Type}{e : SkElem}, (fun x : Skeleton × γ => e :: x.1) = List.cons e ∘ (·.fst) := sorry
+     have f : forall {γ : Type}{e : SkElem}, (fun x : Skeleton × γ => e :: x.1) = List.cons e ∘ (·.fst)
+       := by intros γ e; funext;simp
      rw [f]
      rw [f]
      rw [<- List.map_comp_map]
@@ -329,6 +379,53 @@ def find_first_split_acc {α : Type}(pred : α -> Bool)(elems : List α)(acc : L
 def find_first_split {α : Type}(P : α -> Bool)(elems : List α)
   : Option (List α × α × List α)
   := find_first_split_acc P elems []
+
+theorem find_first_split_none_wk {α : Type}
+   (P : α -> Bool)(els accl accr : List α)
+   : find_first_split_acc P els (accl.append accr) = .none
+   -> find_first_split_acc P els accr = .none
+   := by
+   revert accl accr
+   induction els with
+   | nil => simp [find_first_split_acc]
+   | cons hd tl HI =>
+     intros accl accr
+     simp [find_first_split_acc]
+     split
+     case isTrue h => simp
+     case isFalse h => intro H; apply HI at H; assumption
+
+theorem find_first_split_none {α : Type}
+   (P : α -> Bool)(els acc : List α)
+   (HAcc : ∀ e ∈ acc, ¬ P e)
+   : find_first_split_acc P els acc = .none
+   -> forall (e:α), (e ∈ (els ++ acc)) -> ¬ P e
+   := by
+   revert acc
+   induction els with
+   | nil => simp [find_first_split_acc]
+   | cons hd tl HI =>
+     intros acc HAcc fF
+     simp [find_first_split_acc] at fF
+     rw [ite_eq_iff] at fF
+     simp at fF
+     have ⟨ nh ,fF ⟩ := fF
+     apply HI at fF
+     simp
+     apply And.intro
+     · assumption
+     · intros a aIn
+       apply Bool.of_not_eq_true
+       apply fF
+       simp
+       cases aIn
+       case inl h => left; assumption
+       case inr h => right; left; assumption
+     simp
+     intros e H
+     cases H
+     case inl h => apply Bool.of_not_eq_true; apply HAcc;assumption
+     case inr h => subst_eqs; assumption
 
 theorem find_first_split_acc_law {α : Type}
         (P : α -> Bool)(elems acc pred sect : List α)( e : α )
@@ -360,14 +457,6 @@ def find_two_pred {α : Type}
        | .none => .none
        | .some (pred, e, ss) =>
           (find_first_split P ss).map ( fun (mid, t, succs) => (pred, e ,mid, t, succs) )
-
--- def find_dups_extra {α : Type}[DecidableEq α](e : ?) (elems : List α)
---    : Option (List α × α × List α × α × List α)
---    := sorry
-
--- lemma find_dups_extra_law
---    : finds_dups_extra ts = (pre , e_1 , mid , e_2, pos) -> ts = pre ++ [e_1] ++ mid ++ [e_2] ++ pos
---    := sorry
 
 def find_dups_acc {β α : Type}[DecidableEq α](f : β -> α) (elems acc : List β)
    : Option (List β × β
@@ -422,6 +511,19 @@ lemma finds_dups_law_elems {α β : Type}[DecidableEq α] (f : β -> α)
   have ff := finds_dups_law_elems_acc f elems [] pred mid succs e_1 e_2
   simp at *; apply ff; unfold find_dups at H; assumption
 
+lemma filtermap_nodup {α : Type}{ t : BTree α}
+      (H : ((ABTree.toPaths t).map (·.1)).Nodup)
+      : (List.filterMap
+        (fun x ↦
+          match x.2 with
+          | Sum.inl v => some (x.1, v)
+          | Sum.inr _val => none)
+        (ABTree.toPaths t)).Nodup
+      := by
+      apply List.Nodup.filterMap
+      · simp
+      · apply List.Nodup.of_map at H; assumption
+
 lemma finds_dups_law_elem_sk {α : Type}[DecidableEq α]
   (t : BTree α)
   --
@@ -449,8 +551,47 @@ lemma finds_dups_law_elem_sk {α : Type}[DecidableEq α]
       rw [H.1]
       simp
     · apply And.intro
-      · sorry
+      ·
+        have elem_e_1 : t.toPaths_elems = pred ++ e_1 :: (mid ++ [e_2] ++ succs) :=
+           by rw [H.1]; simp
+        have getE1 := @List.getElem_of_append _ _ _ _ pred.length _ elem_e_1 rfl
+        have elem_e_2 : t.toPaths_elems = (pred ++ [e_1] ++ mid) ++ e_2 :: succs :=
+           by rw [H.1]; simp
+        have getE2 := @List.getElem_of_append _ _ _ _ (pred ++ [e_1] ++ mid).length _ elem_e_2 rfl
+        unfold BTree.toPaths_elems at getE1 getE2
+        simp at getE1 getE2
+        have HNodup : (List.filterMap
+        (fun x ↦
+          match x.2 with
+          | Sum.inl v => some (x.1, v)
+          | Sum.inr val => none)
+        (ABTree.toPaths t)).Nodup := by apply filtermap_nodup; assumption
+        intro eq
+        have heq : e_1 = e_2 := by rw [Prod.eq_iff_fst_eq_snd_eq]; apply And.intro <;> assumption
+        simp at *
+        rw [<- getE1] at heq
+        conv at heq =>
+          rhs; rw [<- getE2]
+        rw [List.Nodup.getElem_inj_iff HNodup] at heq
+        simp at heq
       · assumption
+
+lemma finds_dup_wk {α β : Type}[DecidableEq α]{f : β -> α}
+   (els accl accr : List β)
+   : find_dups_acc f els (accl ++ accr) = .none
+   -> find_dups_acc f els accr = .none
+   := by
+  revert accl accr
+  induction els with
+  | nil => simp [find_dups_acc]
+  | cons e els HI =>
+    intros accl accr
+    simp [find_dups_acc]
+    split
+    case h_1 x heq =>
+      intro hep
+      apply HI at hep; assumption
+    case h_2 _ _ _ _ _ => simp
 
 lemma finds_no_dup {α β : Type}[DecidableEq β]
    (f : α -> β)(elems : List α)
@@ -460,14 +601,30 @@ lemma finds_no_dup {α β : Type}[DecidableEq β]
    induction elems with
    | nil => simp
    | cons e els HI =>
-     simp; simp [find_dups, find_dups_acc] at no_dups_found
-     sorry
+     simp
+     unfold find_dups at no_dups_found
+     unfold find_dups_acc at no_dups_found
+     simp [find_dups, find_dups_acc] at no_dups_found
+     split at no_dups_found
+     case h_1 x heq =>
+       apply find_first_split_none at heq
+       apply And.intro
+       · simp at heq; intros x xIn ff; symm at ff; apply heq at ff; simp at ff; assumption
+       · apply HI
+         have henil : [e] = [e] ++ [] := by simp
+         rw [henil] at no_dups_found
+         apply finds_dup_wk at no_dups_found
+         unfold find_dups; assumption
+       -- proof obl
+       simp
+     case h_2 x pred e_2 sccs heq => simp at no_dups_found
 
-lemma no_dups_finds_none {α β : Type}[DecidableEq β]
-  (f : α -> β)(elems : List α )
-  (h_nodups : List.Nodup (elems.map f))
-  : find_dups f elems = .none
-  := sorry
+
+-- lemma no_dups_finds_none {α β : Type}[DecidableEq β]
+--   (f : α -> β)(elems : List α )
+--   (h_nodups : List.Nodup (elems.map f))
+--   : find_dups f elems = .none
+--   := sorry
 
 lemma finds_no_dup_inj {α β : Type}
      [DecidableEq β]
