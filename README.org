@@ -279,7 +279,7 @@ It says that when the player choosing a side on a k-sectioning, it also provides
 the ranges and the next sectioning, and roles are swapped.
 I do not fully understand how it works, but the idea is that sectioning happens at each move.
 The only similar game I have is what I call simultaneous games, but I am not sure what they do yet.
-**** TODO Ask Marga what's her take
+**** DONE Ask Marga what's her take
 
 * To build the whole project
 #+begin_src sh :noeval
