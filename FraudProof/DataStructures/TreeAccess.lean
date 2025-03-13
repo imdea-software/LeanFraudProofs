@@ -731,21 +731,3 @@ lemma finds_no_dup_inj {α β : Type}
      apply finds_no_dup at H_nodups
      apply List.Nodup.of_map
      assumption
-
--- lemma find_dups_mem {α : Type}[DecidableEq α]
---       (elems : List (Skeleton × α))
---       (res : DuplicateElem α)
---       ( h : find_dups elems = .some res )
---       : (res.path_1 , res.val) ∈ elems ∧ (res.path_2 , res.val) ∈ elems
---       := sorry -- should be easy to prove, it should be in Mathlib
-
--- theorem find_dups_tree {α β : Type}
---   [DecidableEq α] [DecidableEq β]
---   (t : ABTree α β)
---   (res : DuplicateElem (α ⊕ β))
---   : find_dups t.toPaths = .some res -> ¬ res.path_1 = res.path_2
---   := by
---   have ⟨ p1, p2 , val ⟩ := res
---   simp; intro HFdups
---   have pIn_1 : (p1,val) ∈ t.toPaths := sorry
---   have pIn_2 : (p2,val) ∈ t.toPaths := sorry
