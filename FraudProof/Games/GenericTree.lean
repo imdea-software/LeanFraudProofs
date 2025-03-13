@@ -781,3 +781,19 @@ def spl_game {ℍ : Type}[BEq ℍ][m : HashMagma ℍ]
       -- Chooser won't challenge these. Game is played until reaching a leaf.
       (fun _ _ _ => Player.Proposer)
       da proposer chooser
+
+--
+
+def gen_chooser_opt {ℍ : Type}
+   -- [DecidableEq ℍ]
+   [BEq ℍ]
+   (data : Option (ℍ × ℍ) )
+   (proposed : ℍ × ℍ × ℍ)
+   : Option ChooserMoves
+   := data.map ( fun (l , r) =>
+     if l == proposed.2.1 ∧ r == proposed.2.2
+     then .Now
+     else if ¬ l == proposed.2.1
+          then .Continue .Left
+          else .Continue .Right
+   )
