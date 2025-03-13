@@ -1,7 +1,45 @@
 * FMBC Files
-[[https://gitlab.software.imdea.org/martin.ceresa/leanfpgames/-/tree/FMBC?ref_type=tags][See tag]]
+Wrote last minute FMBC proofs, and put them together in a single file.
+Froze lib at tag : [[https://gitlab.software.imdea.org/martin.ceresa/leanfpgames/-/tree/FMBC?ref_type=tags][See tag]]
 
- 
+* Project Structure:
+** Data Structures
+Here I programmed useful data structures:
++ BTree :: Binary Trees
++ Hash ::  Hash stuff, classes defining hash function from one type to another.
+  Collision Free notions.
++ MTree :: Merkle Trees. (BTree + Hashes).
++ Sequences :: Fin lists (Sequences,Arrays?,n-Tuples), in Lean
+ #+begin_src lean4 :noeval
+def Sequence (a : Type) (n : Nat) := { t : List a // t.lenght = n }
+ #+end_src
++ SeqBTree :: Sequences to BTrees. Balance Complete Trees, so we can show log
+  search of fraud-proofs.
++ TreeAccess :: Main star when formalizing L2 (Arranger) games.
+  - Find invalid elements returning extra metadata when an invalid element is
+    found and proof-carrying data when no element is found. We need extra data
+    to build strategies and to eventually prove that correct agents always win.
+  - Find duplicated elements. Find_inv ; Find_inv when invalid is membership?
+    Several proofs are needed here, I proved them all.
+** Extras
+Don't really remember here, files here may be obsolete.
+** Games
++ ElemInTree :: Arbitration games proving element membership in merkle trees.
++ FMBC :: Fmbc stuff. I did it to guide reviewrs, idk.
++ FromBtoMTree :: DAC game, merkle tree is correctly built arbitration game.
++ GameDef :: definitions of games.
++ GenericTree :: Generic Games played on top of Binary Trees arenas.
++ LogProof :: logarithmic games are logarithmic.
++ PathToTreeGames :: similar to ElemInTree?
++ ReverseLinearGames :: linear games can be played bottom-up ant top-down.
++ Simultaneous :: Arbitration Games where both players provide their strategies
+  before playing. It is not their complete strategies but a commitment element.
+  The Merkle Tree root of their strategies.
+** Proofs
+Again, not so sure.
+** L2.Lean
+Root file implementing Arrenger games and strategies.
+Using everything we defined, we prove that honest players always win.
 * FraudProof
 
 Here we aim to implement and formalize FraudProof ideas placed in L2 Setchain.
