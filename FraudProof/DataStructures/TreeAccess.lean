@@ -368,6 +368,7 @@ theorem path_different {α β : Type}(t : ABTree α β)
      unfold ABTree.toPaths at HR; assumption
      simp
 
+@[simp]
 def find_first_split_acc {α : Type}(pred : α -> Bool)(elems : List α)(acc : List α)
   : Option (List α × α × List α)
   := match elems with
@@ -379,6 +380,7 @@ def find_first_split_acc {α : Type}(pred : α -> Bool)(elems : List α)(acc : L
 def find_first_split {α : Type}(P : α -> Bool)(elems : List α)
   : Option (List α × α × List α)
   := find_first_split_acc P elems []
+
 
 theorem find_first_split_none_wk {α : Type}
    (P : α -> Bool)(els accl accr : List α)
@@ -394,6 +396,27 @@ theorem find_first_split_none_wk {α : Type}
      split
      case isTrue h => simp
      case isFalse h => intro H; apply HI at H; assumption
+
+lemma find_first_split_none_forget{α : Type}
+   (P : α -> Bool)(els acc : List α)
+   : find_first_split_acc P els [] = .none
+   -> find_first_split_acc P els acc = .none
+   := by revert acc; induction els with
+   | nil => simp
+   | cons hd tl HI =>
+     intros acc FF
+     simp at *
+     rw [ite_eq_iff] at FF
+     cases FF
+     case inl h => simp at h
+     case inr h =>
+       have ⟨ cF , rest ⟩ := h
+       rw [ite_cond_eq_false]
+       apply HI
+       have connil : [hd] = [hd] ++ [] := by simp
+       rw [connil] at rest; apply find_first_split_none_wk at rest
+       assumption
+       apply eq_false; assumption
 
 theorem find_first_split_none {α : Type}
    (P : α -> Bool)(els acc : List α)
@@ -427,6 +450,19 @@ theorem find_first_split_none {α : Type}
      case inl h => apply Bool.of_not_eq_true; apply HAcc;assumption
      case inr h => subst_eqs; assumption
 
+theorem find_first_split_none' {α : Type}
+   (P : α -> Bool)(els acc : List α)
+   : (forall (e:α), (e ∈ els) -> ¬ P e)
+   -> find_first_split_acc P els acc = .none
+   := by
+   revert acc; induction els with
+   | nil => simp
+   | cons hd tl HI =>
+     intros acc AE
+     simp at *
+     rw [AE.1]; simp
+     apply HI; exact AE.2
+
 theorem find_first_split_acc_law {α : Type}
         (P : α -> Bool)(elems acc pred sect : List α)( e : α )
         : find_first_split_acc P elems acc = .some (pred, e , sect)
@@ -458,6 +494,7 @@ def find_two_pred {α : Type}
        | .some (pred, e, ss) =>
           (find_first_split P ss).map ( fun (mid, t, succs) => (pred, e ,mid, t, succs) )
 
+@[simp]
 def find_dups_acc {β α : Type}[DecidableEq α](f : β -> α) (elems acc : List β)
    : Option (List β × β
             × List β × β
@@ -576,6 +613,19 @@ lemma finds_dups_law_elem_sk {α : Type}[DecidableEq α]
         simp at heq
       · assumption
 
+lemma finds_dup_wk' {α β : Type}[DecidableEq α]{f : β -> α}
+   (els accl accr : List β)
+   : find_dups_acc f els  accr = .none
+   -> find_dups_acc f els (accl ++ accr) = .none
+   := by revert accl accr; induction els with
+   | nil => simp
+   | cons hd tl HI =>
+     intros accl accr
+     simp; intro HF
+     split
+     case h_1 x heq => rw [heq] at HF; simp at HF; apply HI;assumption
+     case h_2 _ _ _ _ heq => rw [heq] at HF; simp at HF
+
 lemma finds_dup_wk {α β : Type}[DecidableEq α]{f : β -> α}
    (els accl accr : List β)
    : find_dups_acc f els (accl ++ accr) = .none
@@ -619,12 +669,43 @@ lemma finds_no_dup {α β : Type}[DecidableEq β]
        simp
      case h_2 x pred e_2 sccs heq => simp at no_dups_found
 
+
+lemma finds_no_dup_head_forall {α β : Type}[DecidableEq β]
+   (f : α -> β)(a : α)(elems : List α)
+   (no_dups_found : find_dups f (a :: elems) = .none)
+   : ∀ e ∈ elems, ¬ f a = f e
+   := by
+   apply finds_no_dup at no_dups_found
+   simp at no_dups_found
+   intros e EIn
+   replace no_dups_found := no_dups_found.1 e EIn
+   intro fae; apply no_dups_found; symm; assumption
+
+lemma no_dups_no_first_head {α β : Type}[DecidableEq β]
+  (f : α -> β)(a : α)(els : List α )
+  (h_nodups : find_dups f (a :: els) = .none)
+  : find_first_split (fun y => f a == f y) els = .none
+  := by
+  apply finds_no_dup_head_forall at h_nodups
+  unfold find_first_split
+  apply find_first_split_none'
+  simpa
+
 lemma no_find_dups_head {α β : Type}[DecidableEq β]
   (f : α -> β)(a :α)(elems : List α )
-  (h_nodups : List.Nodup (elems.map f))
-  (h_no_a : ∀ e ∈ elems, ¬ f e = f a)
+  (h_nodups : find_dups f elems = .none)
+  (h_no_elems : ∀ e ∈ elems, ¬ f a = f e)
   : find_dups f (a :: elems) = .none
-  := sorry
+  := by
+  simp [find_dups]
+  -- apply find_first_split_none' _ _ [] at h_no_elems
+  have ffist := find_first_split_none' (fun x => f a = f x) elems [] (by simp; assumption)
+  unfold find_first_split
+  have ff_none : find_first_split_acc (fun e ↦ f a == f e) elems [] = none :=
+    by exact ffist
+  rw [ff_none]; simp
+  have connil : [a] = ([a] ++ []) := by {simp}; rw [connil]
+  apply finds_dup_wk'; assumption
 
 lemma no_dups_finds_none {α β : Type}[DecidableEq β]
   (f : α -> β)(elems : List α )
@@ -636,11 +717,9 @@ lemma no_dups_finds_none {α β : Type}[DecidableEq β]
   | cons hd tl HInd =>
     simp at *
     have ⟨ hl , Htl ⟩ := h_nodups
-    -- have lthm : find_dups f tl = .none ∧ ( ∀ x ∈ tl, ¬f x = f hd) -> find_dups f (hd :: tl) = .none := sorry
-    apply no_find_dups_head <;> assumption
-    -- apply lthm; apply And.intro
-    -- · apply HInd; assumption
-    -- · assumption
+    apply no_find_dups_head -- <;> assumption
+    · apply HInd; assumption
+    · intros e EIn; apply hl at EIn; intro ff; apply EIn; symm; assumption
 
 lemma finds_no_dup_inj {α β : Type}
      [DecidableEq β]
