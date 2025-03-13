@@ -31,19 +31,19 @@ theorem winning_prop_hashes {ℍ α : Type}
          = Player.Proposer
     := winning_proposer_wins _ _ da revealer good_revealer
 
-def gen_chooser_opt {ℍ : Type}
-   -- [DecidableEq ℍ]
-   [BEq ℍ]
-   (data : Option (ℍ × ℍ) )
-   (proposed : ℍ × ℍ × ℍ)
-   : Option ChooserMoves
-   := data.map ( fun (l , r) =>
-     if l == proposed.2.1 ∧ r == proposed.2.2
-     then .Now
-     else if ¬ l == proposed.2.1
-          then .Continue .Left
-          else .Continue .Right
-   )
+-- def gen_chooser_opt {ℍ : Type}
+--    -- [DecidableEq ℍ]
+--    [BEq ℍ]
+--    (data : Option (ℍ × ℍ) )
+--    (proposed : ℍ × ℍ × ℍ)
+--    : Option ChooserMoves
+--    := data.map ( fun (l , r) =>
+--      if l == proposed.2.1 ∧ r == proposed.2.2
+--      then .Now
+--      else if ¬ l == proposed.2.1
+--           then .Continue .Left
+--           else .Continue .Right
+--    )
 
 
 theorem winning_gen_chooser {ℍ α : Type}

@@ -45,20 +45,6 @@ def data_challenge_game{α ℍ : Type}
         (fun fhs ⟨hrs , hl , hr ⟩ => fhs ⟨ hrs, hl , hr ⟩)
         chooser)
 
-def gen_chooser_opt {ℍ : Type}
-   -- [DecidableEq ℍ]
-   [BEq ℍ]
-   (data : Option (ℍ × ℍ) )
-   (proposed : ℍ × ℍ × ℍ)
-   : Option ChooserMoves
-   := data.map ( fun (l , r) =>
-     if l == proposed.2.1 ∧ r == proposed.2.2
-     then .Now
-     else if ¬ l == proposed.2.1
-          then .Continue .Left
-          else .Continue .Right
-   )
-
 theorem dac_winning_gen_chooser {α ℍ : Type}
     [hash : Hash α ℍ][HashMagma ℍ]
     [BEq ℍ][LawfulBEq ℍ]
