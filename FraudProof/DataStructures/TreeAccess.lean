@@ -17,6 +17,16 @@ def ABTree.access {α β : Type} (t : ABTree α β)(p : Skeleton) : Option (α �
 def ABTree.iaccess {α β : Type}{n : Nat}(t : ABTree α β)(p : ISkeleton n) : Option (α ⊕ β)
   := t.access $ sequence_forget p
 
+-- Access a Tree by a given path of lenght n reaching a value and returning
+-- values along the way.
+def ABTree.access_path_value {α β : Type}{n : Nat}(t : ABTree α β)(p : ISkeleton n) : Option ( Sequence n β × α )
+ := match n, t with
+   | 0 , .leaf v => .some (.nil , v)
+   | .succ _pn , .node b bl br =>
+           ((p.head.destruct bl.access_path_value br.access_path_value) p.tail).map (fun (rs , a) => (rs.cons b, a))
+   -- Bad cases?
+   | _ , _ => .none
+
 lemma access_iaccess {α β : Type}(t : ABTree α β)(p : Skeleton)
     : t.access p = t.iaccess (sequence_lift p)
     := by simp [ABTree.iaccess, sequence_lift,sequence_forget]

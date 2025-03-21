@@ -9,20 +9,13 @@ import FraudProof.Games.GameDef
 import FraudProof.Games.FromBtoMTree -- DAC
 import FraudProof.Games.ElemInTree
 
--- * Generate Honest HashTree
-def generate_honest_hashtree {α ℍ : Type}
-    [o : Hash α ℍ][m : HashMagma ℍ]
-    (data : BTree α)
-    : ABTree α (ℍ × ℍ)
-    := match data with
-       | .leaf v => .leaf v
-       | .node bl br =>
-          have bl' := generate_honest_hashtree bl
-          have br' := generate_honest_hashtree br
-          .node (bl'.getI' o.mhash (fun (l,r) => m.comb l r)
-                ,br'.getI' o.mhash (fun (l,r) => m.comb l r) ) bl' br'
-
--- lemma generate_honest_hashtree = ABTree.hash_SubTree
+-- This depends on what game we are playing.
+def generate_honest_strategies_forward {α ℍ : Type}
+    -- Tree with anotations.
+    (t : ABTree α (MkData ℍ))
+    {n : Nat}(ph : ISkeleton n)
+    : Sequence n (Option (ℍ × ℍ) × Option α)
+    := _
 
 -- * Linear L2
 
@@ -32,18 +25,19 @@ structure P1_Actions (α ℍ : Type) : Type
  dac_str : ABTree (Option α) (Option (ℍ × ℍ))
  gen_elem_str : {n : Nat} -> ISkeleton n -> (Sequence n (Option (ℍ × ℍ)) × Option α)
 
-def honest_playerOne {α ℍ : Type}
+-- Honest Proposer takes raw data |t| and creates a claim.
+def honest_playerOne {α ℍ : Type} [DecidableEq α]
   [Hash α ℍ][HashMagma ℍ]
   (val_fun : α -> Bool)
-  (raw : BTree α)
+  (t : BTree α)
   : Option (P1_Actions α ℍ)
-  := if raw.fold val_fun and
-     then .none
-     else .some $
-          { da := (raw , raw.hash_BTree)
-          , dac_str := (generate_honest_hashtree raw).map .some .some
+  := if t.fold val_fun and ∧ (find_dups id t.toList).isNone
+     then .some $
+          { da := (t , t.hash_BTree)
+          , dac_str := (t.hash_SubTree).map .some .some
           , gen_elem_str := sorry -- all possible element challenges.
           }
+     else .none
 
 structure Valid_DA {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
           (data : BTree α)(mk : ℍ)(val_fun : α -> Bool)
@@ -323,7 +317,7 @@ def honest_chooser {α ℍ : Type}
            naive_lin_forward
            -- Naive Strategy. (We will need more info for the logarithmic game.)
  -- challenge merkle tree with strategy
- else .DAC ((generate_honest_hashtree public_data).map (fun _ => ()) gen_chooser_opt')
+ else .DAC ((public_data.hash_SubTree).map (fun _ => ()) gen_chooser_opt')
 
 lemma const_comp {α β γ : Type}
  (f : α -> β) (g : γ) : (fun _ => g) ∘ f = (fun _ => g)
@@ -340,11 +334,11 @@ lemma fold_getI_hash { α ℍ : Type }
   [o : Hash α ℍ][m : HashMagma ℍ]
   (b : ABTree α Unit)
   : ABTree.fold o.mhash (fun _ ↦ m.comb) b
-  = ABTree.getI' o.mhash (fun x ↦ m.comb x.1 x.2) (generate_honest_hashtree b)
+  = ABTree.getI' o.mhash (fun x => m.comb x.1 x.2) b.hash_SubTree
  := by induction b with
-   | leaf v => simp [generate_honest_hashtree, ABTree.getI']
+   | leaf v => simp [ABTree.hash_SubTree, ABTree.getI']
    | node _ bl br HL HR =>
-     unfold generate_honest_hashtree
+     unfold ABTree.hash_SubTree
      simp [ABTree.getI']; congr
 
 lemma honest_chooser_wins {α ℍ : Type}
@@ -353,19 +347,21 @@ lemma honest_chooser_wins {α ℍ : Type}
     : winning_condition_player (fun hc a h ↦ dac_leaf_winning_condition hc a h = true)
         (fun _x x res ↦ dac_node_winning_condition res x.1 x.2 = true) (fun _x ↦ id)
         { data := ABTree.map o.mhash id da, res := ABTree.fold o.mhash (fun _x ↦ m.comb) da }
-        (ABTree.map some some (generate_honest_hashtree da))
+        (ABTree.map some .some da.hash_SubTree)
     := by
     induction da with
     | leaf v =>
       simp
-      simp [generate_honest_hashtree, winning_condition_player, dac_leaf_winning_condition]
+      simp [ABTree.hash_SubTree, winning_condition_player, dac_leaf_winning_condition]
     | node _ bl br HL HR =>
-      simp [generate_honest_hashtree , winning_condition_player]
+      simp [ABTree.hash_SubTree, winning_condition_player]
       simp at *
       apply And.intro
       · simp [dac_node_winning_condition]
+        rw [<- ABTree.hash_SubTree]
         rw [<- fold_getI_hash, <- fold_getI_hash]
       · apply And.intro; all_goals {
+              rw [<- ABTree.hash_SubTree]
               rw [<- fold_getI_hash]
               assumption
         }
@@ -484,9 +480,9 @@ theorem honest_chooser_valid {α ℍ}
                                   -- Rev info
                                   dac_str da.2
                                   -- Chooser Info
-                                  ((generate_honest_hashtree da.fst).map .some .some)
+                                  (da.fst.hash_SubTree.map .some .some)
                                   (ABTree.fold o.mhash (fun _ => m.comb) da.fst)
-       simp [generate_honest_hashtree] at w_cho
+       simp [ABTree.hash_SubTree] at w_cho
        rw [abtree_map_compose] at w_cho
        rw [abtree_map_compose] at w_cho
        rw [abtree_map_compose]
@@ -499,6 +495,7 @@ theorem honest_chooser_valid {α ℍ}
             w_cho
             (honest_chooser_wins _)
             Hm
+       unfold ABTree.hash_SubTree
        rw [ass]
        simp
    · simp
