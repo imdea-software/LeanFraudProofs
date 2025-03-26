@@ -63,12 +63,12 @@ def Valid_Seq {α ℍ : Type} {lgn : Nat}
   := Valid_DA (perfectSeqLeaves data) merkle_tree P
 
 def valid_da {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
-  (da : BTree α × ℍ)(val_fun : α -> Bool)
- : Prop
+  (da : BTree α × ℍ)(val_fun : α -> Bool) : Prop
  -- Merkle Tree is correct
  := da.fst.hash_BTree = da.snd
  -- All elements are |val_fun| valid
  ∧ (da.fst.fold val_fun and)
+ -- There are no duplicated elements.
  ∧ List.Nodup da.fst.toList
 
 theorem struct_and_iff_valid {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
