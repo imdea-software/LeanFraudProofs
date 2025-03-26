@@ -1,5 +1,5 @@
 -- Induction proofs
-import Mathlib.Data.Nat.Defs
+-- import Mathlib.Data.Nat.Defs
 
 import Mathlib.Control.Bifunctor
 
@@ -117,9 +117,11 @@ def BTree.toAB {α : Type} : BTree α -> ABTree α Unit
  := id
 
 @[simp]
-def BTree.leaf {α : Type} : α -> BTree α := .leaf
+def BTree.leaf {α : Type} : α -> BTree α := ABTree.leaf
+
 @[simp]
-def BTree.node {α : Type} : BTree α -> BTree α -> BTree α := .node ()
+def BTree.node {α : Type} : BTree α -> BTree α -> BTree α
+ := ABTree.node ()
 
 @[simp]
 def BTree.map {α β : Type}(f : α -> β) : BTree α -> BTree β

@@ -4,32 +4,14 @@ import FraudProof.DataStructures.Hash
 import FraudProof.DataStructures.MTree
 import FraudProof.DataStructures.SeqBTree
 import FraudProof.DataStructures.Sequence
---
-import FraudProof.Extras.List
-import FraudProof.Extras.Nat
---
--- Game elements definitions (Players)
-import FraudProof.Games.GameDef
--- Generic tree games
-import FraudProof.Games.GenericTree
---
--- * Membership games
---  **  Element int trees
+import FraudProof.DataStructures.TreeAccess
 import FraudProof.Games.ElemInTree
--- ** Path ti tree
-import FraudProof.Games.PathToTreeGames
--- import FraudProof.Games.ReverseLinearGame
--- ** Logarithmic
-import FraudProof.Games.LogProof
--- import FraudProof.Games.LogarithmicTransformation
--- * BTree to Merkle Tree
-import FraudProof.Games.FromBtoMTree
--- import FraudProof.Games.ValidBtoMTree
---
--- * FMBC Definitions
 import FraudProof.Games.FMBC
--- * Simultaneous Games (Tournaments)
+import FraudProof.Games.FromBtoMTree
+import FraudProof.Games.GameDef
+import FraudProof.Games.GenericTree
+import FraudProof.Games.LogProof
+import FraudProof.Games.PathToTreeGames
+import FraudProof.Games.ReverseLinearGame
 import FraudProof.Games.Simultaneous
-
--- * L2
---
+import FraudProof.L2
