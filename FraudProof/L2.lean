@@ -9,13 +9,23 @@ import FraudProof.Games.GameDef
 import FraudProof.Games.FromBtoMTree -- DAC
 import FraudProof.Games.ElemInTree
 
+/-!
+# Arranger Block Validity Fraud Proofs
+
+We explore a simple protocol with two kind of players: One proposing blocks and
+the other just challenging.
+
+The main goal is to prove that when we have an honest challenger challenging
+only /good/ blocks are accepted: See `honest_chooser_valid`
+-/
+
 -- This depends on what game we are playing.
 def generate_honest_strategies_forward {α ℍ : Type}
     -- Tree with anotations.
     (t : ABTree α (MkData ℍ))
     {n : Nat}(ph : ISkeleton n)
     : Sequence n (Option (ℍ × ℍ) × Option α)
-    := _
+    := sorry
 
 -- * Linear L2
 
@@ -39,12 +49,18 @@ def honest_playerOne {α ℍ : Type} [DecidableEq α]
           }
      else .none
 
+
 structure Valid_DA {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
           (data : BTree α)(mk : ℍ)(val_fun : α -> Bool)
   where
   MkTree : data.hash_BTree = mk
   ValidElems : data.fold val_fun and = true
   NoDup : List.Nodup data.toList
+
+def Valid_Seq {α ℍ : Type} {lgn : Nat}
+  [DecidableEq α][Hash α ℍ][HashMagma ℍ]
+  (data : Sequence (2^lgn) α)(merkle_tree : ℍ)(P : α -> Bool)
+  := Valid_DA (perfectSeqLeaves data) merkle_tree P
 
 def valid_da {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
   (da : BTree α × ℍ)(val_fun : α -> Bool)
@@ -97,7 +113,6 @@ def linear_l2_protocol{α ℍ : Type}
    --
    : Bool
    := match playerTwo playerOne.da with
-         | .Ok => true
          | .DAC ch_str =>
             -- Challenging Sequencer (Merkle tree is not correct)
             match data_challenge_game
@@ -105,6 +120,7 @@ def linear_l2_protocol{α ℍ : Type}
                 playerOne.dac_str ch_str with
             | .Proposer => true
             | .Chooser => false
+         | .Ok => true
          | .Invalid _e ph str =>
             -- Merkle tree is correct, but there is an invalid element in it.
             -- Path is valid. I think in Arb is just the position. (0 <= pos < n)? play : invalid.

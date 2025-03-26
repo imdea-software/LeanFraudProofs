@@ -1,6 +1,17 @@
-* FMBC Files
-Wrote last minute FMBC proofs, and put them together in a single file.
+* FMBC'25 Frozen Files
+
 Froze lib at tag : [[https://gitlab.software.imdea.org/martin.ceresa/leanfpgames/-/tree/FMBC?ref_type=tags][See tag]]
+
+* Compilation
+To build the whole project should suffice with a simple lake build command
+
+#+begin_src bash
+lake build
+#+end_src
+
+** Compile Documentation [Work In Progress]
+Move to 'docbuild' folder and just 'make' and 'make serve' to lunch a small http
+server (through python.)
 
 * Project Structure:
 ** Data Structures
@@ -15,12 +26,17 @@ def Sequence (a : Type) (n : Nat) := { t : List a // t.lenght = n }
  #+end_src
 + SeqBTree :: Sequences to BTrees. Balance Complete Trees, so we can show log
   search of fraud-proofs.
-+ TreeAccess :: Main star when formalizing L2 (Arranger) games.
++ TreeAccess :: Main star when formalizing L2 (Arranger) games. Main lesson
+  here, we need to characterize the algorithm in a complete way. We need errors
+  and enough information to build fraudproofs. This reminds me a lot of 'Z'
+  charts characterizing good and bad behaviours.
+
   - Find invalid elements returning extra metadata when an invalid element is
     found and proof-carrying data when no element is found. We need extra data
     to build strategies and to eventually prove that correct agents always win.
   - Find duplicated elements. Find_inv ; Find_inv when invalid is membership?
-    Several proofs are needed here, I proved them all.
+    Several proofs are needed here.
+
 ** Extras
 Don't really remember here, files here may be obsolete.
 ** Games
@@ -40,6 +56,7 @@ Again, not so sure.
 ** L2.Lean
 Root file implementing Arrenger games and strategies.
 Using everything we defined, we prove that honest players always win.
+
 * FraudProof
 
 Here we aim to implement and formalize FraudProof ideas placed in L2 Setchain.

@@ -46,6 +46,14 @@ def perfectSeq {α : Type}{n : Nat} (seq : Sequence ((2^n.succ) - 1) α)
        have (seql , ar , seqr) := seq.perfect_split
        .node ar (perfectSeq seql) (perfectSeq seqr)
 
+def perfectSeqLeaves {α : Type}{n : Nat}
+  (seq : Sequence (2^n) α) : BTree α
+  := match n with
+     | .zero => .leaf seq.head
+     | .succ _ =>
+       have (lseq, rseq) := half_split_pow seq
+       .node (perfectSeqLeaves lseq) (perfectSeqLeaves rseq)
+
 -- Size computing. Size of a perfect |seq| is the length of the seq.
 lemma perfect_tree_size {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
     (perfectSeq seq).size = (2^n.succ) - 1
