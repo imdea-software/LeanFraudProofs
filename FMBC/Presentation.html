@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>Towards Mechanizations in Lean</title>
+<meta name="author" content="Martín Ceresa"/>
+<style type="text/css">
+.underline { text-decoration: underline; }
+</style>
+<link rel="stylesheet" href="file:///home/mceresa/Research/Lean/FMBC/reveal/dist/reveal.css"/>
+
+<link rel="stylesheet" href="file:///home/mceresa/Research/Lean/FMBC/reveal/dist/theme/white.css" id="theme"/>
+<link rel="stylesheet" href="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/highlight/zenburn.css"/>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+<section id="sec-title-slide">
+<h1>Towards Mechanizations in Lean</h1><h3>[Martín Ceresa] and César Sanchez</h3><img width="700" src="./images/white_background.png">
+</section>
+<section>
+<section id="slide-orge3dbf4b">
+<h2 id="orge3dbf4b">Introduction</h2>
+<dl>
+<dt>WHAT</dt><dd>A simple <i>Lean</i> mechanization of Fraud-Proof games.</dd>
+<dt>WHY</dt><dd>Provide basic building blocks to prove that <i>honest players</i> always win and
+guarantee correctness of <i>Optimistic Rollups</i> Layer-2 schemes.</dd>
+<dt>HOW</dt><dd>We focus on the structure of arguments using <i>authenticated data-structures</i>
+(Merkle trees.)</dd>
+
+</dl>
+
+<aside class="notes">
+<dl>
+<dt>WHAT</dt><dd>this is about a lean library we programmed to do stuff</dd>
+<dt>WHY</dt><dd>I actually serves to several thing. First, optimistic rollups based
+their correctness in that a single <i>honest</i> player can guarantee correctness
+of the whole ecosystem.</dd>
+<dt>HOW</dt><dd>??</dd>
+
+</dl>
+
+</aside>
+</section>
+<section id="slide-org5df7b2b">
+<h3 id="org5df7b2b">Layer-2</h3>
+</section>
+<section id="slide-org6c04515">
+<h3 id="org6c04515">Optimistic Rollups &#x2013; RDoC</h3>
+</section>
+</section>
+<section>
+<section id="slide-org8b6fec7">
+<h2 id="org8b6fec7">Implicit Game Arenas</h2>
+
+</section>
+</section>
+<section>
+<section id="slide-org8193e58">
+<h2 id="org8193e58">Winning Conditions</h2>
+</section>
+</section>
+<section>
+<section id="slide-org62287fc">
+<h2 id="org62287fc">Formal Statements Decomposition</h2>
+</section>
+</section>
+<section>
+<section id="slide-org2cff724">
+<h2 id="org2cff724">Closing Remarks</h2>
+</section>
+</section>
+</div>
+</div>
+<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/dist/reveal.js"></script>
+<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/highlight/highlight.js"></script>
+<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/notes/notes.js"></script>
+<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/zoom/zoom.js"></script>
+<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/math/math.js"></script>
+<script>
+// Full list of configuration options available here:
+// https://github.com/hakimel/reveal.js#configuration
+Reveal.initialize({
+
+controls: true,
+progress: true,
+history: false,
+center: true,
+slideNumber: 'c',
+rollingLinks: false,
+keyboard: true,
+mouseWheel: false,
+fragmentInURL: false,
+hashOneBasedIndex: false,
+pdfSeparateFragments: true,
+overview: true,
+
+transition: 'None',
+transitionSpeed: 'default',
+
+// Plugins with reveal.js 4.x
+plugins: [ RevealHighlight, RevealNotes, RevealZoom, RevealMath ],
+
+// Optional libraries used to extend reveal.js
+dependencies: [
+]
+
+});
+</script>
+</body>
+</html>
