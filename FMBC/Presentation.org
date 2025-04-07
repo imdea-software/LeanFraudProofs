@@ -1,0 +1,70 @@
+#+REVEAL_ROOT: file:///home/mceresa/Research/Lean/FMBC/reveal/
+#+TITLE: Towards Mechanizations in Lean
+#+AUTHOR: Martín Ceresa
+#+EMAIL: martin.ceresa@imdea.org
+#+OPTIONS: num:nil toc:nil
+#+REVEAL_TRANS: None
+#+EXCLUDE_TAGS: noexport
+#+REVEAL_THEME: white
+#+REVEAL_PLUGINS: (highlight notes zoom math)
+
+#+reveal_title_slide: <h1>%t</h1><h3>[%a] and César Sánchez</h3><img width="700" src="./images/white_background.png">
+
+* Introduction
++ WHAT ::
+  A simple /Lean/ mechanization of Fraud-Proof games.
++ WHY ::
+  Provide basic building blocks to prove that /honest players/ always win and
+  guarantee correctness of /Optimistic Rollups/ Layer-2 schemes.
++ HOW ::
+  We focus on the structure of arguments using /authenticated data-structures/
+  (Merkle trees.)
+
+#+BEGIN_NOTES
++ WHAT :: this is about a lean library we programmed to do stuff
++ WHY :: I actually serves to several thing. First, optimistic rollups based
+  their correctness in that a single /honest/ player can guarantee correctness
+  of the whole ecosystem.
++ HOW :: ??
+#+END_NOTES
+
+** Layer-2
++ Problem :: Scalability.
++ Solution :: Take everything outside the blockchain.
++ Constrain :: Keep the same guarantees as the blockchain.
+
+** Optimistic Rollups -- RDoC
+
++ Instead of computing, results are assumed correct unless someone challenge the
+claim.
++ There is a time period where challengers can challenge
++ If a claim is challenged, the proposer and the challenger of the claim engage
+  into a two-player game.
++ In the blockchain, only the claim and the arbitration of the games are recorded.
+
+** TODO Explain Optimistic Rollups
+** TODO Diff between Arbitrum and RDoC?
+
+* Implicit Game Arenas
+
+Instead of playing games exploring /implicit trees/, we made them explicit.
+We define the arena of arbitration games as trees.
+
+We can state explicitly what properties our system has to prove and maintain.
+
+* Winning Conditions
+
+Our expressions are define as folds/traversals, so to win a game, players must
+win it in all possible states.
+In our case, at the leaf level and node level.
+
+* Formal Statements Decomposition
+
+Moving from arbitration over traces to clever game decomposition into simpler
+games.
+
+* Closing Remarks
+
++ This was fun, but a lot of work. Can we build a systems handling as much as boiler-plate possible?
++ Can we find other games to decompose them in a clever way?
++ Domain specific Layer-2 schemes Language (Frugal?)
