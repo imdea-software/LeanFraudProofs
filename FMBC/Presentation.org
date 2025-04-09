@@ -1,14 +1,13 @@
-#+REVEAL_ROOT: file:///home/mceresa/Research/Lean/FMBC/reveal/
-#+TITLE: Towards Mechanizations in Lean
+#+REVEAL_ROOT: ./reveal/
+#+TITLE: Towards a Mechanization of Fraud Proof Games in Lean
 #+AUTHOR: Martín Ceresa
 #+EMAIL: martin.ceresa@imdea.org
-#+OPTIONS: num:nil toc:nil
-#+REVEAL_TRANS: None
+#+OPTIONS: num:nil toc:nil reveal_width:1200
+#+REVEAL_TRANS: none
 #+EXCLUDE_TAGS: noexport
 #+REVEAL_THEME: white
 #+REVEAL_PLUGINS: (highlight notes zoom math)
-
-#+reveal_title_slide: <h1>%t</h1><h3>[%a] and César Sánchez</h3><img width="700" src="./images/white_background.png">
+#+REVEAL_TITLE_SLIDE: <h2>%t</h2><h3>[%a] and César Sánchez</h3><img width="500" src="./images/white_background.png">
 
 * Introduction
 + WHAT ::
@@ -37,15 +36,34 @@
 
 + Instead of computing, results are assumed correct unless someone challenge the
 claim.
+
 + There is a time period where challengers can challenge
+
 + If a claim is challenged, the proposer and the challenger of the claim engage
   into a two-player game.
-+ In the blockchain, only the claim and the arbitration of the games are recorded.
+
++ In the blockchain, only the claim and the arbitration of the games are
+  recorded.
 
 ** TODO Explain Optimistic Rollups
 ** TODO Diff between Arbitrum and RDoC?
 
-* Implicit Game Arenas
+* Implicit Game Arenas -- Formalization
+
+** DA
+
+#+begin_src lean4
+structure TraceTree (α β γ : Type) where
+  data : BinaryTree α β
+  res : γ
+
+
+def implicit_assumption (comp : ComputationTree α β γ)(leaf_interpretation : α -> γ)
+    (node_intrepretation : β -> γ -> γ -> γ) : Prop
+    := fold leaf_interpretation node_interpretation comp.data = comp.res
+#+end_src
+
+** Tree Arena
 
 Instead of playing games exploring /implicit trees/, we made them explicit.
 We define the arena of arbitration games as trees.

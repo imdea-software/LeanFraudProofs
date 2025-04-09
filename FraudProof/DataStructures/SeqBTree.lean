@@ -94,7 +94,8 @@ theorem seq_tree_seq {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α):
           rw [<- rfl_coerce_up]
           simp [Sequence.perfect_split, Sequence.split, Sequence.tail]
           rw [<- rfl_coerce_up]
-          have list_lm : (seq.1)[2 ^ (pn + 1) - 1]'(by rw [seq.2];sorry) :: (List.drop (2 ^ (pn + 1) - 1) seq.1).tail = List.drop (2 ^ (pn + 1) - 1) seq.1 := sorry
+          have list_lm : (seq.1)[2 ^ (pn + 1) - 1]'(by rw [seq.2]; have ps := @pow_geq_one pn; omega) :: (List.drop (2 ^ (pn + 1) - 1) seq.1).tail
+                    = List.drop (2 ^ (pn + 1) - 1) seq.1 := by simp
           rw [list_lm]
           rw [List.take_append_drop]
 
@@ -115,11 +116,11 @@ def gen_info_perfect_tree {α β : Type}{h : Nat}
      (gen_info_perfect_tree ln ll)
      (gen_info_perfect_tree rn lr)
 
-lemma half_split_rev {α : Type}{lgn : Nat}
-      (s : Sequence (2^lgn.succ) α)
-      : half_split_pow s.reverse
-      = ((half_split_pow s).2.reverse , (half_split_pow s).1.reverse)
-      := sorry
+-- lemma half_split_rev {α : Type}{lgn : Nat}
+--       (s : Sequence (2^lgn.succ) α)
+--       : half_split_pow s.reverse
+--       = ((half_split_pow s).2.reverse , (half_split_pow s).1.reverse)
+--       := sorry
  -- unfold half_split_pow
  -- unfold Sequence.reverse
  -- simp
@@ -138,12 +139,30 @@ lemma half_split_rev {α : Type}{lgn : Nat}
  --   simp
  --   have sameI : 2^(lgn + 1) - (2^lgn + xi + 1) = 2 ^ lgn - (xi + 1) := by omega
  --   congr
+ --
+
+lemma take_init {α : Type}{n m : Nat}( hLT : m.succ ≤ n)(s : Sequence n α)
+   : (Sequence.take m.succ hLT s).init = Sequence.take m (by omega) s
+   := sorry
+
+lemma take_less_init {α : Type}{n k m : Nat}( hLT : m < n)(heq : n = k + 1)(s : Sequence n α)
+   : Sequence.take m (by omega) (sequence_coerce heq s).init = Sequence.take m (by omega) s
+   := sorry
 
 lemma half_perfect_split_same {α : Type} {n : Nat}
       ( s : Sequence (2^n.succ) α )
       : (sequence_coerce ( by have pNZ := @pow_gt_zero n; omega) (half_split_pow s).1).init
       =  (@sequence_coerce _ _ (2^n.succ -1 +1) ( by have pNZ := @pow_gt_zero n.succ; omega) s).init.perfect_split.1
-      := sorry
+      := by simp [Sequence.perfect_split, Sequence.split]
+            unfold half_split_pow; simp; rw [<- Sequence.take]
+            rw [TakeCoerce]
+            rw [take_init]
+            rw [<- take_less_init ]
+            simp
+            congr
+            simp; have pnZ := @pow_gt_zero n; omega
+            omega
+            -- simp [Sequence.init]
       -- apply funext
       -- intro x
       -- simp [seqPerfectSplit, splitSeq, Fin.init]
