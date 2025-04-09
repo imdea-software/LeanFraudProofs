@@ -136,7 +136,7 @@ def BTree.toList {α : Type} : BTree α -> List α
 
 lemma abfold_bfold {α γ : Type}(l : α -> γ)(n : γ -> γ -> γ) (t : BTree α)
   : t.fold l n = ABTree.fold l (fun _x => n) t
-  := sorry
+  := by simp
 
 instance : Functor BTree where
  map := BTree.map

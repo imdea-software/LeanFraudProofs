@@ -128,24 +128,20 @@ theorem rfl_coerce {α : Type}( l r : List α )
      | nil => simp [sequence_coerce]
      | cons y ys => simp [Sequence.tail]; rw [<- HInd]
 
+theorem cons_seq_coerce {α : Type}{n m : Nat}{heq : n = m}(a : α) (seq : Sequence n α):
+   .cons a (sequence_coerce heq seq)
+   = sequence_coerce (by omega) (.cons a seq)
+   := by
+   apply rfl_coerce
+   subst_eqs
+   congr; symm; apply rfl_coerce; simp
+
+
 lemma same_length {α : Type} {n m : Nat}(l : Sequence n α)(r : Sequence m α)
    : l.1 = r.1 -> n = m
    := by
    intro same_l; have ⟨ ls, lp ⟩ := l; have ⟨ rs, rp ⟩ := r
    simp at same_l; subst_eqs; rfl
-
--- theorem coerce_heq {α : Type}{n m : Nat}(l : Sequence n α)(r : Sequence m α)
---     : l.1 = r.1 ↔ HEq l r
---     := by
---     apply Iff.intro
---     · intro same_ls; have same_ln := same_length l r same_ls; subst_eqs
---       have ⟨ ls , ln ⟩ := l; have ⟨ rs, rn ⟩ := r
---       subst_eqs; exact HEq.rfl
---     · intro heq
---       have ⟨ ls , ln ⟩ := l; have ⟨ rs, rn ⟩ := r
---       simp
---       apply eq_of_heq
-
 
 
 -- Proof irrev equiv.
@@ -267,13 +263,6 @@ def zip_succ {α : Type}{n : Nat}
   (seq : Sequence n.succ.succ α) : Sequence n.succ (α × α)
   := zip_succ_int seq.head seq.tail
 
--- Same as above but using indexes.
--- def zip_succ' {α : Type}{n : Nat}
---   (seq : Sequence n.succ.succ α) : Sequence n.succ (α × α)
---   := fun i =>
---     match i with
---     | .mk i iLtns => ( seq ⟨ i , by omega ⟩ , seq ⟨ i.succ , by omega ⟩ )
-
 -- Append
 @[simp]
 def Sequence.append {α : Type}{n m : Nat}(p : Sequence n α)(q : Sequence m α) : Sequence (n + m) α
@@ -322,40 +311,15 @@ def Sequence.nats {n : Nat} : Sequence n Nat
 def Sequence.imap {α β : Type} {n : Nat} (f : Nat -> α -> β) ( seq : Sequence n α ) : Sequence n β
   := seq.zip_with (flip f) .nats
 
-lemma zip_with_coerce {α β ε : Type}{n m : Nat}
-    {f : α -> β -> ε}
-    {sl : Sequence n α}
-    {sr : Sequence n β}
-    (hnq : n = m+1)
-    : sequence_coerce hnq (sl.zip_with f sr) =
-      (sequence_coerce hnq sl).zip_with f (sequence_coerce hnq sr)
-    := sorry
-
-lemma zip_with_init {α β ε : Type}{n : Nat}
-    {f : α -> β -> ε}
-    {sl : Sequence n.succ α}
-    {sr : Sequence n.succ β}
-    : (sl.zip_with f sr).init = Sequence.zip_with f sl.init sr.init
-    := sorry
-
-lemma init_seq_zip {α β ε : Type}{n m : Nat}
-    {f : α -> β -> ε}
-    {sl : Sequence n α}
-    {sr : Sequence n β}
-    (hnq : n = m+1)
-    : (sequence_coerce hnq $ sl.zip_with f sr ).init
-      = (Sequence.init $ sequence_coerce hnq sl).zip_with f  (Sequence.init $ sequence_coerce hnq sr)
-    := by rw [zip_with_coerce]; exact zip_with_init
-
 -- Reverse
 -- @[simp]
 def Sequence.reverse {α : Type} {n : Nat} (seq : Sequence n α) : Sequence n α
   := ⟨ seq.1.reverse , by simp; rw [seq.2] ⟩
 
-theorem Fin.snoc_head {α : Type}{ n : Nat }
-   ( seq : Sequence n.succ α )(lt : α)
-   : (seq.snoc lt).head = seq.head
-   := sorry
+-- theorem Fin.snoc_head {α : Type}{ n : Nat }
+--    ( seq : Sequence n.succ α )(lt : α)
+--    : (seq.snoc lt).head = seq.head
+--    := sorry
 
 -- Take
 @[simp]
@@ -435,30 +399,8 @@ def Sequence.perfect_split {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) 
     , Sequence.tail (sequence_coerce (by rw [pp2]; have ps :=@pow_geq_one n; omega) hdseqr))
 
 
-theorem cons_seq_coerce {α : Type}{n m : Nat}{heq : n = m}(a : α) (seq : Sequence n α):
-   .cons a (sequence_coerce heq seq)
-   = sequence_coerce (by omega) (.cons a seq)
-   := by
-   apply rfl_coerce
-   subst_eqs
-   congr; symm; apply rfl_coerce; simp
-
 def sequence_forget {α : Type}{n : Nat} (seq : Sequence n α) : List α
   := seq.1
-
-theorem concat_perfect_split {α : Type}{n : Nat}(seq : Sequence ((2^n.succ) - 1) α)
-  : let ⟨ seql, m , seqr ⟩ := seq.perfect_split
-  seq = sequence_coerce
-        (by simp; rw [pp2]; have ps := @pow_geq_one n.succ; omega )
-        (seql.append ( .cons m seqr ))
-  := by
-  simp [Sequence.perfect_split]
-  have ⟨ ls , lp ⟩ := seq
-  apply rfl_coerce
-  simp [Sequence.split, Sequence.tail]
-  have ⟨ ldrop , lprop ⟩ := (sequence_coerce _ ⟨List.drop (2 ^ n - 1) ls, _⟩)
-  simp
-  sorry
 
 ----------------------------------------
 -- * Theorems and stuff
@@ -470,11 +412,6 @@ theorem split_seq_eq {α : Type}{n m : Nat}{ mLTn : m ≤ n }( seq : Sequence n 
   have ⟨ ls, lp ⟩ := seq
   apply rfl_coerce
   simp
-
-theorem ConsTailSeqCoerce { α : Type }{n m : Nat} { ceq : n = m + 1 }(seq : Sequence n α)
-  : .cons (sequence_coerce ceq seq).head (sequence_coerce ceq seq).tail = sequence_coerce ceq seq
-  -- Fin.cons ( seq ⟨ 0 , by omega ⟩ ) ( Fin.tail (sequence_coerce ceq seq )) = sequence_coerce ceq seq
-  := sorry
 
 theorem ExtraCoerce {α : Type}{n : Nat}(req : n = n)(seq : Sequence n α)
         : seq = sequence_coerce req seq
@@ -542,35 +479,8 @@ theorem TailCoerDrop {α : Type}{n m : Nat}(d : Nat){heq : n - d = m + 1}(seq : 
     simp [Sequence.tail]; apply rfl_coerce
     have ⟨ ls , lp ⟩ := seq
     simp
-    -- have ⟨ ld , llp ⟩ := sequence_coerce heq ⟨List.drop d ls, by simp; subst_eqs; rfl ⟩
-    -- simp
     subst_eqs
     rw [ <- List.tail_drop ]
     congr
     symm
     apply rfl_coerce_up
-
-theorem ConsMid {α : Type}{n m : Nat}(d : Nat){dLt : d < n}{mheq : n - d = m + 1}
-    (seq : Sequence n α):
-    .cons (seq.getI d dLt) (.tail ( sequence_coerce mheq (.drop d seq) ))
-    = sequence_coerce mheq (.drop d seq)
-    := sorry
-
-
-theorem ConcatSplitCoerce { α : Type } {n cut m : Nat}{cutLn : cut ≤ n}(ceq : n - cut = m) (seq : Sequence n α):
-  have ⟨ fst, snd ⟩ := (seq.split cut cutLn)
-  fst.append ( sequence_coerce ceq snd )
-  = sequence_coerce (by omega) seq
-  := sorry
-
-theorem ConcatCoerce {α : Type}{m n p q: Nat}
-   {h : m = p}{j : n = q}
-   (sl : Sequence n α)(sr : Sequence m α):
-   (sequence_coerce j sl).append (sequence_coerce h sr)
-   = sequence_coerce (by omega) (sl.append sr)
-   := sorry
-
-theorem ConcatSplit {α : Type}{n d : Nat}{dLt : d ≤ n}
-     (seq : Sequence n α):
-     (Sequence.take d dLt seq).append (.drop d seq) = sequence_coerce (by omega) seq
-     := sorry
