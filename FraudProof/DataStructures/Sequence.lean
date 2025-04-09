@@ -484,3 +484,8 @@ theorem TailCoerDrop {α : Type}{n m : Nat}(d : Nat){heq : n - d = m + 1}(seq : 
     congr
     symm
     apply rfl_coerce_up
+
+theorem TakeCoerce {α : Type}{n m k : Nat}{kLT : k ≤ n} (heq : k = m)  (seq : Sequence n α):
+  sequence_coerce heq (Sequence.take k kLT seq)
+  = Sequence.take m (by rw [<- heq]; assumption) seq
+  := sorry

@@ -130,6 +130,7 @@ theorem proposer_winning_mod_forward {ℍ : Type} {lgn : Nat}
                              (half_split_pow proposer).1
          simp [built_up_arena] at hind
          simp [forward_proposer_to_tree] at hind
+
          rw [<- half_perfect_split_same]
          rw [<- perfect_split_constant]
          -- Half_split map
