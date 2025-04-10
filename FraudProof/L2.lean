@@ -20,12 +20,12 @@ only /good/ blocks are accepted: See `honest_chooser_valid`
 -/
 
 -- This depends on what game we are playing.
-def generate_honest_strategies_forward {α ℍ : Type}
-    -- Tree with anotations.
-    (t : ABTree α (MkData ℍ))
-    {n : Nat}(ph : ISkeleton n)
-    : Sequence n (Option (ℍ × ℍ) × Option α)
-    := sorry
+-- def generate_honest_strategies_forward {α ℍ : Type}
+--     -- Tree with anotations.
+--     (t : ABTree α (MkData ℍ))
+--     {n : Nat}(ph : ISkeleton n)
+--     : Sequence n (Option (ℍ × ℍ) × Option α)
+--     := sorry
 
 -- * Linear L2
 
@@ -36,18 +36,18 @@ structure P1_Actions (α ℍ : Type) : Type
  gen_elem_str : {n : Nat} -> ISkeleton n -> (Sequence n (Option (ℍ × ℍ)) × Option α)
 
 -- Honest Proposer takes raw data |t| and creates a claim.
-def honest_playerOne {α ℍ : Type} [DecidableEq α]
-  [Hash α ℍ][HashMagma ℍ]
-  (val_fun : α -> Bool)
-  (t : BTree α)
-  : Option (P1_Actions α ℍ)
-  := if t.fold val_fun and ∧ (find_dups id t.toList).isNone
-     then .some $
-          { da := (t , t.hash_BTree)
-          , dac_str := (t.hash_SubTree).map .some .some
-          , gen_elem_str := sorry -- all possible element challenges.
-          }
-     else .none
+-- def honest_playerOne {α ℍ : Type} [DecidableEq α]
+--   [Hash α ℍ][HashMagma ℍ]
+--   (val_fun : α -> Bool)
+--   (t : BTree α)
+--   : Option (P1_Actions α ℍ)
+--   := if t.fold val_fun and ∧ (find_dups id t.toList).isNone
+--      then .some $
+--           { da := (t , t.hash_BTree)
+--           , dac_str := (t.hash_SubTree).map .some .some
+--           , gen_elem_str := sorry -- all possible element challenges.
+--           }
+--      else .none
 
 
 structure Valid_DA {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
