@@ -45,11 +45,11 @@ def extract_sibling_hashes {ℍ : Type}{n : Nat}
 -- * Arena
 def built_up_arena {n : Nat}
    : Sequence (2^n) SkElem -> ABTree SkElem Unit
-   := gen_info_perfect_tree (Sequence.constant ())
+   := gen_info_perfect_tree (Sequence.constant _ ())
 
 def built_up_arena_backward {n : Nat}
    : Sequence (2^n) SkElem -> ABTree SkElem Unit
-   := gen_info_perfect_tree (Sequence.constant ()) ∘ Sequence.reverse
+   := gen_info_perfect_tree (Sequence.constant _ ()) ∘ Sequence.reverse
 
 def backward_proposer_to_tree {α : Type}{ n : Nat}
     (sides : Sequence (2^n) SkElem)
