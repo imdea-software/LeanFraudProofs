@@ -512,7 +512,7 @@ theorem winning_chooser_wins {α α' β β' γ : Type}
              -- Not Winning?
              rw [HR,HP] at loPro --; simp [winning_condition_player] at loPro
              unfold winning_condition_player at loPro
-             have lemm {a b c : Prop} :  a ∧ b ∧ c <-> a ∧ c ∧ b := sorry
+             have lemm {a b c : Prop} :  a ∧ b ∧ c <-> a ∧ c ∧ b := by tauto
              rw [lemm] at loPro
              simp at loPro
              replace loPro := loPro wCh.1 (no_challenge_matching_data wCh.2.2)
@@ -529,7 +529,9 @@ theorem winning_chooser_wins {α α' β β' γ : Type}
                -- This case is the interesting one. We need to specialize our winning chooser.
                -- In this case, we need to assume something else, like, if res
                -- does not match, then I won't play
-               sorry -- wCh.2.2 -- This we cannot do, we need partial information to be correct and another to be bad.
+               -- We have that data is correct, but we need to show that it wins
+               -- against all other possible datum.
+               ( by sorry )
                --
                sorry
              exact hind
@@ -638,11 +640,11 @@ def skeleton_da_to_tree {lgn : Nat}{γ : Type}
     := { data := perfectSeq skeleton , res := res }
 
 -- Building up arena.
-def tree_da {γ : Type} { lgn : Nat }
-   (seq_da : ImpTreePath (2^lgn.succ - 1) γ γ)
-   : CompTree Unit Unit (γ × γ)-- ABTree Unit Unit × (γ × γ)
-   := { data := sorry -- Data does not matter here.
-      , res := ⟨ seq_da.1.1 , seq_da.2 ⟩  }
+-- def tree_da {γ : Type} { lgn : Nat }
+--    (seq_da : ImpTreePath (2^lgn.succ - 1) γ γ)
+--    : CompTree Unit Unit (γ × γ)-- ABTree Unit Unit × (γ × γ)
+--    := { data := sorry -- Data does not matter here.
+--       , res := ⟨ seq_da.1.1 , seq_da.2 ⟩  }
 
 -- Homogeneous game.
 -- def perfect_seq_to_tree {γ : Type} {lgn : Nat}
@@ -692,11 +694,15 @@ def tree_da {γ : Type} { lgn : Nat }
 --              := ⟨ tDA , da.res ⟩
 --           treeCompArbGame _ _ treeDA tP tC
 
+def Unique_Mid_Condition {β γ : Type}(md : β -> γ -> γ -> γ -> Bool)
+  : Prop := forall (b : β)( k1 k2 x y : γ), ¬ (k1 = k2 ) -> ¬ md b k1 x y =  md b k2 x y
+
 theorem chooser_data_availability {α α' β γ : Type}
     [BEq γ][LawfulBEq γ]
     -- Conditions
     (leafCondition : α -> α' -> γ -> Bool)
     (midCondition  : β -> γ -> γ -> γ -> Bool)
+    (unique_mid : Unique_Mid_Condition midCondition) -- This is provided by hashing stuff
     -- Public Information
     -- (da : CompTree α β γ)
     (data : ABTree α β)
@@ -751,11 +757,42 @@ theorem chooser_data_availability {α α' β γ : Type}
            simp [tree_comp_winning_conditions] at win_ch
            simp
            split
-           case h_1 x heq => sorry -- destroy heq plus unique property about midcondition.
-           case h_2 x heq => apply HIndL; exact win_ch.2.1; sorry
-           case h_3 x heq => apply HIndR; exact win_ch.2.2; sorry
-           case h_4 x heq => sorry -- heq is nonsense
-
+           case h_1 x heq =>
+             clear HIndL HIndR
+             rw [ite_eq_iff] at heq
+             cases heq
+             case inl h =>
+               simp at h
+               have micond := win_ch.1
+               have umid := unique_mid gb ch_res da_res proposed.1 proposed.2 nheq
+               rw [h.1,h.2] at micond
+               rw [micond] at umid
+               simp at *; assumption
+             case inr h => -- Nonsense
+               simp at *
+               replace ⟨ hpneq , h ⟩ := h
+               rw [ite_eq_iff] at h
+               simp at h
+           case h_2 x heq =>
+             apply HIndL; exact win_ch.2.1
+             clear HIndL HIndR
+             rw [ite_eq_iff] at heq
+             simp at heq
+             exact heq.2
+           case h_3 x heq =>
+             apply HIndR; exact win_ch.2.2
+             clear HIndL HIndR
+             rw [ite_eq_iff] at heq
+             simp at heq
+             replace ⟨heq , arg ⟩ := heq
+             tauto
+           case h_4 x heq =>
+             clear HIndL HIndR win_ch
+             rw [ite_eq_iff] at heq
+             simp at heq
+             replace ⟨ _ , heq ⟩ := heq
+             rw [ite_eq_iff] at heq
+             simp at heq
 
 --
 --
