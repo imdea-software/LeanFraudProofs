@@ -1,30 +1,37 @@
 ----------------------------------------
--- * Generic Hash Function (for us)
--- Hash from |v| to |h|
+/-! # Hash Definitions-/
+/-! Here we define what we explicitly define properties about hash funcitons.-/
+
+
+/-! ## Hash Operations as Classes -/
+
+/-! We say that elements in `α` can be hashed to `ℍ` through `mhash`. -/
 @[class] structure Hash (α ℍ : Type) where
   mhash : α -> ℍ
--- plus a comb function.
+
+/-! Additionally, we define another function combining hashes `comb` -/
 @[class] structure HashMagma (ℍ : Type) where
   comb : ℍ -> ℍ -> ℍ
+
+/-! Usually, `Hash` and `Hashmagma` would go together. -/
 ----------------------------------------
 
 ----------------------------------------
--- * Hash Properties
+/-! ## Hash Properties -/
 --
--- ** Hash function collision resistant and Injective
+
+/-! ### Hash function collision resistant and Injective -/
 @[class] structure CollResistant (α ℍ : Type)[op : Hash α ℍ] where
-  -- Collision resistant? It should be hard to find these guys.
   noCollisions : forall (a b : α), a ≠ b -> op.mhash a ≠ op.mhash b
 
 @[class] structure InjectiveHash (α ℍ : Type)[h : Hash α ℍ] where
   inject : forall (a b : α), h.mhash a = h.mhash b -> a = b
 
--- Injective is stronger than Collision resistant
+/-! Injective is stronger than Collision resistant -/
 def injIsCollResis {α ℍ : Type}[m : Hash α ℍ](inj : InjectiveHash α ℍ) : CollResistant α ℍ
   := { noCollisions := by intros a b neqab eqm; have inje := inj.inject _ _ eqm; contradiction}
 
--- ** Hash combination is collision resistant (both arguments) and Injective.
--- Lawful versions
+/-! ###  Hash combination respects collision resistant (both arguments) and Injective. -/
 @[class] structure SLawFulHash (ℍ : Type)[m : HashMagma ℍ] where
   -- Combine diff hashes are diff.
   neqLeft : forall (a1 a2 b1 b2 : ℍ), a1 ≠ a2 -> m.comb a1 b1 ≠ m.comb a2 b2
@@ -35,7 +42,7 @@ def injIsCollResis {α ℍ : Type}[m : Hash α ℍ](inj : InjectiveHash α ℍ) 
   injectR : forall (a1 a2 b1 b2 : ℍ), m.comb a1 b1 = m.comb a2 b2 -> b1 = b2
 
 
--- Injective is stronger than Collision resistant
+/-! ### Injective is stronger than Collision resistant -/
 -- Constructive ok
 def injIsLawful {ℍ : Type}{m : HashMagma ℍ}(inj : InjectiveMagma ℍ) : SLawFulHash ℍ
  := { neqLeft
@@ -69,12 +76,11 @@ def injIsLawful {ℍ : Type}{m : HashMagma ℍ}(inj : InjectiveMagma ℍ) : SLaw
 ----------------------------------------
 
 ----------------------------------------
--- Useful names
-----------------------------------------
+/-! ## Decidability through `α` and `CollResistant` -/
 
-----------------------------------------
--- * Hash Properties
--- Decable eq!
+/-! This is kinda important, it actually hides when we are using `CollResistant`
+hashes -/
+
 def eq_eqhash {α ℍ : Type}
   [ eqa : DecidableEq α]
   [o : Hash α ℍ][cfree : CollResistant α ℍ]
