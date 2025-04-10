@@ -101,9 +101,12 @@ def Sequence.tail_pred {α : Type}{n : Nat}(s : Sequence n α) : Sequence n.pred
     | .succ _pn => s.tail
 
 def Sequence.init {α : Type}{n : Nat}(seq : Sequence n.succ α) : Sequence n α
- := match n with
-   | .zero => .nil
-   | .succ _ => .cons seq.head $ seq.tail.init
+  := ⟨ List.take n seq.1 , by have ⟨ l , len ⟩ := seq; simp at *; omega⟩
+
+-- def Sequence.init {α : Type}{n : Nat}(seq : Sequence n.succ α) : Sequence n α
+--  := match n with
+--    | .zero => .nil
+--    | .succ _ => .cons seq.head $ seq.tail.init
 
 ----------------------------------------
 -- ** Sequence coercions and eq
@@ -210,10 +213,14 @@ def lastSeq' {α : Type}{n m : Nat} (seq : Sequence n α)(ns : n = m + 1) : α
 --   := seq ⟨ n - 1, by omega ⟩
 --
 @[simp]
-def Sequence.constant {α : Type} {n : Nat}(a : α) : Sequence n α
+def Sequence.constant {α : Type} (n : Nat)(a : α) : Sequence n α
  := match n with
     | .zero => .nil
-    | .succ _ => (Sequence.constant a).cons a
+    | .succ pn => (Sequence.constant pn a).cons a
+
+theorem constant_succ {α : Type}{n : Nat}{a : α}:
+  Sequence.constant n.succ a = a :: Sequence.constant n a
+  := by simp
 
 @[simp]
 def polyLenSeqEq {α : Type}[BEq α]{n m : Nat}(p : Sequence n α)(q : Sequence m α) : Bool
@@ -488,4 +495,4 @@ theorem TailCoerDrop {α : Type}{n m : Nat}(d : Nat){heq : n - d = m + 1}(seq : 
 theorem TakeCoerce {α : Type}{n m k : Nat}{kLT : k ≤ n} (heq : k = m)  (seq : Sequence n α):
   sequence_coerce heq (Sequence.take k kLT seq)
   = Sequence.take m (by rw [<- heq]; assumption) seq
-  := sorry
+  := by subst_eqs; simp; rw [<- rfl_coerce ]; simp

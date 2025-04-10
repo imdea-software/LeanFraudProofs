@@ -143,11 +143,23 @@ def gen_info_perfect_tree {α β : Type}{h : Nat}
 
 lemma take_init {α : Type}{n m : Nat}( hLT : m.succ ≤ n)(s : Sequence n α)
    : (Sequence.take m.succ hLT s).init = Sequence.take m (by omega) s
-   := sorry
+   := by
+     unfold Sequence.init
+     simp
+     rw [List.take_take]
+     simp
 
 lemma take_less_init {α : Type}{n k m : Nat}( hLT : m < n)(heq : n = k + 1)(s : Sequence n α)
    : Sequence.take m (by omega) (sequence_coerce heq s).init = Sequence.take m (by omega) s
-   := sorry
+   := by
+   unfold Sequence.init
+   simp; rw [List.take_take]
+   have mm : m ⊓ k = m := by simp; omega
+   rw [mm]
+   subst_eqs
+   congr
+   rw [<- rfl_coerce]
+   rfl
 
 lemma half_perfect_split_same {α : Type} {n : Nat}
       ( s : Sequence (2^n.succ) α )
@@ -162,39 +174,57 @@ lemma half_perfect_split_same {α : Type} {n : Nat}
             congr
             simp; have pnZ := @pow_gt_zero n; omega
             omega
-            -- simp [Sequence.init]
-      -- apply funext
-      -- intro x
-      -- simp [seqPerfectSplit, splitSeq, Fin.init]
-      -- simp [half_split_pow]
 
-lemma half_zip_with {α β ε : Type}{lgn : Nat}
-    {f : α -> β -> ε}
-    {sl : Sequence (2^lgn.succ) α}
-    {sr : Sequence (2^lgn.succ) β}
-    : (half_split_pow (sl.zip_with f sr)).1
-    = (half_split_pow sl).1.zip_with f (half_split_pow sr).1
-    := sorry
+-- lemma half_zip_with {α β ε : Type}{lgn : Nat}
+--     {f : α -> β -> ε}
+--     {sl : Sequence (2^lgn.succ) α}
+--     {sr : Sequence (2^lgn.succ) β}
+--     : (half_split_pow (sl.zip_with f sr)).1
+--     = (half_split_pow sl).1.zip_with f (half_split_pow sr).1
+--     :=
       -- apply funext
       -- intro x
       -- simp [half_split_pow]
 
-lemma half_split_map_left {α β : Type}{lgn : Nat}
-    {f : α -> β}
-    ( s : Sequence (2^lgn.succ) α)
-    : (half_split_pow (s.map f)).1
-    = (half_split_pow s).1.map f
- := sorry
+-- lemma half_split_map_left {α β : Type}{lgn : Nat}
+--     {f : α -> β}
+--     ( s : Sequence (2^lgn.succ) α)
+--     : (half_split_pow (s.map f)).1
+--     = (half_split_pow s).1.map f
+--  := sorry
  -- by unfold half_split_pow;simp;unfold takeN
  --       apply funext
  --       intro x; simp
 
+lemma take_constant {α : Type} {n m : Nat}{ mLt : m ≤ n } {a : α}:
+   (Sequence.constant n a).take m mLt = Sequence.constant m a
+   := by
+   revert n
+   induction m with
+   | zero => simp
+   | succ pm HI =>
+     intros n mLt
+     simp at *
+     have hi := @HI n.pred (by simp; omega)
+     rw [<- hi]
+     simp
+     rw [<- List.take_succ_cons]
+     congr
+     rw [<- constant_succ]
+     have ns : (n - 1).succ = n := by simp; omega
+     rw [ns]
+
 lemma perfect_split_constant { α : Type }{lgn : Nat}
   (a : α)
   -- (s : Sequence (2^lgn - 1) α)
-  : @Sequence.constant _ (2^lgn - 1) a
-  = (Sequence.constant a).perfect_split.1
-  := sorry -- by apply funext; intro x; simp [seqPerfectSplit, splitSeq]
+  : Sequence.constant (2^lgn - 1) a
+  = (Sequence.constant _ a).perfect_split.1
+  := by
+     rw [Sequence.perfect_split, Sequence.split]
+     simp; rw [<- Sequence.take]
+     rw [take_constant]
+     have pnZ := @pow_gt_zero lgn
+     omega
 
 lemma gen_empty_size {n : Nat}
   : (gen_empty_perfect_tree n).size = 2^n.succ - 1

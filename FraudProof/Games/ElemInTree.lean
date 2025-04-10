@@ -244,7 +244,7 @@ def naive_lin_forward_test {ℍ : Type}[m : HashMagma ℍ][BEq ℍ]
 
 def naive_lin_forward {ℍ : Type}{n : Nat}[ HashMagma ℍ][BEq ℍ]
   : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp)
-  := .constant naive_lin_forward_test
+  := .constant _ naive_lin_forward_test
 
 -- * Winning Lemmas
 --
