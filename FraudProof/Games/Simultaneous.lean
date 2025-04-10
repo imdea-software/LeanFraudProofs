@@ -214,6 +214,7 @@ theorem eq_sim_games {α ℍ : Type}
                 | inr hyp =>
                   simp at HIndL
                   apply HIndL
+                  clear HIndL HIndR
                   -- have cf : (p = rp) = False := sorry
                   rw [ite_cond_eq_false] at simG
                   have ⟨ neq , neq1 ⟩ := hyp
@@ -222,8 +223,18 @@ theorem eq_sim_games {α ℍ : Type}
                   assumption
                   simp; intro pp; apply neq1; rw [pp]
                   simp; intro pp; apply hyp.1; rw [pp]
-              case h_3 x heq => sorry
-              case h_4 x heq => sorry
+              case h_3 x heq =>
+                simp at heq
+                rw [ite_eq_iff] at heq
+                simp at heq
+                simp at HIndR
+                apply HIndR
+                clear HIndR HIndL
+                rw [ite_eq_iff] at simG; simp at simG
+                cases simG
+                case a.inl h => tauto
+                case a.inr h => replace h := h.2; rw [heq.2] at h; simp at h; assumption
+              case h_4 x heq => simp at heq
 
 -- Elemen In Tree
 def simultaneous_elemenin_game {α ℍ : Type}
