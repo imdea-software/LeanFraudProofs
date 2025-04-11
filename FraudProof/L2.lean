@@ -71,6 +71,17 @@ def valid_da {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
  -- There are no duplicated elements.
  ∧ List.Nodup da.fst.toList
 
+def historical_valid_da
+  {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
+  --
+  (H : List α)
+  (val_fun : α -> Bool)
+  --
+  (da : BTree α × ℍ) : Prop
+  := valid_da da val_fun
+  -- New elements do not belong to H
+  ∧ (∀ x ∈ da.1, ¬ x ∈ H)
+
 theorem struct_and_iff_valid {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
         (data : BTree α)(mk : ℍ)(val_fun : α -> Bool)
         : Valid_DA data mk val_fun ↔ valid_da (data , mk) val_fun
