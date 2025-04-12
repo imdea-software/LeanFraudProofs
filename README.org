@@ -9,7 +9,7 @@ To build the whole project should suffice with a simple lake build command
 lake build
 #+end_src
 
-** Compile Documentation [Work In Progress]
+** DONE Compile Documentation
 Move to 'docbuild' folder and just 'make' and 'make serve' to lunch a small http
 server (through python.)
 
@@ -193,7 +193,7 @@ when proving.)
 *** [X] Fraud Proof Games -- [[file:FraudProof.lean][FraudProofs]]
 Main file proving that:
 **** [X] Winning Proposers win Linear Game
-**** [X] Winning Proposers win Log Game
+**** [ ] Winning Proposers win Log Game
 *** [ ] Chooser Guarantees
 If someone wrongly challenges a posted Merkle Tree, we can defend it and win.
 It is a similar theorem to winning strategies when challenged. But on the other side.
