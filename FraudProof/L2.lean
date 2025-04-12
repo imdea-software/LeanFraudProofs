@@ -50,7 +50,7 @@ structure P1_Actions (α ℍ : Type) : Type
 --      else .none
 
 
-structure Valid_DA {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
+structure Local_valid {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
           (data : BTree α)(mk : ℍ)(val_fun : α -> Bool)
   where
   MkTree : data.hash_BTree = mk
@@ -60,9 +60,9 @@ structure Valid_DA {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
 def Valid_Seq {α ℍ : Type} {lgn : Nat}
   [DecidableEq α][Hash α ℍ][HashMagma ℍ]
   (data : Sequence (2^lgn) α)(merkle_tree : ℍ)(P : α -> Bool)
-  := Valid_DA (perfectSeqLeaves data) merkle_tree P
+  := Local_valid (perfectSeqLeaves data) merkle_tree P
 
-def valid_da {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
+def local_valid {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
   (da : BTree α × ℍ)(val_fun : α -> Bool) : Prop
  -- Merkle Tree is correct
  := da.fst.hash_BTree = da.snd
@@ -71,29 +71,18 @@ def valid_da {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
  -- There are no duplicated elements.
  ∧ List.Nodup da.fst.toList
 
-def historical_valid_da
-  {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
-  --
-  (H : List α)
-  (val_fun : α -> Bool)
-  --
-  (da : BTree α × ℍ) : Prop
-  := valid_da da val_fun
-  -- New elements do not belong to H
-  ∧ (∀ x ∈ da.1, ¬ x ∈ H)
-
 theorem struct_and_iff_valid {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
         (data : BTree α)(mk : ℍ)(val_fun : α -> Bool)
-        : Valid_DA data mk val_fun ↔ valid_da (data , mk) val_fun
+        : Local_valid data mk val_fun ↔ local_valid (data , mk) val_fun
         := by
  apply Iff.intro
- · intro v_D; simp [valid_da]
+ · intro v_D; simp [local_valid]
    apply And.intro
    · exact v_D.MkTree
    · apply And.intro
      · exact v_D.ValidElems
      · exact v_D.NoDup
- · intro valid; simp [valid_da] at valid
+ · intro valid; simp [local_valid] at valid
    exact { MkTree := valid.1
          , ValidElems := valid.2.1
          , NoDup := (valid.2).2
@@ -114,16 +103,17 @@ inductive P2_Actions (α ℍ : Type)  : Type
 -- Simple linear protocol, no time. Assuming no player play to lose.
 -- If chooser wins, the proposed block is discarded. This is not how the real
 -- world behaves.
-def linear_l2_protocol{α ℍ : Type}
+@[simp]
+def inner_l2_actions {α ℍ : Type}
   [BEq α] -- Checking dup
   [BEq ℍ][o : Hash α ℍ][HashMagma ℍ]
    (val_fun : α -> Bool)
    --
    (playerOne : P1_Actions α ℍ)
-   (playerTwo : (BTree α × ℍ) -> P2_Actions α ℍ)
+   (playerTwo : P2_Actions α ℍ)
    --
    : Bool
-   := match playerTwo playerOne.da with
+   := match playerTwo with
          | .DAC ch_str =>
             -- Challenging Sequencer (Merkle tree is not correct)
             match data_challenge_game
@@ -181,6 +171,18 @@ def linear_l2_protocol{α ℍ : Type}
             if path_p.1 == path_q.1
             then true
             else res
+
+
+def linear_l2_protocol{α ℍ : Type}
+  [BEq α] -- Checking dup
+  [BEq ℍ][o : Hash α ℍ][HashMagma ℍ]
+   (val_fun : α -> Bool)
+   --
+   (playerOne : P1_Actions α ℍ)
+   (playerTwo : (BTree α × ℍ) -> P2_Actions α ℍ)
+   --
+   : Bool
+   := inner_l2_actions val_fun playerOne (playerTwo playerOne.da)
 
 -- ** Crafting Honest Players.
 -- *** Honest Player One. -- Proposer
@@ -398,7 +400,7 @@ lemma honest_chooser_accepts_valid {α ℍ : Type}
    [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
    (val_fun : α -> Bool)
    (data : BTree α)( mk : ℍ )
-   ( da_valid : Valid_DA data mk val_fun)
+   ( da_valid : Local_valid data mk val_fun)
    : honest_chooser val_fun data mk = .Ok
    := by
    simp [honest_chooser]
@@ -421,13 +423,13 @@ theorem honest_chooser_valid {α ℍ}
    (val_fun : α -> Bool)
    (p1 : P1_Actions α ℍ)
    : linear_l2_protocol val_fun p1 ( fun (t, mt) => honest_chooser val_fun t mt)
-     ↔ valid_da p1.da val_fun
+     ↔ local_valid p1.da val_fun
    := by
    apply Iff.intro
    · have ⟨ da , dac_str, gen_elem_str ⟩ := p1
      unfold linear_l2_protocol
      simp [honest_chooser]
-     unfold valid_da
+     unfold local_valid
      cases Hm : (da.2 == ABTree.fold o.mhash (fun x ↦ m.comb) da.1)
      case true =>
        simp
@@ -531,3 +533,132 @@ theorem honest_chooser_valid {α ℍ}
      simp [linear_l2_protocol]
      have hcho := honest_chooser_accepts_valid val_fun da.1 da.2 (by rw [struct_and_iff_valid]; simpa)
      rw [hcho]
+
+----------------------------------------
+-- ## Stateful Protocol.
+-- Now we have a history of all previous accepted batches.
+
+def historical_valid
+  {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
+  --
+  (Hist : List (BTree α × ℍ))
+  (val_fun : α -> Bool)
+  : Prop
+  :=
+  -- Each epoch is `local_valid`
+  (∀ e ∈ Hist, local_valid e val_fun)
+  ∧ -- Plus there are no duplicated elements.
+  (List.Nodup (Hist.map (BTree.toList $ ·.fst)).flatten)
+
+inductive P2_History_Actions (α ℍ : Type) : Type where
+ | Local (ll : P2_Actions α ℍ) : P2_History_Actions α ℍ
+ | DupHistory_Actions
+      -- Here is an element in epoch
+      (epoch : Nat) -- This is depentent on the history.
+      ( n : Nat )(path_p: ISkeleton n) (str_p : Sequence n ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+      --
+      (m : Nat)(path_q: ISkeleton m)(str_q : Sequence m ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+      : P2_History_Actions α ℍ
+
+structure P1_History_Actions (α ℍ : Type) : Type where
+ local_str : P1_Actions α ℍ
+ global_str : List (BTree α × ℍ)  -> {n : Nat} -> ISkeleton n -> (Sequence n (Option (ℍ × ℍ)) × Option α)
+
+def find_first_dup_in_history
+   {α ℍ : Type}[DecidableEq α]
+   -- We have a list of elements in a tree
+   (elems : List (Skeleton × α))
+   --
+   (hist : List (BTree α × ℍ))
+   --
+   : Option ( (List (BTree α × ℍ) × (BTree α × ℍ) × List (BTree α × ℍ))
+            ×
+            (  (List (Skeleton × α) × (Skeleton × α) × List (Skeleton × α))
+             × (List (Skeleton × α) × (Skeleton × α) × List (Skeleton × α))
+            ))
+   := split_at_first_pred
+      (fun (e : (BTree α × ℍ)) => find_intersect (·.snd) e.fst.toPaths_elems elems) hist
+
+def historical_honest_algorith {α ℍ : Type}
+  [DecidableEq α]
+  [BEq ℍ][Hash α ℍ][m : HashMagma ℍ]
+  --
+  (val_fun : α -> Bool)
+  --
+  (history : List (BTree α × ℍ))
+  --
+  (public_data : BTree α)
+  (da_mtree : ℍ)
+  --
+  : P2_History_Actions α ℍ
+  := match find_first_dup_in_history public_data.toPaths_elems history with
+    | .some ((pred, _e , _) , ( (_, e1, _) , (_ , e2 , _)) ) =>
+      .DupHistory_Actions pred.length.succ
+          -- Same as before, we need to choose strategies before playing,
+          -- depending on which arbitration games we are playing.
+          -- Naive lin forward does not need extra info, but logarithmic
+          -- requires more.
+          e1.fst.length ⟨ e1.fst , rfl ⟩ naive_lin_forward
+          e2.fst.length ⟨ e2.fst , rfl ⟩ naive_lin_forward
+    | .none => .Local $ honest_chooser val_fun public_data da_mtree
+
+-- This is the step in our blockchain evolution.
+--
+def linear_l2_historical_protocol{α ℍ : Type}
+  [BEq α] -- Checking dup
+  [BEq ℍ][o : Hash α ℍ][HashMagma ℍ]
+   (val_fun : α -> Bool)
+   (hist : List (BTree α × ℍ))
+   --
+   (playerOne : P1_History_Actions α ℍ)
+   (playerTwo : List (BTree α × ℍ) -> (BTree α × ℍ) -> P2_History_Actions α ℍ)
+   --
+   : Bool
+   := match playerTwo hist playerOne.local_str.da with
+   | .DupHistory_Actions
+       epoch _fpLen fpSkl fpStr _spLen spSkl spStr
+       => match hist[epoch]? with
+       -- Get epoch from history
+       | .none => true -- Wins POne
+       | .some p =>
+         -- We play two consecutive membership games
+         match elem_in_backward_rev
+                  fpSkl
+                  p.snd
+                  -- Strategies
+                  (playerOne.global_str hist fpSkl)  -- Missing Player One Strategy
+                  fpStr
+             , elem_in_backward_rev
+                  spSkl
+                  playerOne.local_str.da.snd -- Current Da
+                  -- Strategies
+                  (playerOne.local_str.gen_elem_str spSkl)
+                  spStr
+             with
+          -- Both games reach values
+          | (.Proposer, .some v1) , (.Proposer, .some v2) => v1 != v2
+          -- Proposer wins
+          | (.Proposer, .none) , _ => true
+          | _ , (.Proposer, .none) => true
+          -- Chooser wins
+          | (.Chooser , _ ) , _ => false
+          | _ , (.Chooser, _)   => false
+
+   | .Local act => inner_l2_actions val_fun playerOne.local_str act
+
+-- Historical Honest Valid
+theorem history_honest_chooser_valid {α ℍ}
+   [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   (val_fun : α -> Bool)
+   (p1 : P1_History_Actions α ℍ)
+   --
+   (hist : List (BTree α × ℍ))
+   (hist_valid : historical_valid hist val_fun)
+   --
+   : linear_l2_historical_protocol val_fun hist p1
+        ( fun h (t, mt) => historical_honest_algorith val_fun h t mt)
+     ↔ historical_valid (hist ++ [p1.local_str.da]) val_fun
+   := sorry
+
+----------------------------------------

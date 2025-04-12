@@ -142,6 +142,19 @@ instance : Functor BTree where
  map := BTree.map
 
 ----------------------------------------
+-- Membership.
+inductive Mem {α : Type} (a : α) : BTree α -> Prop where
+  -- `a ∈ leaf a`
+  | here : Mem a (.leaf a)
+  -- `a ∈ bl -> a ∈ node _ bl _`
+  | inL (br : BTree α) {bl : BTree α} : Mem a bl -> Mem a (.node bl br)
+  -- `a ∈ bl -> a ∈ node _ bl _`
+  | inR (bl : BTree α) {br : BTree α} : Mem a br -> Mem a (.node bl br)
+
+instance {α : Type}: Membership α (BTree α) where
+  mem t a := Mem a t
+
+----------------------------------------
 -- * From list to complete BTrees
 -- Acc
 @[simp]
