@@ -296,6 +296,10 @@ def desc_Seq {n : Nat}{α : Type} (seq : Sequence n.succ α) : α × Sequence n 
 def Sequence.map {α β : Type} {n : Nat} (f : α -> β) ( seq : Sequence n α ) : Sequence n β
   := ⟨ seq.1.map f, by simp; exact seq.2⟩
 
+lemma map_tail {α β : Type}{n : Nat} (f : α -> β) ( seq : Sequence n.succ α ) :
+   (seq.map f).tail = seq.tail.map f
+   := by simp [Sequence.map, Sequence.tail]
+
 @[simp]
 def Sequence.zip_with {α β ε : Type}{n : Nat}
     (f : α -> β -> ε)
