@@ -435,110 +435,110 @@ axiom no_challenge_matching_data {α α' β β' γ : Type}
        winning_condition_player leafCondition midCondition splitter da other_player
 
 -- This is a generic proof. There is a specific one at ElemInTree!
-theorem winning_chooser_wins {α α' β β' γ : Type}
-    [BEq β][LawfulBEq β]
-    (splitter : γ -> β -> γ × γ)
-    -- Conditions
-    (leafCondition : α' -> α -> γ -> Winner)
-    (midCondition  : β' -> β -> γ -> Winner)
-    -- Public Information
-    (da : CompTree α' β' γ)
-    -- Reveler
-    (reveler : ABTree (Option α) (Option β))
-    -- Chooser
-    (wise_chooser : ABTree (Option α) (Option β))
-    -- Assumptions
-    (win_chooser : winning_condition_player
-                   (fun x y z => prop_winner $ leafCondition x y z)
-                   (fun x y z => prop_winner $ midCondition x y z) splitter da wise_chooser)
-    (lossing_reveler : ¬ winning_condition_player
-                   (fun x y z => prop_winner $ leafCondition x y z)
-                   (fun x y z => prop_winner $ midCondition x y z) splitter da reveler)
-    : simp_tree splitter
-      leafCondition
-      midCondition
-      da reveler (gen_to_fun_chooser wise_chooser) = Player.Chooser
-    := by
- revert reveler wise_chooser da; intro da
- have ⟨ data , res ⟩ := da
- revert res; clear da
- -- unfold simp_tree; simp
- induction data with
- | leaf a' =>
-   intros res reveler chooser wCh loPro
-   unfold simp_tree
-   cases H : reveler with
-   | leaf r =>
-     cases r with
-     | some p =>
-       simp
-       unfold winning_condition_player at loPro; simp at loPro
-       rw [H] at loPro; simp at loPro
-       rw [prop_win_chooser ] at loPro
-       assumption
-     | none => simp
-   | node _ _ _ => simp
- | node b' gl gr HIndL HIndR =>
-   intros res reveler wise_chooser wCh loPro
-   cases HR : reveler with
-   | leaf _ => simp [simp_tree]
-   | node p pl pr =>
-     cases HP : p with
-     | none => simp [simp_tree]
-     | some proposed =>
-       simp [gen_to_fun_chooser]
-       cases HC : wise_chooser with
-       | leaf _ => rw [HC] at wCh; simp [winning_condition_player] at wCh
-       | node ch chL chR =>
-         simp
-         cases HCed : ch with
-         | none =>
-           rw [HC, HCed] at wCh
-           simp [winning_condition_player] at wCh
-         | some ched =>
-           simp [simp_tree]
-           split
-           case h_1 x heq =>
-            -- simp at heq
-            have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Side.Left)) (some (ChooserPrimMoves.Continue Side.Right)) (some ChooserPrimMoves.Now)
-            rw [iteeq] at heq
-            simp at heq
-           case h_2 x heq =>
-             simp at heq
-             subst heq
-             -- Win Left Condition
-             rw [ HC, HCed ] at wCh ; simp [winning_condition_player] at wCh
-             -- have subwin_ch := wCh.2.1 ; rw [heq] at subwin_ch
-             -- Not Winning?
-             rw [HR,HP] at loPro --; simp [winning_condition_player] at loPro
-             unfold winning_condition_player at loPro
-             have lemm {a b c : Prop} :  a ∧ b ∧ c <-> a ∧ c ∧ b := by tauto
-             rw [lemm] at loPro
-             simp at loPro
-             replace loPro := loPro wCh.1 (no_challenge_matching_data wCh.2.2)
-             have hind := HIndL (splitter res ched).1 pl chL
-               wCh.2.1
-               loPro
-             exact hind
-           case h_3 x heq =>
-             simp at heq
-             -- Winning chooser left
-             rw [HC, HCed] at wCh; simp [winning_condition_player] at wCh
-             -- unfold winning_condition_player at wCh
-             have hind := HIndR (splitter res proposed).2 pr chR
-               -- This case is the interesting one. We need to specialize our winning chooser.
-               -- In this case, we need to assume something else, like, if res
-               -- does not match, then I won't play
-               -- We have that data is correct, but we need to show that it wins
-               -- against all other possible datum.
-               ( by sorry )
-               --
-               sorry
-             exact hind
-           case h_4 x heq =>
-             have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Side.Left)) (some (ChooserPrimMoves.Continue Side.Right)) none
-             rw [iteeq] at heq
-             simp at heq
+-- theorem winning_chooser_wins {α α' β β' γ : Type}
+--     [BEq β][LawfulBEq β]
+--     (splitter : γ -> β -> γ × γ)
+--     -- Conditions
+--     (leafCondition : α' -> α -> γ -> Winner)
+--     (midCondition  : β' -> β -> γ -> Winner)
+--     -- Public Information
+--     (da : CompTree α' β' γ)
+--     -- Reveler
+--     (reveler : ABTree (Option α) (Option β))
+--     -- Chooser
+--     (wise_chooser : ABTree (Option α) (Option β))
+--     -- Assumptions
+--     (win_chooser : winning_condition_player
+--                    (fun x y z => prop_winner $ leafCondition x y z)
+--                    (fun x y z => prop_winner $ midCondition x y z) splitter da wise_chooser)
+--     (lossing_reveler : ¬ winning_condition_player
+--                    (fun x y z => prop_winner $ leafCondition x y z)
+--                    (fun x y z => prop_winner $ midCondition x y z) splitter da reveler)
+--     : simp_tree splitter
+--       leafCondition
+--       midCondition
+--       da reveler (gen_to_fun_chooser wise_chooser) = Player.Chooser
+--     := by
+--  revert reveler wise_chooser da; intro da
+--  have ⟨ data , res ⟩ := da
+--  revert res; clear da
+--  -- unfold simp_tree; simp
+--  induction data with
+--  | leaf a' =>
+--    intros res reveler chooser wCh loPro
+--    unfold simp_tree
+--    cases H : reveler with
+--    | leaf r =>
+--      cases r with
+--      | some p =>
+--        simp
+--        unfold winning_condition_player at loPro; simp at loPro
+--        rw [H] at loPro; simp at loPro
+--        rw [prop_win_chooser ] at loPro
+--        assumption
+--      | none => simp
+--    | node _ _ _ => simp
+--  | node b' gl gr HIndL HIndR =>
+--    intros res reveler wise_chooser wCh loPro
+--    cases HR : reveler with
+--    | leaf _ => simp [simp_tree]
+--    | node p pl pr =>
+--      cases HP : p with
+--      | none => simp [simp_tree]
+--      | some proposed =>
+--        simp [gen_to_fun_chooser]
+--        cases HC : wise_chooser with
+--        | leaf _ => rw [HC] at wCh; simp [winning_condition_player] at wCh
+--        | node ch chL chR =>
+--          simp
+--          cases HCed : ch with
+--          | none =>
+--            rw [HC, HCed] at wCh
+--            simp [winning_condition_player] at wCh
+--          | some ched =>
+--            simp [simp_tree]
+--            split
+--            case h_1 x heq =>
+--             -- simp at heq
+--             have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Side.Left)) (some (ChooserPrimMoves.Continue Side.Right)) (some ChooserPrimMoves.Now)
+--             rw [iteeq] at heq
+--             simp at heq
+--            case h_2 x heq =>
+--              simp at heq
+--              subst heq
+--              -- Win Left Condition
+--              rw [ HC, HCed ] at wCh ; simp [winning_condition_player] at wCh
+--              -- have subwin_ch := wCh.2.1 ; rw [heq] at subwin_ch
+--              -- Not Winning?
+--              rw [HR,HP] at loPro --; simp [winning_condition_player] at loPro
+--              unfold winning_condition_player at loPro
+--              have lemm {a b c : Prop} :  a ∧ b ∧ c <-> a ∧ c ∧ b := by tauto
+--              rw [lemm] at loPro
+--              simp at loPro
+--              replace loPro := loPro wCh.1 (no_challenge_matching_data wCh.2.2)
+--              have hind := HIndL (splitter res ched).1 pl chL
+--                wCh.2.1
+--                loPro
+--              exact hind
+--            case h_3 x heq =>
+--              simp at heq
+--              -- Winning chooser left
+--              rw [HC, HCed] at wCh; simp [winning_condition_player] at wCh
+--              -- unfold winning_condition_player at wCh
+--              have hind := HIndR (splitter res proposed).2 pr chR
+--                -- This case is the interesting one. We need to specialize our winning chooser.
+--                -- In this case, we need to assume something else, like, if res
+--                -- does not match, then I won't play
+--                -- We have that data is correct, but we need to show that it wins
+--                -- against all other possible datum.
+--                ( by sorry )
+--                --
+--                sorry
+--              exact hind
+--            case h_4 x heq =>
+--              have iteeq := @ite_eq_iff _ (ched == proposed) _ (some (ChooserPrimMoves.Continue Side.Left)) (some (ChooserPrimMoves.Continue Side.Right)) none
+--              rw [iteeq] at heq
+--              simp at heq
 ----------------------------------------
 
 -- Another generid tree, more focused on logarithmic games.
@@ -694,6 +694,10 @@ def skeleton_da_to_tree {lgn : Nat}{γ : Type}
 --              := ⟨ tDA , da.res ⟩
 --           treeCompArbGame _ _ treeDA tP tC
 
+def Unique_Leaf_Condition {α α' γ : Type}(lc : α -> α' -> γ -> Bool)
+  : Prop := forall (a : α)(x y : α')(r r' : γ),
+        ¬ r = r' -> lc a x r = true -> lc a y r' = false
+
 def Unique_Mid_Condition {β γ : Type}(md : β -> γ -> γ -> γ -> Bool)
   : Prop := forall (b : β)( k1 k2 x y : γ), ¬ (k1 = k2 ) -> ¬ md b k1 x y =  md b k2 x y
 
@@ -701,6 +705,7 @@ theorem chooser_data_availability {α α' β γ : Type}
     [BEq γ][LawfulBEq γ]
     -- Conditions
     (leafCondition : α -> α' -> γ -> Bool)
+    (unique_leaf : Unique_Leaf_Condition leafCondition)
     (midCondition  : β -> γ -> γ -> γ -> Bool)
     (unique_mid : Unique_Mid_Condition midCondition) -- This is provided by hashing stuff
     -- Public Information
@@ -741,7 +746,11 @@ theorem chooser_data_availability {α α' β γ : Type}
                     | node _ _ _ => simp [tree_comp_winning_conditions] at win_ch
                     | leaf ch_l =>
                       simp [tree_comp_winning_conditions, prop_winner] at win_ch
-                      sorry -- leaf uniqueness -- collision free hash
+                      -- Uniqueness of Leaves - Collision free hash!!
+                      unfold Unique_Leaf_Condition at unique_leaf
+                      apply unique_leaf
+                      exact nheq
+                      assumption
     | node gb gl gr HIndL HIndR =>
      intros ch_res da_res rev wch win_ch nheq
      cases rev with

@@ -380,27 +380,27 @@ def sibling_forward {ℍ : Type}{n : Nat}
 
 -- @check foldr
 -- Winning proposer prop is a winning sufficient condition.
-theorem winning_reveler_wins {ℍ : Type}
-    [BEq ℍ][HashMagma ℍ]
-    {n : Nat}
-    (da : ElemInTreeH n ℍ)
-    (proposer : Sequence n (PMoves ℍ))
-    (winning_prop : elem_in_reveler_winning_condition_backward da proposer)
-    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
-    : elem_in_tree_backward da (proposer.map .some) chooser = Player.Proposer
-    := by revert n
-          intro n
-          induction n with
-          | zero =>
-            intros da prop Hwin cho
-            simp [elem_in_tree_backward]
-            simp [elem_in_reveler_winning_condition_backward] at Hwin
-            assumption
-          | succ pn HInd =>
-            intros da prop Hwin cho
-            simp [elem_in_tree_backward]
-            simp [elem_in_reveler_winning_condition_backward] at Hwin
-            sorry
+-- theorem winning_reveler_wins {ℍ : Type}
+--     [BEq ℍ][HashMagma ℍ]
+--     {n : Nat}
+--     (da : ElemInTreeH n ℍ)
+--     (proposer : Sequence n (PMoves ℍ))
+--     (winning_prop : elem_in_reveler_winning_condition_backward da proposer)
+--     (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+--     : elem_in_tree_backward da (proposer.map .some) chooser = Player.Proposer
+--     := by revert n
+--           intro n
+--           induction n with
+--           | zero =>
+--             intros da prop Hwin cho
+--             simp [elem_in_tree_backward]
+--             simp [elem_in_reveler_winning_condition_backward] at Hwin
+--             assumption
+--           | succ pn HInd =>
+--             intros da prop Hwin cho
+--             simp [elem_in_tree_backward]
+--             simp [elem_in_reveler_winning_condition_backward] at Hwin
+--             sorry
             -- cases HP : prop.head with
             -- | End v => contradiction
             -- | Next p =>
@@ -416,26 +416,26 @@ theorem winning_reveler_wins {ℍ : Type}
             --       exact Hwin.2
 
 -- Winning proposer prop is a winning sufficient condition.
-theorem winning_reveler_wins_forward {ℍ : Type}
-    [BEq ℍ][HashMagma ℍ]
-    {n : Nat}
-    (da : ElemInTreeH n ℍ)
-    (proposer : Sequence n (PMoves ℍ))
-    (winning_prop : elem_in_reveler_winning_condition_forward da proposer)
-    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
-    : elem_in_tree_forward da (proposer.map .some) chooser = Player.Proposer
-    := by
- revert n; intro n; induction n with
- | zero =>
-   intros da proposer wProp cho
-   simp [elem_in_reveler_winning_condition_forward] at wProp
-   simp [elem_in_tree_forward]
-   assumption
- | succ pn Hind =>
-   intros da prop wProp ch
-   simp [elem_in_tree_forward]
-   simp [elem_in_reveler_winning_condition_forward] at wProp
-   sorry
+-- theorem winning_reveler_wins_forward {ℍ : Type}
+--     [BEq ℍ][HashMagma ℍ]
+--     {n : Nat}
+--     (da : ElemInTreeH n ℍ)
+--     (proposer : Sequence n (PMoves ℍ))
+--     (winning_prop : elem_in_reveler_winning_condition_forward da proposer)
+--     (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+--     : elem_in_tree_forward da (proposer.map .some) chooser = Player.Proposer
+--     := by
+--  revert n; intro n; induction n with
+--  | zero =>
+--    intros da proposer wProp cho
+--    simp [elem_in_reveler_winning_condition_forward] at wProp
+--    simp [elem_in_tree_forward]
+--    assumption
+--  | succ pn Hind =>
+--    intros da prop wProp ch
+--    simp [elem_in_tree_forward]
+--    simp [elem_in_reveler_winning_condition_forward] at wProp
+--    sorry
    -- cases HP : prop 0 with
    -- | End v => contradiction
    -- | Next p =>
