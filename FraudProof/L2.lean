@@ -533,6 +533,4 @@ theorem honest_chooser_valid {α ℍ}
      simp [linear_l2_protocol]
      have hcho := honest_chooser_accepts_valid val_fun da.1 da.2 (by rw [struct_and_iff_valid]; simpa)
      rw [hcho]
-
-
 ----------------------------------------
