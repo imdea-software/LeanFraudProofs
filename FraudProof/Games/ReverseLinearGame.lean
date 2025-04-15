@@ -38,12 +38,12 @@ def backward_to_forward_proposer
       ) <$> opt_mov
       ) da.data back_proposer
 
-theorem equiv_lin_forward_backward {ℍ : Type}[BEq ℍ][mag : HashMagma ℍ]
-    {n : Nat}
-    (da : ElemInTreeH n ℍ)
-    (proposer : Sequence n (Option (PMoves ℍ)))
-    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
-    : elem_in_tree_backward da proposer chooser
-    = elem_in_tree_forward  da
-      (@backward_to_forward_proposer _ mag _ da proposer) chooser
-    := by sorry
+-- theorem equiv_lin_forward_backward {ℍ : Type}[BEq ℍ][mag : HashMagma ℍ]
+--     {n : Nat}
+--     (da : ElemInTreeH n ℍ)
+--     (proposer : Sequence n (Option (PMoves ℍ)))
+--     (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+--     : elem_in_tree_backward da proposer chooser
+--     = elem_in_tree_forward  da
+--       (@backward_to_forward_proposer _ mag _ da proposer) chooser
+--     := by sorry

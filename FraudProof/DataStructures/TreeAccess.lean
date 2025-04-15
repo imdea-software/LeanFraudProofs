@@ -742,57 +742,70 @@ lemma finds_no_dup_inj {α β : Type}
      apply List.Nodup.of_map
      assumption
 
+---------------------------
 -- Intersection
+-- def SplitAt (α : Type) : Type := List α × α × List α
 
-def SplitAt (α : Type) : Type := List α × α × List α
+-- def find_first_intersect {β α : Type}[DecidableEq α]
+--     (proj : β -> α)(b : β)(ll : List β )
+--     : Option (List β × β × List β)
+--     := find_first_split (proj · == (proj b)) ll
 
-def find_first_intersect {β α : Type}[DecidableEq α]
-    (proj : β -> α)(b : β)(ll : List β )
-    : Option (List β × β × List β)
-    := find_first_split (proj · == (proj b)) ll
+-- def find_intersect' {β α : Type}[DecidableEq α]
+--     (proj : β -> α)(ll rr acc : List β)
+--     : Option ((List β × β × List β) × (List β × β × List β))
+--     := match ll with
+--       | .nil => .none
+--       | .cons le les =>
+--         match find_first_intersect proj le rr with
+--         | .none => find_intersect' proj les rr (acc.concat le)
+--         | .some inter_rr => .some ( (acc, le, les) , inter_rr)
 
-def find_intersect' {β α : Type}[DecidableEq α]
-    (proj : β -> α)(ll rr acc : List β)
-    : Option ((List β × β × List β) × (List β × β × List β))
-    := match ll with
-      | .nil => .none
-      | .cons le les =>
-        match find_first_intersect proj le rr with
-        | .none => find_intersect' proj les rr (acc.concat le)
-        | .some inter_rr => .some ( (acc, le, les) , inter_rr)
+-- def split_at_first_pred' {α β: Type}
+--      (pred : α -> Option β) (l acc : List α)
+--      : Option ((List α × α × List α) × β)
+--      := match l with
+--       | .nil => .none
+--       | .cons le ls =>
+--         match pred le with
+--         | .none => split_at_first_pred' pred ls (acc.concat le)
+--         | .some b => .some ((acc , le , ls), b)
 
-def split_at_first_pred' {α β: Type}
-     (pred : α -> Option β) (l acc : List α)
-     : Option ((List α × α × List α) × β)
-     := match l with
-      | .nil => .none
-      | .cons le ls =>
-        match pred le with
-        | .none => split_at_first_pred' pred ls (acc.concat le)
-        | .some b => .some ((acc , le , ls), b)
+-- def split_at_first_pred {α β: Type}
+--      (pred : α -> Option β) (l : List α)
+--      : Option ((List α × α × List α) × β)
+--      := split_at_first_pred' pred l .nil
 
-def split_at_first_pred {α β: Type}
-     (pred : α -> Option β) (l : List α)
-     : Option ((List α × α × List α) × β)
-     := split_at_first_pred' pred l .nil
+-- lemma splitAtFirstLaw {α β : Type}
+--       {pred : α -> Option β}{ls pre pos : List α}{a : α}{rs : β}
+--       (H : split_at_first_pred pred ls = .some ((pre,a,pos), rs))
+--       : ls = pre ++ [a] ++ pos
+--       ∧ pred a = .some rs
+--       := sorry
 
-lemma splitAtFirstLaw {α β : Type}
-      {pred : α -> Option β}{ls pre pos : List α}{a : α}{rs : β}
-      (H : split_at_first_pred pred ls = .some ((pre,a,pos), rs))
-      : ls = pre ++ [a] ++ pos
-      ∧ pred a = .some rs
-      := sorry
+-- lemma splitAtFirstNone {α β : Type}
+--      {pred : α -> Option β}{ls : List α}
+--      (H : split_at_first_pred pred ls = .none)
+--      : ∀ a ∈ ls, pred a = .none
+--      := sorry
 
-def find_intersect {β α : Type}[DecidableEq α]
-    (proj : β -> α)(ll rr : List β)
-    : Option ((List β × β × List β) × (List β × β × List β))
-    := split_at_first_pred (find_first_intersect proj · rr) ll
+-- def find_intersect {β α : Type}[DecidableEq α]
+--     (proj : β -> α)(ll rr : List β)
+--     : Option ((List β × β × List β) × (List β × β × List β))
+--     := split_at_first_pred (find_first_intersect proj · rr) ll
 
-lemma find_intersect_law {β α : Type}[DecidableEq α]{proj : β -> α}
-      (ls prels posls rs prers posrs : List β)
-      (el er : β)
-      (H : find_intersect proj ls rs = .some ( (prels, el, posls), (prers, er, posrs)))
-      : ls = prels ++ [el] ++ posls
-      ∧ rs = prers ++ [er] ++ posrs
-      ∧ proj el = proj er
-      := sorry
+-- lemma find_intersect_law {β α : Type}[DecidableEq α]{proj : β -> α}
+--       (ls prels posls rs prers posrs : List β)
+--       (el er : β)
+--       (H : find_intersect proj ls rs = .some ( (prels, el, posls), (prers, er, posrs)))
+--       : ls = prels ++ [el] ++ posls
+--       ∧ rs = prers ++ [er] ++ posrs
+--       ∧ proj el = proj er
+--       := sorry
+
+-- lemma find_intersec_none {β α : Type}[DecidableEq α]{proj : β -> α}
+--       {ls rs : List β}
+--       (H : find_intersect proj ls rs = .none)
+--       : ∀ l ∈ ls, ∀ r ∈ rs, ¬ proj l = proj r
+--       := sorry
+---------------------------

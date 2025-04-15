@@ -77,66 +77,66 @@ def forward_proposer_to_tree {α : Type}{ n : Nat}
        ( Sequence.map (fun p => p.2) prop) -- leaves
 
 
-theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
-       [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
-       (da : ElemInTreeH (2^lgn) ℍ)
-       (proposer : Sequence (2^lgn) (ℍ × ℍ))
-       (wProp : elem_in_reveler_winning_condition_backward da proposer)
-       (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
-       : spl_game
-         ({data := built_up_arena_backward da.data , res := da.mtree})
-         ( ABTree.map .some .some $ backward_proposer_to_tree da.data proposer)
-         chooser
-         = Player.Proposer
-       := by
-       apply simp_game_reveler_wins
-       sorry
+-- theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
+--        [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
+--        (da : ElemInTreeH (2^lgn) ℍ)
+--        (proposer : Sequence (2^lgn) (ℍ × ℍ))
+--        (wProp : elem_in_reveler_winning_condition_backward da proposer)
+--        (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
+--        : spl_game
+--          ({data := built_up_arena_backward da.data , res := da.mtree})
+--          ( ABTree.map .some .some $ backward_proposer_to_tree da.data proposer)
+--          chooser
+--          = Player.Proposer
+--        := by
+--        apply simp_game_reveler_wins
+--        sorry
 
-theorem proposer_winning_mod_forward {ℍ : Type} {lgn : Nat}
-       [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
-       (da : ElemInTreeH (2^lgn) ℍ)
-       (proposer : Sequence (2^lgn) (ℍ × ℍ))
-       (wProp : elem_in_reveler_winning_condition_forward da proposer)
-       (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
-       : spl_game
-         ({data := built_up_arena da.data , res := da.mtree})
-         ( ABTree.map .some .some $ forward_proposer_to_tree proposer)
-         chooser
-         = Player.Proposer
- := by
-    apply simp_game_reveler_wins
-    revert lgn; intro lgn
-    induction lgn with
-    | zero =>
-        intros da proposer wProp
-        unfold reveler_winning_condition_simp_game
-        simp [built_up_arena,gen_info_perfect_tree,get_sibling]
-        simp [forward_proposer_to_tree]
-        simp [gen_info_perfect_tree]
-        simp [elem_in_reveler_winning_condition_forward] at wProp
-        have ⟨ singH , midH ⟩ := wProp
-        simp [SingleLastStepH] at midH
-        rw [singH]
-        assumption
-    | succ pnlgn HInd =>
-       intros da proposer wProp
-       unfold reveler_winning_condition_simp_game
-       simp [forward_proposer_to_tree, built_up_arena, gen_info_perfect_tree]
-       apply And.intro
-       ·
-         have hind := HInd ⟨ (half_split_pow da.data).1
-                           , ⟨ da.mtree.1
-                           , ((Sequence.init ( @sequence_coerce _ _ (2^(pnlgn.succ) -1 + 1) sorry (proposer.map (fun p => p.1) )) ).perfect_split).2.1 ⟩ ⟩
-                             (half_split_pow proposer).1
-         simp [built_up_arena] at hind
-         simp [forward_proposer_to_tree] at hind
+-- theorem proposer_winning_mod_forward {ℍ : Type} {lgn : Nat}
+--        [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
+--        (da : ElemInTreeH (2^lgn) ℍ)
+--        (proposer : Sequence (2^lgn) (ℍ × ℍ))
+--        (wProp : elem_in_reveler_winning_condition_forward da proposer)
+--        (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
+--        : spl_game
+--          ({data := built_up_arena da.data , res := da.mtree})
+--          ( ABTree.map .some .some $ forward_proposer_to_tree proposer)
+--          chooser
+--          = Player.Proposer
+--  := by
+--     apply simp_game_reveler_wins
+--     revert lgn; intro lgn
+--     induction lgn with
+--     | zero =>
+--         intros da proposer wProp
+--         unfold reveler_winning_condition_simp_game
+--         simp [built_up_arena,gen_info_perfect_tree,get_sibling]
+--         simp [forward_proposer_to_tree]
+--         simp [gen_info_perfect_tree]
+--         simp [elem_in_reveler_winning_condition_forward] at wProp
+--         have ⟨ singH , midH ⟩ := wProp
+--         simp [SingleLastStepH] at midH
+--         rw [singH]
+--         assumption
+--     | succ pnlgn HInd =>
+--        intros da proposer wProp
+--        unfold reveler_winning_condition_simp_game
+--        simp [forward_proposer_to_tree, built_up_arena, gen_info_perfect_tree]
+--        apply And.intro
+--        ·
+--          have hind := HInd ⟨ (half_split_pow da.data).1
+--                            , ⟨ da.mtree.1
+--                            , ((Sequence.init ( @sequence_coerce _ _ (2^(pnlgn.succ) -1 + 1) sorry (proposer.map (fun p => p.1) )) ).perfect_split).2.1 ⟩ ⟩
+--                              (half_split_pow proposer).1
+--          simp [built_up_arena] at hind
+--          simp [forward_proposer_to_tree] at hind
 
-         rw [<- half_perfect_split_same]
-         rw [<- perfect_split_constant]
-         -- Half_split map
-         -- apply hind
-         sorry
-       · sorry
+--          rw [<- half_perfect_split_same]
+--          rw [<- perfect_split_constant]
+--          -- Half_split map
+--          -- apply hind
+--          sorry
+--        · sorry
 
 -- * Chooser
 -- Similar to proposer, but what's the chooser transformation.
