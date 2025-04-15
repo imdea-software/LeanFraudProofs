@@ -46,6 +46,13 @@ def local_valid {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
  -- There are no duplicated elements.
  ∧ List.Nodup da.fst.toList
 #+end_src
+** Winning Lemmas
+To see how we prove that honest players win games see file [[./FraudProof/Games/ElementInTree.lean][ElementInTree]] .
++ Lemma ~elem_back_rev_honest_two~ stating that knowing the data, honest
+  choosers lead proposers either to quit or to prove that an element is in a
+  tree.
++ We define the notion of winning conditions in file [[file:./FraudProof/Game/GenericTree.lean][GenericTree]] and prove that
+  proposers win ~winning_proposer_wins~.
 
 * FMBC'25 Frozen Files
 
