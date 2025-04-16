@@ -380,40 +380,37 @@ def sibling_forward {ℍ : Type}{n : Nat}
 
 -- @check foldr
 -- Winning proposer prop is a winning sufficient condition.
--- theorem winning_reveler_wins {ℍ : Type}
---     [BEq ℍ][HashMagma ℍ]
---     {n : Nat}
---     (da : ElemInTreeH n ℍ)
---     (proposer : Sequence n (PMoves ℍ))
---     (winning_prop : elem_in_reveler_winning_condition_backward da proposer)
---     (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
---     : elem_in_tree_backward da (proposer.map .some) chooser = Player.Proposer
---     := by revert n
---           intro n
---           induction n with
---           | zero =>
---             intros da prop Hwin cho
---             simp [elem_in_tree_backward]
---             simp [elem_in_reveler_winning_condition_backward] at Hwin
---             assumption
---           | succ pn HInd =>
---             intros da prop Hwin cho
---             simp [elem_in_tree_backward]
---             simp [elem_in_reveler_winning_condition_backward] at Hwin
---             sorry
-            -- cases HP : prop.head with
-            -- | End v => contradiction
-            -- | Next p =>
-            --   simp; rw [HP] at Hwin; simp at Hwin
-            --   cases HC : cho 0 (da.mtree.2, p) with
-            --   | none => simp
-            --   | some chod =>
-            --     cases chod with
-            --     | Now => simp; exact Hwin.1
-            --     | Continue _ =>
-            --       simp
-            --       apply HInd
-            --       exact Hwin.2
+theorem winning_reveler_wins {ℍ : Type}
+    [BEq ℍ][HashMagma ℍ]
+    {n : Nat}
+    (da : ElemInTreeH n ℍ)
+    (proposer : Sequence n (PMoves ℍ))
+    (winning_prop : elem_in_reveler_winning_condition_backward da proposer)
+    (chooser : Sequence n (ℍ × ℍ × ℍ -> Option ChooserSmp))
+    : elem_in_tree_backward da (proposer.map .some) chooser = Player.Proposer
+    := by revert n
+          intro n
+          induction n with
+          | zero =>
+            intros da prop Hwin cho
+            simp [elem_in_tree_backward]
+            simp [elem_in_reveler_winning_condition_backward] at Hwin
+            assumption
+          | succ pn HInd =>
+            intros da prop Hwin cho
+            simp [elem_in_tree_backward]
+            simp [elem_in_reveler_winning_condition_backward] at Hwin
+            split
+            case h_1 x heq => rfl
+            case h_2 x heq => exact Hwin.left
+            case h_3 x _ heq =>
+              cases Hhd : da.data.head with
+              | Left => simp at Hhd; rw [Hhd]; simp; rw [Hhd] at Hwin; simp at Hwin
+                        have hind := HInd ⟨ da.data.tail, (da.mtree.1 , prop.head.1) ⟩ prop.tail Hwin.right cho.tail
+                        rw [<- map_tail] at hind; simp at hind; assumption
+              | Right => simp at Hhd; rw [Hhd]; simp; rw [Hhd] at Hwin; simp at Hwin
+                         have hind := HInd ⟨ da.data.tail, (da.mtree.1 , prop.head.2) ⟩ prop.tail Hwin.right cho.tail
+                         rw [<- map_tail] at hind; simp at hind; assumption
 
 -- Winning proposer prop is a winning sufficient condition.
 theorem winning_reveler_wins_forward {ℍ : Type}
