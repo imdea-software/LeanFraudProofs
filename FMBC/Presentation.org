@@ -8,6 +8,8 @@
 #+REVEAL_THEME: white
 #+REVEAL_PLUGINS: (highlight notes zoom math)
 #+REVEAL_TITLE_SLIDE: <h2>%t</h2><h3>[%a] and César Sánchez</h3><img width="500" src="./images/white_background.png">
+#+REVEAL_EXTRA_CSS: ./custom.css
+# #+REVEAL_EXTRA_SCRIPTS: ("https://unpkg.com/highlightjs-lean/dist/lean.min.js")
 
 * Introduction
 + WHAT ::
@@ -18,6 +20,7 @@
 + HOW ::
   We focus on the structure of arguments using /authenticated data-structures/
   (Merkle trees.)
++ GOAL :: Prove that one honest agent guarantees /valid computations/.
 
 #+BEGIN_NOTES
 + WHAT :: this is about a lean library we programmed to do stuff
@@ -25,6 +28,10 @@
   their correctness in that a single /honest/ player can guarantee correctness
   of the whole ecosystem.
 + HOW :: ??
++ GOAL :: Our goal was to prove the statement that one honest player can guarantee the correct evolution of the system.
+  There are some limitations to our approach, we do not measure time nor other attacks. Delay attacks and front-runnings.
+  Another way of saying this is that we only focus on the computational and
+  reasoning behind arbitration games.
 #+END_NOTES
 
 ** Layer-2
@@ -32,6 +39,16 @@
 + Solution :: Take everything outside the blockchain.
 + Constrain :: Keep the same guarantees as the blockchain.
 
+#+BEGIN_NOTES
+Layer 2 solutions come to solve one problem: scalability.
+
+One solution was to design mechanisms to take as much as data and computations
+outside of the blockchain while keeping the same guarantees offered by the
+blockchain itself. Or at least as much as possible.
+Other solutions involve improving the blockchain itself, sharding and stuff.
+
+Two big extremes solutions: Optimistic Rollups and ZK-Rollups.
+#+END_NOTES
 ** Optimistic Rollups -- RDoC
 
 + Instead of computing, results are assumed correct unless someone challenge the
@@ -45,32 +62,122 @@ claim.
 + In the blockchain, only the claim and the arbitration of the games are
   recorded.
 
-** TODO Explain Optimistic Rollups
+** TODO Arbitration Games
+
 ** TODO Diff between Arbitrum and RDoC?
 
-* Implicit Game Arenas -- Formalization
+* Formalization
 
-** DA
+** Disputable Assertions
 
+# class hljs language-lean
+# data-highlighted="yes"
+#+ATTR_REVEAL: :code_attribs data-line-numbers="1-3|2|5-9"
 #+begin_src lean4
 structure TraceTree (α β γ : Type) where
   data : BinaryTree α β
   res : γ
 
-
-def implicit_assumption (comp : ComputationTree α β γ)(leaf_interpretation : α -> γ)
+def implicit_assumption
+    (comp : TraceTree α β γ)
+    (leaf_interpretation : α -> γ)
     (node_intrepretation : β -> γ -> γ -> γ) : Prop
     := fold leaf_interpretation node_interpretation comp.data = comp.res
 #+end_src
 
-** Tree Arena
+#+BEGIN_NOTES
+Our first step towards a modelization is to have a structure representing the
+computation. Following the algorithm just described, a Binary tree is enough.
+
+Here I call implicit assumption to the computation we want to leave outside the
+blockchain, we want to leave intermediate computations and results completely
+outside the blockchain.
+
+If someone is lying about the result of a computation, depending on the
+interpretation functions, we may be able to pinpoint the mistake.
+#+END_NOTES
+
+** Tree Arena -- Merkle Trees
 
 Instead of playing games exploring /implicit trees/, we made them explicit.
-We define the arena of arbitration games as trees.
+We define the arena of our arbitration games simply as binary trees.
 
-We can state explicitly what properties our system has to prove and maintain.
+Using Merkle Trees, we can hash entire computations.
 
-* Winning Conditions
+#+begin_src hljs
+def BTree.hash_BTree : BinaryTree α Unit -> ℍ
+    := fun t => t.fold hash_value comb_hash
+#+end_src
+
+#+BEGIN_NOTES
+The main basic block here is the Merkle Tree. Merkle trees are the most used
+authenticated data structure and it is the foundamental stone in Optimistic Rollups.
+They provide us with a way of verify statements and link reasoning arguments.
+When computing the next state, agents publish a hash and the resulting state (here, we call it ~TraceTree~.)
+When the hashing function is collision free, the hash is a very compact way of
+uniquely describing the computation that led to that result, and when an agent
+publishes it, it commits to that computation. That is, when challenge, the agent can only provide hashes computing the root hash (already published.)
+And thus, the agent cannot lie.
+#+END_NOTES
+
+** Games : Arbitration Game
+
+#+begin_src lean
+inductive ChooserMoves where | Now | ContLeft | ContRight
+
+def treeCompArbGame
+    -- Game Mechanics
+    (leafCondition : α -> α' -> γ -> Winner)
+    (midCondition  : β -> γ -> γ -> γ -> Winner)
+    -- Public Information
+    (da : TraceTree α β γ)
+    -- Players
+    (revealer : BinaryTree (Option α') (Option (γ × γ)))
+    (chooser : BinaryTree Unit ((β × γ × γ × γ) -> Option ChooserMoves))
+    : Winner := match da.data, revealer with ...
+#+end_src
+
+Winning condition: winning all possible challenges.
+
+#+BEGIN_NOTES
+We defined the arbitration game following the scheme we just defined.
+We have to conditions, one triggered when reaching leaves and one that can be
+triggered by the chooser at nodes. The chooser chooses which branch of the tree to take and they can also triggers the ~midCondition~ at any node.
+When reaching a leaf, the ~leafCondition~ is triggered.
+
+So, when an agent publishes a DA, any other agent can challenge it. The
+challenge consists on going through the structure of the computation, where the
+proposing agent reveals information and the challenger chooses to challenge that
+information or which path in the computation tree to take.
+#+END_NOTES
+
+** Games : Membership Game
+
+#+begin_src lean
+inductive SkElem : Type where | Left | Right
+abbrev Skeleton := List SkElem
+
+inductive ChooserSmp : Type where| Now | Continue
+
+structure ElemInMTree (α ℍ : Type) where
+  elem : α
+  path : Skeleton
+  mtree : ℍ
+
+def arbElem
+    (da : ElemInMTree α ℍ)
+    (proposer : Skeleton -> Option (ℍ × ℍ))
+    (chooser : Skeleton -> (ℍ × ℍ -> Option ChooserSmp))
+    : Winner
+#+end_src
+
+
+#+BEGIN_NOTES
+Similar to the arbitration game, here is a different game. The game consists on
+proving that an element is an element of the tree.
+#+END_NOTES
+
+** Winning Conditions
 
 Our expressions are define as folds/traversals, so to win a game, players must
 win it in all possible states.
@@ -81,8 +188,31 @@ In our case, at the leaf level and node level.
 Moving from arbitration over traces to clever game decomposition into simpler
 games.
 
-* Closing Remarks
+#+BEGIN_NOTES
+We designed a some arbitration games, different from the ones designed by arbitrum and RDoc.
+This was the real motivation of this work. We wanted to have a framework to play around and prove our games correct.
+#+END_NOTES
 
-+ This was fun, but a lot of work. Can we build a systems handling as much as boiler-plate possible?
-+ Can we find other games to decompose them in a clever way?
-+ Domain specific Layer-2 schemes Language (Frugal?)
+* Conclusions
+In 5k lines of Lean, we
++ Formalize Arbitration games
++ Definitions of DA, Player, honest players
++ Membership games (bottom-up and top-down) and Logarithmic.
++ Formalized a simpler version of Optimistic Rollups.
+
+* Future Work
++ Generalization ::
+  Can we build a systems handling as much as boiler-plate possible?
+  What are the basic constructs we need to design arbitration games?
++ Problem decomposition ::
+  Can we find other games to decompose them in a clever way?
++ Domain Specific for Layer-2 schemes ::
+  Instead of arbitrating over the execution of programs, can we designed a
+  language to decompose Layer-2 protocols into simple games?
+  Are our basic constructs from before enough?
++ Time ::
+  Time is a big attack vector here, and we left it outside of the model.
+  Delay attacks
++ Layer-1 Limintations ::
+  Computations, one-shoot games, small step verification not fitting in
+  L1-transactions.
