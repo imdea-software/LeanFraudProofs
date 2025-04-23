@@ -2,31 +2,34 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
-<title>Towards Mechanizations in Lean</title>
+<title>Towards a Mechanization of Fraud Proof Games in Lean</title>
 <meta name="author" content="Martín Ceresa"/>
 <style type="text/css">
 .underline { text-decoration: underline; }
 </style>
-<link rel="stylesheet" href="file:///home/mceresa/Research/Lean/FMBC/reveal/dist/reveal.css"/>
+<link rel="stylesheet" href="./reveal/dist/reveal.css"/>
 
-<link rel="stylesheet" href="file:///home/mceresa/Research/Lean/FMBC/reveal/dist/theme/white.css" id="theme"/>
-<link rel="stylesheet" href="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/highlight/zenburn.css"/>
+<link rel="stylesheet" href="./reveal/dist/theme/white.css" id="theme"/>
+
+<link rel="stylesheet" href="./custom.css"/>
+<link rel="stylesheet" href="./reveal/plugin/highlight/zenburn.css"/>
 </head>
 <body>
 <div class="reveal">
 <div class="slides">
 <section id="sec-title-slide">
-<h1>Towards Mechanizations in Lean</h1><h3>[Martín Ceresa] and César Sanchez</h3><img width="700" src="./images/white_background.png">
+<h2>Towards a Mechanization of Fraud Proof Games in Lean</h2><h3>[Martín Ceresa] and César Sánchez</h3><img width="500" src="./images/white_background.png">
 </section>
 <section>
-<section id="slide-orge3dbf4b">
-<h2 id="orge3dbf4b">Introduction</h2>
+<section id="slide-org1296f1f">
+<h2 id="org1296f1f">Introduction</h2>
 <dl>
 <dt>WHAT</dt><dd>A simple <i>Lean</i> mechanization of Fraud-Proof games.</dd>
 <dt>WHY</dt><dd>Provide basic building blocks to prove that <i>honest players</i> always win and
 guarantee correctness of <i>Optimistic Rollups</i> Layer-2 schemes.</dd>
 <dt>HOW</dt><dd>We focus on the structure of arguments using <i>authenticated data-structures</i>
 (Merkle trees.)</dd>
+<dt>GOAL</dt><dd>Prove that one honest agent guarantees <i>valid computations</i>.</dd>
 
 </dl>
 
@@ -37,46 +40,281 @@ guarantee correctness of <i>Optimistic Rollups</i> Layer-2 schemes.</dd>
 their correctness in that a single <i>honest</i> player can guarantee correctness
 of the whole ecosystem.</dd>
 <dt>HOW</dt><dd>??</dd>
+<dt>GOAL</dt><dd>Our goal was to prove the statement that one honest player can guarantee the correct evolution of the system.
+There are some limitations to our approach, we do not measure time nor other attacks. Delay attacks and front-runnings.
+Another way of saying this is that we only focus on the computational and
+reasoning behind arbitration games.</dd>
 
 </dl>
 
 </aside>
 </section>
-<section id="slide-org5df7b2b">
-<h3 id="org5df7b2b">Layer-2</h3>
+<section id="slide-org2cf31a9">
+<h3 id="org2cf31a9">Layer-2</h3>
+<dl>
+<dt>Problem</dt><dd>Scalability.</dd>
+<dt>Solution</dt><dd>Take everything outside the blockchain.</dd>
+<dt>Constrain</dt><dd>Keep the same guarantees as the blockchain.</dd>
+
+</dl>
+
+<aside class="notes">
+<p>
+Layer 2 solutions come to solve one problem: scalability.
+</p>
+
+<p>
+One solution was to design mechanisms to take as much as data and computations
+outside of the blockchain while keeping the same guarantees offered by the
+blockchain itself. Or at least as much as possible.
+Other solutions involve improving the blockchain itself, sharding and stuff.
+</p>
+
+<p>
+Two big extremes solutions: Optimistic Rollups and ZK-Rollups.
+</p>
+
+</aside>
 </section>
-<section id="slide-org6c04515">
-<h3 id="org6c04515">Optimistic Rollups &#x2013; RDoC</h3>
+<section id="slide-org08a7f4d">
+<h3 id="org08a7f4d">Optimistic Rollups &#x2013; RDoC</h3>
+<ul>
+<li>Instead of computing, results are assumed correct unless someone challenge the</li>
+
+</ul>
+<p>
+claim.
+</p>
+
+<ul>
+<li>There is a time period where challengers can challenge</li>
+
+<li>If a claim is challenged, the proposer and the challenger of the claim engage
+into a two-player game.</li>
+
+<li>In the blockchain, only the claim and the arbitration of the games are
+recorded.</li>
+
+</ul>
 </section>
-</section>
-<section>
-<section id="slide-org8b6fec7">
-<h2 id="org8b6fec7">Implicit Game Arenas</h2>
+<section id="slide-org7940fbf">
+<h3 id="org7940fbf"><span class="todo TODO">TODO</span> Arbitration Games</h3>
 
 </section>
-</section>
-<section>
-<section id="slide-org8193e58">
-<h2 id="org8193e58">Winning Conditions</h2>
+<section id="slide-org34c41cc">
+<h3 id="org34c41cc"><span class="todo TODO">TODO</span> Diff between Arbitrum and RDoC?</h3>
 </section>
 </section>
 <section>
-<section id="slide-org62287fc">
-<h2 id="org62287fc">Formal Statements Decomposition</h2>
+<section id="slide-orgafc94e1">
+<h2 id="orgafc94e1">Formalization</h2>
+<div class="outline-text-2" id="text-orgafc94e1">
+</div>
+</section>
+<section id="slide-org60abcfc">
+<h3 id="org60abcfc">Disputable Assertions</h3>
+<div class="org-src-container">
+
+<pre><code class="lean4" data-line-numbers="1-3|2|5-9">structure TraceTree (α β γ : Type) where
+  data : BinaryTree α β
+  res : γ
+
+def implicit_assumption
+    (comp : TraceTree α β γ)
+    (leaf_interpretation : α -&gt; γ)
+    (node_intrepretation : β -&gt; γ -&gt; γ -&gt; γ) : Prop
+    := fold leaf_interpretation node_interpretation comp.data = comp.res
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+Our first step towards a modelization is to have a structure representing the
+computation. Following the algorithm just described, a Binary tree is enough.
+</p>
+
+<p>
+Here I call implicit assumption to the computation we want to leave outside the
+blockchain, we want to leave intermediate computations and results completely
+outside the blockchain.
+</p>
+
+<p>
+If someone is lying about the result of a computation, depending on the
+interpretation functions, we may be able to pinpoint the mistake.
+</p>
+
+</aside>
+</section>
+<section id="slide-org6d73de1">
+<h3 id="org6d73de1">Tree Arena &#x2013; Merkle Trees</h3>
+<p>
+Instead of playing games exploring <i>implicit trees</i>, we made them explicit.
+We define the arena of our arbitration games simply as binary trees.
+</p>
+
+<p>
+Using Merkle Trees, we can hash entire computations.
+</p>
+
+<div class="org-src-container">
+
+<pre><code class="hljs" >def BTree.hash_BTree : BinaryTree α Unit -&gt; ℍ
+    := fun t =&gt; t.fold hash_value comb_hash
+</code></pre>
+</div>
+
+<aside class="notes">
+<p>
+The main basic block here is the Merkle Tree. Merkle trees are the most used
+authenticated data structure and it is the foundamental stone in Optimistic Rollups.
+They provide us with a way of verify statements and link reasoning arguments.
+When computing the next state, agents publish a hash and the resulting state (here, we call it <code>TraceTree</code>.)
+When the hashing function is collision free, the hash is a very compact way of
+uniquely describing the computation that led to that result, and when an agent
+publishes it, it commits to that computation. That is, when challenge, the agent can only provide hashes computing the root hash (already published.)
+And thus, the agent cannot lie.
+</p>
+
+</aside>
+</section>
+<section id="slide-org1f2df15">
+<h3 id="org1f2df15">Games : Arbitration Game</h3>
+<div class="org-src-container">
+
+<pre><code class="lean" >inductive ChooserMoves where | Now | ContLeft | ContRight
+
+def treeCompArbGame
+    -- Game Mechanics
+    (leafCondition : α -&gt; α' -&gt; γ -&gt; Winner)
+    (midCondition  : β -&gt; γ -&gt; γ -&gt; γ -&gt; Winner)
+    -- Public Information
+    (da : TraceTree α β γ)
+    -- Players
+    (revealer : BinaryTree (Option α') (Option (γ × γ)))
+    (chooser : BinaryTree Unit ((β × γ × γ × γ) -&gt; Option ChooserMoves))
+    : Winner := match da.data, revealer with ...
+</code></pre>
+</div>
+
+<p>
+Winning condition: winning all possible challenges.
+</p>
+
+<aside class="notes">
+<p>
+We defined the arbitration game following the scheme we just defined.
+We have to conditions, one triggered when reaching leaves and one that can be
+triggered by the chooser at nodes. The chooser chooses which branch of the tree to take and they can also triggers the <code>midCondition</code> at any node.
+When reaching a leaf, the <code>leafCondition</code> is triggered.
+</p>
+
+<p>
+So, when an agent publishes a DA, any other agent can challenge it. The
+challenge consists on going through the structure of the computation, where the
+proposing agent reveals information and the challenger chooses to challenge that
+information or which path in the computation tree to take.
+</p>
+
+</aside>
+</section>
+<section id="slide-orgbdb64a0">
+<h3 id="orgbdb64a0">Games : Membership Game</h3>
+<div class="org-src-container">
+
+<pre><code class="lean" >inductive SkElem : Type where | Left | Right
+abbrev Skeleton := List SkElem
+
+inductive ChooserSmp : Type where| Now | Continue
+
+structure ElemInMTree (α ℍ : Type) where
+  elem : α
+  path : Skeleton
+  mtree : ℍ
+
+def arbElem
+    (da : ElemInMTree α ℍ)
+    (proposer : Skeleton -&gt; Option (ℍ × ℍ))
+    (chooser : Skeleton -&gt; (ℍ × ℍ -&gt; Option ChooserSmp))
+    : Winner
+</code></pre>
+</div>
+
+
+<aside class="notes">
+<p>
+Similar to the arbitration game, here is a different game. The game consists on
+proving that an element is an element of the tree.
+</p>
+
+</aside>
+</section>
+<section id="slide-org924aedf">
+<h3 id="org924aedf">Winning Conditions</h3>
+<p>
+Our expressions are define as folds/traversals, so to win a game, players must
+win it in all possible states.
+In our case, at the leaf level and node level.
+</p>
 </section>
 </section>
 <section>
-<section id="slide-org2cff724">
-<h2 id="org2cff724">Closing Remarks</h2>
+<section id="slide-orge165b2e">
+<h2 id="orge165b2e">Formal Statements Decomposition</h2>
+<p>
+Moving from arbitration over traces to clever game decomposition into simpler
+games.
+</p>
+
+<aside class="notes">
+<p>
+We designed a some arbitration games, different from the ones designed by arbitrum and RDoc.
+This was the real motivation of this work. We wanted to have a framework to play around and prove our games correct.
+</p>
+
+</aside>
+</section>
+</section>
+<section>
+<section id="slide-orgd9a8c9b">
+<h2 id="orgd9a8c9b">Conclusions</h2>
+<p>
+In 5k lines of Lean, we
+</p>
+<ul>
+<li>Formalize Arbitration games</li>
+<li>Definitions of DA, Player, honest players</li>
+<li>Membership games (bottom-up and top-down) and Logarithmic.</li>
+<li>Formalized a simpler version of Optimistic Rollups.</li>
+
+</ul>
+</section>
+</section>
+<section>
+<section id="slide-org68fd90d">
+<h2 id="org68fd90d">Future Work</h2>
+<dl>
+<dt>Generalization</dt><dd>Can we build a systems handling as much as boiler-plate possible?
+What are the basic constructs we need to design arbitration games?</dd>
+<dt>Problem decomposition</dt><dd>Can we find other games to decompose them in a clever way?</dd>
+<dt>Domain Specific for Layer-2 schemes</dt><dd>Instead of arbitrating over the execution of programs, can we designed a
+language to decompose Layer-2 protocols into simple games?
+Are our basic constructs from before enough?</dd>
+<dt>Time</dt><dd>Time is a big attack vector here, and we left it outside of the model.
+Delay attacks</dd>
+<dt>Layer-1 Limintations</dt><dd>Computations, one-shoot games, small step verification not fitting in
+L1-transactions.</dd>
+
+</dl>
 </section>
 </section>
 </div>
 </div>
-<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/dist/reveal.js"></script>
-<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/highlight/highlight.js"></script>
-<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/notes/notes.js"></script>
-<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/zoom/zoom.js"></script>
-<script src="file:///home/mceresa/Research/Lean/FMBC/reveal/plugin/math/math.js"></script>
+<script src="./reveal/dist/reveal.js"></script>
+<script src="./reveal/plugin/highlight/highlight.js"></script>
+<script src="./reveal/plugin/notes/notes.js"></script>
+<script src="./reveal/plugin/zoom/zoom.js"></script>
+<script src="./reveal/plugin/math/math.js"></script>
 <script>
 // Full list of configuration options available here:
 // https://github.com/hakimel/reveal.js#configuration
@@ -94,8 +332,9 @@ fragmentInURL: false,
 hashOneBasedIndex: false,
 pdfSeparateFragments: true,
 overview: true,
+width: 1200,
 
-transition: 'None',
+transition: 'none',
 transitionSpeed: 'default',
 
 // Plugins with reveal.js 4.x
