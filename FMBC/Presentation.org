@@ -10,7 +10,8 @@
 #+REVEAL_TITLE_SLIDE: <h2>%t</h2><h3>[%a] and César Sánchez</h3><img width="500" src="./images/white_background.png">
 #+REVEAL_EXTRA_CSS: ./custom.css
 # #+REVEAL_EXTRA_SCRIPTS: ("https://unpkg.com/highlightjs-lean/dist/lean.min.js")
-
+#+REVEAL_HIGHLIGHT_URL: ./highlight.lean.js
+# #+REVEAL_EXTRA_SCRIPTS: ("./lean.js")
 * Introduction
 + WHAT ::
   A simple /Lean/ mechanization of Fraud-Proof games.
@@ -185,13 +186,46 @@ In our case, at the leaf level and node level.
 
 * Formal Statements Decomposition
 
+Arbitrum and RDoC arbitrates over the execution of the evaluation machine (Turing Machines or EVM)
+
+We worked on designing simpler games. What if we can define a L2 scheme
 Moving from arbitration over traces to clever game decomposition into simpler
 games.
+
+We moved the small step evolution out simplifying the problem and defining
+simpler valid block definition.
 
 #+BEGIN_NOTES
 We designed a some arbitration games, different from the ones designed by arbitrum and RDoc.
 This was the real motivation of this work. We wanted to have a framework to play around and prove our games correct.
 #+END_NOTES
+
+** Valid Block Definition
+
+Instead of executing transactions, we have a function telling us when a
+transaction is valid and we have the following definition.
+
++ Validity :: Every transaction request in $b$ is a valid
+    transaction request added by a client.
++ IntegrityOne :: No transaction request appears twice in $b$.
++ IntegrityTwo :: No transaction request in $b$ appears in a
+    legal batch tag previously posted by the arranger.
+
+** Valid Block Definition
+
+Instead of executing transactions, we have a function telling us when a
+transaction is valid and we have the following definition.
+
+#+begin_src lean4
+def local_valid {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
+  (da : BTree α × ℍ)(val_fun : α -> Bool) : Prop
+ -- Merkle Tree is correct
+ := da.fst.hash_BTree = da.snd
+ -- All elements are |val_fun| valid
+ ∧ (da.fst.fold val_fun and)
+ -- There are no duplicated elements.
+ ∧ List.Nodup da.fst.toList
+#+end_src
 
 * Conclusions
 In 5k lines of Lean, we
