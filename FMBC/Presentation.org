@@ -12,6 +12,8 @@
 # #+REVEAL_EXTRA_SCRIPTS: ("https://unpkg.com/highlightjs-lean/dist/lean.min.js")
 #+REVEAL_HIGHLIGHT_URL: ./highlight.js
 
+# check https://github.com/hakimel/reveal.js/issues/2761
+
 * Introduction
 + WHAT ::
   A simple /Lean/ mechanization of Fraud-Proof games.
