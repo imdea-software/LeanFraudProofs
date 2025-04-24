@@ -10,80 +10,122 @@
 #+REVEAL_TITLE_SLIDE: <h2>%t</h2><h3>[%a] and César Sánchez</h3><img width="500" src="./images/white_background.png">
 #+REVEAL_EXTRA_CSS: ./custom.css
 # #+REVEAL_EXTRA_SCRIPTS: ("https://unpkg.com/highlightjs-lean/dist/lean.min.js")
-#+REVEAL_HIGHLIGHT_URL: ./highlight.lean.js
-# #+REVEAL_EXTRA_SCRIPTS: ("./lean.js")
+#+REVEAL_HIGHLIGHT_URL: ./highlight.js
+
 * Introduction
 + WHAT ::
   A simple /Lean/ mechanization of Fraud-Proof games.
++ GOAL ::
+  Prove that one honest agent guarantees /valid computations/.
 + WHY ::
-  Provide basic building blocks to prove that /honest players/ always win and
-  guarantee correctness of /Optimistic Rollups/ Layer-2 schemes.
+  L2 Blockchains use /Optimistic Rollups/ for *scalability.*
+  Arbitration games ensure correctness via /fraud proofs/.
+  # Provide basic building blocks to prove that /honest players/ always win and
+  # guarantee correctness of /Optimistic Rollups/ Layer-2 schemes.
 + HOW ::
   We focus on the structure of arguments using /authenticated data-structures/
   (Merkle trees.)
-+ GOAL :: Prove that one honest agent guarantees /valid computations/.
 
 #+BEGIN_NOTES
 + WHAT :: this is about a lean library we programmed to do stuff
-+ WHY :: I actually serves to several thing. First, optimistic rollups based
-  their correctness in that a single /honest/ player can guarantee correctness
-  of the whole ecosystem.
-+ HOW :: ??
 + GOAL :: Our goal was to prove the statement that one honest player can guarantee the correct evolution of the system.
   There are some limitations to our approach, we do not measure time nor other attacks. Delay attacks and front-runnings.
   Another way of saying this is that we only focus on the computational and
   reasoning behind arbitration games.
++ WHY :: It actually serves to several thing. First, optimistic rollups based
+  their correctness in that a single /honest/ player can guarantee correctness
+  of the whole ecosystem.
++ HOW :: ??
 #+END_NOTES
 
-** Layer-2
-+ Problem :: Scalability.
-+ Solution :: Take everything outside the blockchain.
-+ Constrain :: Keep the same guarantees as the blockchain.
+# ** Layer-2
+# + Problem :: Scalability.
+# + Solution :: Take everything outside the blockchain.
+# + Constrain :: Keep the same guarantees as the blockchain.
 
-#+BEGIN_NOTES
-Layer 2 solutions come to solve one problem: scalability.
+# #+BEGIN_NOTES
+# Layer 2 solutions come to solve one problem: scalability.
 
-One solution was to design mechanisms to take as much as data and computations
-outside of the blockchain while keeping the same guarantees offered by the
-blockchain itself. Or at least as much as possible.
-Other solutions involve improving the blockchain itself, sharding and stuff.
+# One solution was to design mechanisms to take as much as data and computations
+# outside of the blockchain while keeping the same guarantees offered by the
+# blockchain itself. Or at least as much as possible.
+# Other solutions involve improving the blockchain itself, sharding and stuff.
 
-Two big extremes solutions: Optimistic Rollups and ZK-Rollups.
-#+END_NOTES
+# Two big extremes solutions: Optimistic Rollups and ZK-Rollups.
+# #+END_NOTES
+
 ** Optimistic Rollups -- RDoC
 
-+ Instead of computing, results are assumed correct unless someone challenge the
++ Instead of computing, results are assumed correct /unless/ someone challenge the
 claim.
 
-+ There is a time period where challengers can challenge
+# + There is a time period where challengers can challenge
++ Challenges lead to /arbitration games/ between proposer and challenger.
 
-+ If a claim is challenged, the proposer and the challenger of the claim engage
-  into a two-player game.
+# + If a claim is challenged, the proposer and the challenger of the claim engage
+#   into a two-player game.
 
-+ In the blockchain, only the claim and the arbitration of the games are
-  recorded.
++ Disputable Assertions (DAs) are registered in the blockchain: compact
+  representations of computations.
+  # In the blockchain, only the claim and the arbitration of the games are
+  # recorded.
 
-** TODO Arbitration Games
++ Fraud proofs are deterrents, not commonly executed.
 
-** TODO Diff between Arbitrum and RDoC?
+#+BEGIN_NOTES
++ Optimistic model of computations and the /unless/ word here is very important.
++ Challenges trigger arbitration games to built fraud-proofs if they can.
++ DAs make a claim on the result of a computation
++ It means that the arbitration mechanism is a deterrent mechanism that should
+  be able to catch bad guys. But they are not the default mechanism.
+#+END_NOTES
+
+** Arbitration Games
+
++ Turn-based games: one player revels, the other explores.
++ Proposers defend their claim, challengers try to built a fraud-proof.
++ Games are played over Merkle trees.
++ Two fraud-types:
+  * Incorrect hash (structure)
+  * Incorrect data (membership)
+
+#+BEGIN_NOTES
+Arbitration games is the mechanism living in the L1-blockchain. Through these
+mechanisms, we should be able to translate/provide correctness from the L1 to L2.
+In other words, for each possible wrong thing that can happen at L2, we should
+have (at least) one way of detecting it at L1.
++ Two player games, perfect information? Combinatorial games?
++ Each player has a role, one defends their claim, the other tries to catch the
+  defender lying.
++ Games are played on /authenticated data-structures/ where Merkle trees are king.
+   This is very important, because by
+  traversing the tree, we get hashes that can be check to be the correct ones.
+  So end up having a chain of hashes leading to the root forming a verifiable claim: a fraud-proof or a validity proof.
++ Assuming a predicate indicating valid from invalid elements, two things could go wrong:
+  * The data-structure is incorrect, if we know the data, the top hash does not
+  matches our result from computing it.
+  * There is an invalid element in the tree.
+#+END_NOTES
+
+# ** TODO Diff between Arbitrum and RDoC?
 
 * Formalization
 
 ** Disputable Assertions
 
-# class hljs language-lean
-# data-highlighted="yes"
+DAs are partial ~TraceTree~ with their hashes.
+
 #+ATTR_REVEAL: :code_attribs data-line-numbers="1-3|2|5-9"
 #+begin_src lean4
 structure TraceTree (α β γ : Type) where
   data : BinaryTree α β
   res : γ
 
-def implicit_assumption
-    (comp : TraceTree α β γ)
-    (leaf_interpretation : α -> γ)
-    (node_intrepretation : β -> γ -> γ -> γ) : Prop
-    := fold leaf_interpretation node_interpretation comp.data = comp.res
+-- def implicit_assumption
+--     (comp : TraceTree α β γ)
+--     (leaf_interpretation : α -> γ)
+--     (node_intrepretation : β -> γ -> γ -> γ) : Prop
+--     := fold leaf_interpretation node_interpretation comp.data = comp.res
 #+end_src
 
 #+BEGIN_NOTES
@@ -103,9 +145,9 @@ interpretation functions, we may be able to pinpoint the mistake.
 Instead of playing games exploring /implicit trees/, we made them explicit.
 We define the arena of our arbitration games simply as binary trees.
 
-Using Merkle Trees, we can hash entire computations.
+Using Merkle trees, we can hash entire computations.
 
-#+begin_src hljs
+#+begin_src lean4
 def BTree.hash_BTree : BinaryTree α Unit -> ℍ
     := fun t => t.fold hash_value comb_hash
 #+end_src
@@ -123,7 +165,7 @@ And thus, the agent cannot lie.
 
 ** Games : Arbitration Game
 
-#+begin_src lean
+#+begin_src lean4
 inductive ChooserMoves where | Now | ContLeft | ContRight
 
 def treeCompArbGame
@@ -138,7 +180,7 @@ def treeCompArbGame
     : Winner := match da.data, revealer with ...
 #+end_src
 
-Winning condition: winning all possible challenges.
+# Winning condition: winning all possible challenges.
 
 #+BEGIN_NOTES
 We defined the arbitration game following the scheme we just defined.
@@ -154,7 +196,7 @@ information or which path in the computation tree to take.
 
 ** Games : Membership Game
 
-#+begin_src lean
+#+begin_src lean4
 inductive SkElem : Type where | Left | Right
 abbrev Skeleton := List SkElem
 
@@ -172,10 +214,22 @@ def arbElem
     : Winner
 #+end_src
 
++ Variants
+  * Linear path check (bottom-up & top-down)
+  * Logarithmic (bisection) game (defined using ~treeCompArbGame~)
++ Different games are equivalent (honest players win them all.)
 
 #+BEGIN_NOTES
 Similar to the arbitration game, here is a different game. The game consists on
 proving that an element is an element of the tree.
+
++ We defined different variants.
+  * Linear games, following just a branc of the original
+  Merkle tree. Either starting from the root hash or from the element and its hash.
+  * Logarithmic games, bisecting the path.
++ We proved them equivalent from the point of view of honest players.
+  If an agent knows the data behind the Merkle tree, the agent knows where the
+  mistake is and can choose the correct path to catch the laying agent.
 #+END_NOTES
 
 ** Winning Conditions
@@ -186,19 +240,20 @@ In our case, at the leaf level and node level.
 
 * Formal Statements Decomposition
 
-Arbitrum and RDoC arbitrates over the execution of the evaluation machine (Turing Machines or EVM)
+# ** Arbitrum and RDoC
+# Arbitrum and RDoC arbitrates over the execution of the evaluation machine (Turing Machines or EVM)
 
-We worked on designing simpler games. What if we can define a L2 scheme
-Moving from arbitration over traces to clever game decomposition into simpler
-games.
+# We worked on designing simpler games. What if we can define a L2 scheme
+# Moving from arbitration over traces to clever game decomposition into simpler
+# games.
 
-We moved the small step evolution out simplifying the problem and defining
-simpler valid block definition.
+# We moved the small step evolution out simplifying the problem and defining
+# simpler valid block definition.
 
-#+BEGIN_NOTES
-We designed a some arbitration games, different from the ones designed by arbitrum and RDoc.
-This was the real motivation of this work. We wanted to have a framework to play around and prove our games correct.
-#+END_NOTES
+# #+BEGIN_NOTES
+# We designed a some arbitration games, different from the ones designed by arbitrum and RDoc.
+# This was the real motivation of this work. We wanted to have a framework to play around and prove our games correct.
+# #+END_NOTES
 
 ** Valid Block Definition
 
@@ -207,9 +262,21 @@ transaction is valid and we have the following definition.
 
 + Validity :: Every transaction request in $b$ is a valid
     transaction request added by a client.
-+ IntegrityOne :: No transaction request appears twice in $b$.
++ No Duplicates :: No transaction request appears twice in $b$.
 + IntegrityTwo :: No transaction request in $b$ appears in a
     legal batch tag previously posted by the arranger.
+
+#+REVEAL: split:t
+
+Instead of executing transactions, we have a function telling us when a
+transaction is valid and we have the following definition.
+
++ Validity :: Every transaction request in $b$ is a valid
+    transaction request added by a client.
++ No Duplicates :: No transaction request appears twice in $b$.
++ +IntegrityTwo+ ::
++ Correct DA :: Merkle tree is correct.
+
 
 ** Valid Block Definition
 
@@ -244,6 +311,7 @@ In 5k lines of Lean, we
   Instead of arbitrating over the execution of programs, can we designed a
   language to decompose Layer-2 protocols into simple games?
   Are our basic constructs from before enough?
+  #+REVEAL: split:t
 + Time ::
   Time is a big attack vector here, and we left it outside of the model.
   Delay attacks
