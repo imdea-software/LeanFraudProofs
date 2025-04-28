@@ -9,8 +9,9 @@
 #+REVEAL_PLUGINS: (highlight notes zoom math)
 #+REVEAL_TITLE_SLIDE: <h2>%t</h2><h3>[%a] and César Sánchez</h3><img width="500" src="./images/white_background.png">
 #+REVEAL_EXTRA_CSS: ./custom.css
-# #+REVEAL_EXTRA_SCRIPTS: ("https://unpkg.com/highlightjs-lean/dist/lean.min.js")
+#+REVEAL_EXTRA_SCRIPTS: ("lean.js")
 #+REVEAL_HIGHLIGHT_URL: ./highlight.js
+#+reveal_init_script: highlight: {beforeHighlight: hljs => {hljs.registerLanguage("lean", lean);hljs.configure({languages:["lean"]})}}
 
 # check https://github.com/hakimel/reveal.js/issues/2761
 
@@ -58,16 +59,15 @@
 
 ** Optimistic Rollups -- RDoC
 
-+ Instead of computing, results are assumed correct /unless/ someone challenge the
-claim.
++ Instead of computing, results are assumed correct /unless/ someone challenge them.
 
 # + There is a time period where challengers can challenge
-+ Challenges lead to /arbitration games/ between proposer and challenger.
++ Challenges lead to /arbitration games/ between proposers and challengers.
 
 # + If a claim is challenged, the proposer and the challenger of the claim engage
 #   into a two-player game.
 
-+ Disputable Assertions (DAs) are registered in the blockchain: compact
++ Disputable Assertions (DAs) are registered in the blockchain : compact
   representations of computations.
   # In the blockchain, only the claim and the arbitration of the games are
   # recorded.
@@ -216,6 +216,7 @@ def arbElem
     : Winner
 #+end_src
 
+#+REVEAL: split:t
 + Variants
   * Linear path check (bottom-up & top-down)
   * Logarithmic (bisection) game (defined using ~treeCompArbGame~)
@@ -294,6 +295,41 @@ def local_valid {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
  ∧ (da.fst.fold val_fun and)
  -- There are no duplicated elements.
  ∧ List.Nodup da.fst.toList
+#+end_src
+
+** Player Actions
+
+- Player 1
+  Proposes DAs (Valid or not)
+
+- Player 2
+  Challenge those claims or not.
+
+#+begin_src lean4
+inductive P2_Actions (α ℍ : Type)  : Type where
+   | DAC (str : ABTree Unit ((ℍ × ℍ × ℍ) -> Option ChooserMoves))
+   | Invalid {n : Nat} (p : α)
+             (seq : ISkeleton n)
+             (str : Sequence n ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+   | Duplicate (n m : Nat)
+      -- There are two paths
+      (path_p : ISkeleton n) (path_q : ISkeleton m)
+      -- Strategies to force proposer to show elements.
+      (str_p : Sequence n ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+      (str_q : Sequence m ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+   | Ok
+#+end_src
+
+We define (and verify) an honest player 2
+
+** One honest chooser prevents invalid blocks
+
+#+begin_src lean4
+theorem honest_chooser_valid
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   (val_fun : α -> Bool) (p1 : P1_Actions α ℍ)
+   : linear_l2_protocol val_fun p1 (honest_chooser val_fun)
+   ↔ local_valid p1.da val_fun
 #+end_src
 
 * Conclusions

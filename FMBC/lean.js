@@ -5,7 +5,7 @@ Category: scientific
 Description: Language definition for Lean theorem prover
 */
 
-module.exports = function(hljs) {
+var lean = function(hljs) {
   var LEAN_KEYWORDS = {
     $pattern: /\w+|λ|∀|Π|∃|:=?/u,
     keyword:
