@@ -70,7 +70,7 @@
 
 + Disputable Assertions (DAs) are registered in the blockchain
 
-+ DA: (Initial_State, Computation, Final State)
++ DA: (Initial State, Computation, Final State)
 
 #+REVEAL: split:t
 
@@ -108,7 +108,7 @@
 
 ** Arbitration Games
 
-+ Turn-based games: one player revels, the other explores.
++ Turn-based games: one player reveals, the other explores.
 + Proposers defend their claim, challengers build fraud-proofs.
 + Games are played over Merkle trees.
 + Two fraud-types:
@@ -297,7 +297,7 @@ In our case, at the leaf level and node level.
 # This was the real motivation of this work. We wanted to have a framework to play around and prove our games correct.
 # #+END_NOTES
 
-** Valid Block Definition
+** Valid Batch Definition
 
 Instead of executing transactions, we have a function telling us when a
 transaction is valid and we have the following definition.
@@ -320,7 +320,7 @@ transaction is valid and we have the following definition.
 + Correct DA :: Merkle tree is correct.
 
 
-** Valid Block Definition
+** Valid Batch Definition
 
 Instead of executing transactions, we have a function telling us when a
 transaction is valid and we have the following definition.
@@ -339,10 +339,16 @@ def local_valid {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
 ** Player Actions
 
 - Player 1
-  Proposes DAs (Valid or not)
+  Proposes DAs (Valid or not) : Data x Hash
 
 - Player 2
-  Challenge those claims or not.
+  Challenge those claims or not:
+  - Data does not match hash.
+  - There is an invalid element
+  - There are duplicated elements
+  - Valid batch
+
+#+BEGIN_NOTES
 
 #+begin_src lean4
 inductive P2_Actions (α ℍ : Type)  : Type where
@@ -361,6 +367,8 @@ inductive P2_Actions (α ℍ : Type)  : Type where
 
 We define (and verify) an honest player 2
 
+#+END_NOTES
+
 ** One honest chooser prevents invalid blocks
 
 #+begin_src lean4
@@ -377,21 +385,24 @@ In 5k lines of Lean, we
 + Definitions of DA, Player, honest players
 + Membership games (bottom-up and top-down) and Logarithmic.
 + Formalized a simpler version of Optimistic Rollups.
++ TODO Executable
 
 * Future Work
+# + One-shot :: One-shot games can be easily implemented.
 + Generalization ::
-  Can we build a systems handling as much as boiler-plate possible?
+  Can we build a systems handling as much boiler-plate as possible?
   What are the basic constructs we need to design arbitration games?
 + Problem decomposition ::
   Can we find other games to decompose them in a clever way?
-+ Domain Specific for Layer-2 schemes ::
++ Domain Specific Layer-2 Framework ::
   Instead of arbitrating over the execution of programs, can we designed a
   language to decompose Layer-2 protocols into simple games?
   Are our basic constructs from before enough?
   #+REVEAL: split:t
 + Time ::
-  Time is a big attack vector here, and we left it outside of the model.
-  Delay attacks
+  Time is an attack vector (delay attacks.)
 + Layer-1 Limitation ::
-  Computations, one-shoot games, small step verification not fitting in
+  Computations, one-shot games, small step verification not fitting in
   L1-transactions.
++ Incentives -- Not modelled ::
+  Why players behave the way they do?
