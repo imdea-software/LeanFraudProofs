@@ -13,7 +13,7 @@
 #+REVEAL_EXTRA_CSS: ./custom.css
 #+REVEAL_EXTRA_SCRIPTS: ("lean.js")
 #+REVEAL_HIGHLIGHT_URL: ./highlight.js
-#+reveal_init_script: highlight: {beforeHighlight: hljs => {hljs.registerLanguage("lean", lean);hljs.configure({languages:["lean"]})}}
+#+REVEAL_INIT_SCRIPT: highlight: {beforeHighlight: hljs => {hljs.registerLanguage("lean", lean);hljs.configure({languages:["lean"]})}}
 # #+REVEAL_EXTERNAL_PLUGINS: ( RevealDrawer )
 
 # check https://github.com/hakimel/reveal.js/issues/2761
@@ -66,9 +66,35 @@
 
 + Challenges lead to /arbitration games/ between proposers and challengers.
 
++ Fraud proofs are deterrents, not commonly executed.
+
 + Disputable Assertions (DAs) are registered in the blockchain
 
++ DA: (Initial_State, Computation, Final State)
+
+#+REVEAL: split:t
+
++ Instead of computing, results are assumed correct /unless/ someone challenge them.
+
++ Challenges lead to /arbitration games/ between proposers and challengers.
+
 + Fraud proofs are deterrents, not commonly executed.
+
++ Disputable Assertions (DAs) are registered in the blockchain
+
++ DA: (+Initial State,+ Computation, Final State)
+
+#+REVEAL: split:t
+
++ Instead of computing, results are assumed correct /unless/ someone challenge them.
+
++ Challenges lead to /arbitration games/ between proposers and challengers.
+
++ Fraud proofs are deterrents, not commonly executed.
+
++ Disputable Assertions (DAs) are registered in the blockchain
+
++ DA: (+Initial State,+ Sequence of Instructions, Final State)
 
 #+BEGIN_NOTES
 + Optimistic model of computations and the /unless/ word here is very important.
@@ -83,7 +109,7 @@
 ** Arbitration Games
 
 + Turn-based games: one player revels, the other explores.
-+ Proposers defend their claim, challengers try to built a fraud-proof.
++ Proposers defend their claim, challengers build fraud-proofs.
 + Games are played over Merkle trees.
 + Two fraud-types:
   * Incorrect hash (structure)
@@ -107,7 +133,22 @@ have (at least) one way of detecting it at L1.
   * There is an invalid element in the tree.
 #+END_NOTES
 
+# *** TODO Game Structure
+
+# - Player One : (Instructions, Res) \to H_1
+# - Player Two : Challenges
+# - Player One : (Inst_{left}, Res) \to H_{left} || (Inst_{right}, Res) \to H_{right}
+# - Player Two : Left
+# - Player One : (Inst_{left'}, Res) \to H_{left'} || (Inst_{right'}, Res) \to H_{right'}
+# - ...
+# - Player One : (I, Instr,O)
+# - Layer 1 contract: val(I , Instr) = O
+
+
 # ** TODO Diff between Arbitrum and RDoC?
+*** [WIP] Game Structure
+
+[[./images/games.png]]
 
 * Formalization
 
@@ -351,6 +392,6 @@ In 5k lines of Lean, we
 + Time ::
   Time is a big attack vector here, and we left it outside of the model.
   Delay attacks
-+ Layer-1 Limintations ::
++ Layer-1 Limitation ::
   Computations, one-shoot games, small step verification not fitting in
   L1-transactions.
