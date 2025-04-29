@@ -6,12 +6,15 @@
 #+REVEAL_TRANS: none
 #+EXCLUDE_TAGS: noexport
 #+REVEAL_THEME: white
+#+REVEAL_ADD_PLUGIN: drawer RevealDrawer plugin/drawer/drawer.js
+
 #+REVEAL_PLUGINS: (highlight notes zoom math)
 #+REVEAL_TITLE_SLIDE: <h2>%t</h2><h3>[%a] and César Sánchez</h3><img width="500" src="./images/white_background.png">
 #+REVEAL_EXTRA_CSS: ./custom.css
 #+REVEAL_EXTRA_SCRIPTS: ("lean.js")
 #+REVEAL_HIGHLIGHT_URL: ./highlight.js
 #+reveal_init_script: highlight: {beforeHighlight: hljs => {hljs.registerLanguage("lean", lean);hljs.configure({languages:["lean"]})}}
+# #+REVEAL_EXTERNAL_PLUGINS: ( RevealDrawer )
 
 # check https://github.com/hakimel/reveal.js/issues/2761
 
@@ -61,24 +64,19 @@
 
 + Instead of computing, results are assumed correct /unless/ someone challenge them.
 
-# + There is a time period where challengers can challenge
 + Challenges lead to /arbitration games/ between proposers and challengers.
 
-# + If a claim is challenged, the proposer and the challenger of the claim engage
-#   into a two-player game.
-
-+ Disputable Assertions (DAs) are registered in the blockchain : compact
-  representations of computations.
-  # In the blockchain, only the claim and the arbitration of the games are
-  # recorded.
++ Disputable Assertions (DAs) are registered in the blockchain
 
 + Fraud proofs are deterrents, not commonly executed.
 
 #+BEGIN_NOTES
 + Optimistic model of computations and the /unless/ word here is very important.
+  If everything goes without troubles, nothing is computed and the L2 systems
+  progresses.
 + Challenges trigger arbitration games to built fraud-proofs if they can.
-+ DAs make a claim on the result of a computation
-+ It means that the arbitration mechanism is a deterrent mechanism that should
++ DAs make a claim on the result of a computation, and they are compact reprentations of computation.
++ Fraudproofs are not to be played, arbitration mechanisms are deterrent mechanisms that should
   be able to catch bad guys. But they are not the default mechanism.
 #+END_NOTES
 
