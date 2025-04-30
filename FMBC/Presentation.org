@@ -20,28 +20,21 @@
 
 * Introduction
 + WHAT ::
-  A simple /Lean/ mechanization of Fraud-Proof games.
+  A simple *Lean* mechanization of Fraud-Proof games.
 + GOAL ::
-  Prove that one honest agent guarantees /valid computations/.
+  Prove that one honest agent guarantees *valid computations.*
 + WHY ::
   L2 Blockchains use /Optimistic Rollups/ for *scalability.*
   Arbitration games ensure correctness via /fraud proofs/.
-  # Provide basic building blocks to prove that /honest players/ always win and
-  # guarantee correctness of /Optimistic Rollups/ Layer-2 schemes.
 + HOW ::
-  We focus on the structure of arguments using /authenticated data-structures/
-  (Merkle trees.)
+  Claims are defended and revoked through *authenticated data-stractures*.
 
 #+BEGIN_NOTES
-+ WHAT :: this is about a lean library we programmed to do stuff
-+ GOAL :: Our goal was to prove the statement that one honest player can guarantee the correct evolution of the system.
-  There are some limitations to our approach, we do not measure time nor other attacks. Delay attacks and front-runnings.
-  Another way of saying this is that we only focus on the computational and
-  reasoning behind arbitration games.
-+ WHY :: It actually serves to several thing. First, optimistic rollups based
-  their correctness in that a single /honest/ player can guarantee correctness
-  of the whole ecosystem.
-+ HOW :: ??
++ WHAT :: Lean library.
++ GOAL :: Our goal is to prove that honest players win all games.
++ WHY :: Optimistic rollups based their correctness in that a single /honest/
+  player can guarantee correctness of the whole ecosystem.
++ HOW :: (Merkle trees.)
 #+END_NOTES
 
 # ** Layer-2
@@ -62,48 +55,25 @@
 
 ** Optimistic Rollups -- RDoC
 
-+ Instead of computing, results are assumed correct /unless/ someone challenge them.
++ Instead of computing everything, results are assumed correct /unless/ someone
+  challenge them.
 
-+ Challenges lead to /arbitration games/ between proposers and challengers.
-
-+ Fraud proofs are deterrents, not commonly executed.
-
-+ Disputable Assertions (DAs) are registered in the blockchain
-
-+ DA: (Initial State, Computation, Final State)
-
-#+REVEAL: split:t
-
-+ Instead of computing, results are assumed correct /unless/ someone challenge them.
-
-+ Challenges lead to /arbitration games/ between proposers and challengers.
++ Challenges lead to *arbitration games* between proposers and challengers.
 
 + Fraud proofs are deterrents, not commonly executed.
 
 + Disputable Assertions (DAs) are registered in the blockchain
 
-+ DA: (+Initial State,+ Computation, Final State)
-
-#+REVEAL: split:t
-
-+ Instead of computing, results are assumed correct /unless/ someone challenge them.
-
-+ Challenges lead to /arbitration games/ between proposers and challengers.
-
-+ Fraud proofs are deterrents, not commonly executed.
-
-+ Disputable Assertions (DAs) are registered in the blockchain
-
-+ DA: (+Initial State,+ Sequence of Instructions, Final State)
-
++ DAs are \(\langle f(x) = y , \mathsf{hash}(f(x) = y) \rangle \)
 #+BEGIN_NOTES
 + Optimistic model of computations and the /unless/ word here is very important.
   If everything goes without troubles, nothing is computed and the L2 systems
   progresses.
 + Challenges trigger arbitration games to built fraud-proofs if they can.
-+ DAs make a claim on the result of a computation, and they are compact reprentations of computation.
 + Fraudproofs are not to be played, arbitration mechanisms are deterrent mechanisms that should
   be able to catch bad guys. But they are not the default mechanism.
++ DAs make a claim on the result of a computation, and they are compact
+  reprentations of computation.
 #+END_NOTES
 
 ** Arbitration Games
@@ -133,22 +103,27 @@ have (at least) one way of detecting it at L1.
   * There is an invalid element in the tree.
 #+END_NOTES
 
-# *** TODO Game Structure
-
-# - Player One : (Instructions, Res) \to H_1
-# - Player Two : Challenges
-# - Player One : (Inst_{left}, Res) \to H_{left} || (Inst_{right}, Res) \to H_{right}
-# - Player Two : Left
-# - Player One : (Inst_{left'}, Res) \to H_{left'} || (Inst_{right'}, Res) \to H_{right'}
-# - ...
-# - Player One : (I, Instr,O)
-# - Layer 1 contract: val(I , Instr) = O
-
-
-# ** TODO Diff between Arbitrum and RDoC?
 *** [WIP] Game Structure
 
 [[./images/games.png]]
+
+** Contributions
+
++ Proved honest players always win
+  - Proposers can defend their claims
+  - Challengers can debunk false claims
+
++ Building blocks for other L2 Schemes
+
++ Verified Oracle
+
+#+begin_notes
+
++ We proved honest players win all games
++ We progammed and verify what we think are basic building blocks to build L2 schemes on top of Merkle-trees
++ We can execute our strategies and use them as verified oracles
+
+#+end_notes
 
 * Formalization
 
@@ -156,7 +131,7 @@ have (at least) one way of detecting it at L1.
 
 DAs are partial ~TraceTree~ with their hashes.
 
-#+ATTR_REVEAL: :code_attribs data-line-numbers="1-3|2|5-9"
+#+ATTR_REVEAL: :code_attribs data-line-numbers="1-3|2|3|5-9"
 #+begin_src lean4
 structure TraceTree (α β γ : Type) where
   data : BinaryTree α β
@@ -206,6 +181,7 @@ And thus, the agent cannot lie.
 
 ** Games : Arbitration Game
 
+#+ATTR_REVEAL: :code_attribs data-line-numbers="1|5,6|8|10,11|12"
 #+begin_src lean4
 inductive ChooserMoves where | Now | ContLeft | ContRight
 
@@ -237,29 +213,28 @@ information or which path in the computation tree to take.
 
 ** Games : Membership Game
 
+#+ATTR_REVEAL: :code_attribs data-line-numbers="4-7|8-12"
 #+begin_src lean4
-inductive SkElem : Type where | Left | Right
-abbrev Skeleton := List SkElem
-
+inductive Side : Type where | Left | Right
 inductive ChooserSmp : Type where| Now | Continue
 
 structure ElemInMTree (α ℍ : Type) where
   elem : α
-  path : Skeleton
+  path : List Side
   mtree : ℍ
 
 def arbElem
     (da : ElemInMTree α ℍ)
-    (proposer : Skeleton -> Option (ℍ × ℍ))
-    (chooser : Skeleton -> (ℍ × ℍ -> Option ChooserSmp))
+    (proposer : Side List -> Option (ℍ × ℍ))
+    (chooser : Side List -> (ℍ × ℍ -> Option ChooserSmp))
     : Winner
 #+end_src
 
 #+REVEAL: split:t
 + Variants
-  * Linear path check (bottom-up & top-down)
+  * Linear path game (bottom-up & top-down)
   * Logarithmic (bisection) game (defined using ~treeCompArbGame~)
-+ Different games are equivalent (honest players win them all.)
++ Different variants are equivalent
 
 #+BEGIN_NOTES
 Similar to the arbitration game, here is a different game. The game consists on
@@ -274,13 +249,13 @@ proving that an element is an element of the tree.
   mistake is and can choose the correct path to catch the laying agent.
 #+END_NOTES
 
-** Winning Conditions
+# ** Winning Conditions
 
-Our expressions are define as folds/traversals, so to win a game, players must
-win it in all possible states.
-In our case, at the leaf level and node level.
+# Our expressions are define as folds/traversals, so to win a game, players must
+# win it in all possible states.
+# In our case, at the leaf level and node level.
 
-* Formal Statements Decomposition
+* Decomposing L2 Schemes
 
 # ** Arbitrum and RDoC
 # Arbitrum and RDoC arbitrates over the execution of the evaluation machine (Turing Machines or EVM)
@@ -296,6 +271,14 @@ In our case, at the leaf level and node level.
 # We designed a some arbitration games, different from the ones designed by arbitrum and RDoc.
 # This was the real motivation of this work. We wanted to have a framework to play around and prove our games correct.
 # #+END_NOTES
+
++ Instead of arbitrating over traces of programs, we can decompose the execution
+  into properties.
+
++ Domain Specific L2 frameworks.
+
++ Optimistic Rollups = Distributed Sequencer + Data Availability Committee +
+  State Transition Function.
 
 ** Valid Batch Definition
 
@@ -326,7 +309,7 @@ Instead of executing transactions, we have a function telling us when a
 transaction is valid and we have the following definition.
 
 #+begin_src lean4
-def local_valid {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
+def local_valid {α ℍ : Type}
   (da : BTree α × ℍ)(val_fun : α -> Bool) : Prop
  -- Merkle Tree is correct
  := da.fst.hash_BTree = da.snd
@@ -338,10 +321,10 @@ def local_valid {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
 
 ** Player Actions
 
-- Player 1
+- Player 1 :
   Proposes DAs (Valid or not) : Data x Hash
 
-- Player 2
+- Player 2 :
   Challenge those claims or not:
   - Data does not match hash.
   - There is an invalid element
@@ -373,7 +356,7 @@ We define (and verify) an honest player 2
 
 #+begin_src lean4
 theorem honest_chooser_valid
-   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   [Hash α ℍ][HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
    (val_fun : α -> Bool) (p1 : P1_Actions α ℍ)
    : linear_l2_protocol val_fun p1 (honest_chooser val_fun)
    ↔ local_valid p1.da val_fun
