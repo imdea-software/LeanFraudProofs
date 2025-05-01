@@ -21,72 +21,90 @@
 <h2>Towards a Mechanization of Fraud Proof Games in Lean</h2><h3>[Martín Ceresa] and César Sánchez</h3><img width="500" src="./images/white_background.png">
 </section>
 <section>
-<section id="slide-orgdf3dc59">
-<h2 id="orgdf3dc59">Introduction</h2>
+<section id="slide-orgb9131e0">
+<h2 id="orgb9131e0">Introduction</h2>
 <dl>
-<dt>WHAT</dt><dd>A simple <i>Lean</i> mechanization of Fraud-Proof games.</dd>
-<dt>GOAL</dt><dd>Prove that one honest agent guarantees <i>valid computations</i>.</dd>
+<dt>WHAT</dt><dd>A simple <b>Lean</b> mechanization of Fraud-Proof games.</dd>
+<dt>GOAL</dt><dd>Prove that one honest agent guarantees <b>valid computations.</b></dd>
 <dt>WHY</dt><dd>L2 Blockchains use <i>Optimistic Rollups</i> for <b>scalability.</b>
 Arbitration games ensure correctness via <i>fraud proofs</i>.</dd>
-<dt>HOW</dt><dd>We focus on the structure of arguments using <i>authenticated data-structures</i>
-(Merkle trees.)</dd>
+<dt>HOW</dt><dd>Claims are defended and revoked through <b>authenticated data-stractures</b>.</dd>
 
 </dl>
 
 <aside class="notes">
 <dl>
-<dt>WHAT</dt><dd>this is about a lean library we programmed to do stuff</dd>
-<dt>GOAL</dt><dd>Our goal was to prove the statement that one honest player can guarantee the correct evolution of the system.
-There are some limitations to our approach, we do not measure time nor other attacks. Delay attacks and front-runnings.
-Another way of saying this is that we only focus on the computational and
-reasoning behind arbitration games.</dd>
-<dt>WHY</dt><dd>It actually serves to several thing. First, optimistic rollups based
-their correctness in that a single <i>honest</i> player can guarantee correctness
-of the whole ecosystem.</dd>
-<dt>HOW</dt><dd>??</dd>
+<dt>WHAT</dt><dd>Lean library.</dd>
+<dt>GOAL</dt><dd>Our goal is to prove that honest players win all games.</dd>
+<dt>WHY</dt><dd>Optimistic rollups based their correctness in that a single <i>honest</i>
+player can guarantee correctness of the whole ecosystem.</dd>
+<dt>HOW</dt><dd>(Merkle trees.)</dd>
 
 </dl>
 
 </aside>
 </section>
-<section id="slide-orgf922656">
-<h3 id="orgf922656">Optimistic Rollups &#x2013; RDoC</h3>
+<section id="slide-orgeff75ac">
+<h3 id="orgeff75ac">Optimistic Rollups &#x2013; RDoC</h3>
 <ul>
-<li>Instead of computing, results are assumed correct <i>unless</i> someone challenge them.</li>
+<li>Instead of computing everything, results are assumed correct <i>unless</i> someone
+challenge them.</li>
 
-</ul>
-
-<ul>
-<li>Challenges lead to <i>arbitration games</i> between proposers and challengers.</li>
-
-</ul>
-
-<ul>
-<li>Disputable Assertions (DAs) are registered in the blockchain : compact
-representations of computations.</li>
+<li>Challenges lead to <b>arbitration games</b> between proposers and challengers.</li>
 
 <li>Fraud proofs are deterrents, not commonly executed.</li>
 
-</ul>
+<li>Disputable Assertions (DAs) are registered in the blockchain</li>
 
+<li>DAs are \(\langle f(x) = y , \mathsf{hash}(f(x) = y) \rangle \)</li>
+
+</ul>
 <aside class="notes">
 <ul>
-<li>Optimistic model of computations and the <i>unless</i> word here is very important.</li>
+<li>Optimistic model of computations and the <i>unless</i> word here is very important.
+If everything goes without troubles, nothing is computed and the L2 systems
+progresses.</li>
 <li>Challenges trigger arbitration games to built fraud-proofs if they can.</li>
-<li>DAs make a claim on the result of a computation</li>
-<li>It means that the arbitration mechanism is a deterrent mechanism that should
+<li>Fraudproofs are not to be played, arbitration mechanisms are deterrent mechanisms that should
 be able to catch bad guys. But they are not the default mechanism.</li>
+<li>DAs make a claim on the result of a computation, and they are compact
+reprentations of computation.</li>
 
 </ul>
 
 </aside>
 </section>
-<section id="slide-org61437c2">
-<h3 id="org61437c2">Arbitration Games</h3>
+<section id="slide-org7e21a32">
+<h3 id="org7e21a32">Arbitration Protocol</h3>
+<span class="fragment"></span>
+<span class="fragment"></span>
+<span class="fragment"></span>
+<span class="fragment"></span>
+<span class="fragment"></span>
+<span class="fragment"></span>
+<span class="fragment"></span>
+
+<div data-animate data-load="./DAEvol.svg">
+<!--
+{ "setup": [
+{"element": "#g103","modifier": "attr", "parameters": [ {"class": "fragment", "data-fragment-index": "0"} ] },
+{"element": "#g104","modifier": "attr", "parameters": [ {"class": "fragment", "data-fragment-index": "1"} ] },
+{"element": "#g105","modifier": "attr", "parameters": [ {"class": "fragment", "data-fragment-index": "2"} ] },
+{"element": "#g30","modifier": "attr", "parameters": [ {"class": "fragment", "data-fragment-index": "3"} ] },
+{"element": "#g106","modifier": "attr", "parameters": [ {"class": "fragment", "data-fragment-index": "4"} ] },
+{"element": "#g60","modifier": "attr", "parameters": [ {"class": "fragment", "data-fragment-index": "5"} ] },
+{"element": "#g107","modifier": "attr", "parameters": [ {"class": "fragment", "data-fragment-index": "6"} ] }
+]}
+-->
+</div>
+</section>
+<section id="slide-org2936e34">
+<h4 id="org2936e34">Arbitration Games</h4>
 <ul>
-<li>Turn-based games: one player revels, the other explores.</li>
-<li>Proposers defend their claim, challengers try to built a fraud-proof.</li>
+<li>Turn-based games: one player reveals, the other explores.</li>
+<li>Proposers defend their claim, challengers build fraud-proofs.</li>
 <li>Games are played over Merkle trees.</li>
+<li>Played until small verifiable data, done at L1.</li>
 <li>Two fraud-types:
 <ul>
 <li>Incorrect hash (structure)</li>
@@ -130,22 +148,52 @@ matches our result from computing it.
 
 </aside>
 </section>
+<section id="slide-org47d8555">
+<h3 id="org47d8555">Contributions</h3>
+<ul>
+<li>Proved honest players always win
+<ul>
+<li>Proposers can defend their claims</li>
+<li>Challengers can debunk false claims</li>
+
+</ul></li>
+
+<li>Building blocks for other L2 Schemes</li>
+
+<li>Verified Oracle</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+
+</p>
+
+<ul>
+<li>We proved honest players win all games</li>
+<li>We progammed and verify what we think are basic building blocks to build L2 schemes on top of Merkle-trees</li>
+<li>We can execute our strategies and use them as verified oracles</li>
+
+</ul>
+
+</aside>
+</section>
 </section>
 <section>
-<section id="slide-orgcf6b151">
-<h2 id="orgcf6b151">Formalization</h2>
-<div class="outline-text-2" id="text-orgcf6b151">
+<section id="slide-org975d448">
+<h2 id="org975d448">Formalization</h2>
+<div class="outline-text-2" id="text-org975d448">
 </div>
 </section>
-<section id="slide-orgd0ff177">
-<h3 id="orgd0ff177">Disputable Assertions</h3>
+<section id="slide-org3e7e73a">
+<h3 id="org3e7e73a">Disputable Assertions</h3>
 <p>
 DAs are partial <code>TraceTree</code> with their hashes.
 </p>
 
 <div class="org-src-container">
 
-<pre><code class="lean4" data-line-numbers="1-3|2|5-9">structure TraceTree (α β γ : Type) where
+<pre><code class="lean4" data-line-numbers="1-3|2|3|5-9">structure TraceTree (α β γ : Type) where
   data : BinaryTree α β
   res : γ
 
@@ -176,8 +224,8 @@ interpretation functions, we may be able to pinpoint the mistake.
 
 </aside>
 </section>
-<section id="slide-org75d60f3">
-<h3 id="org75d60f3">Tree Arena &#x2013; Merkle Trees</h3>
+<section id="slide-org371be0d">
+<h3 id="org371be0d">Tree Arena &#x2013; Merkle Trees</h3>
 <p>
 Instead of playing games exploring <i>implicit trees</i>, we made them explicit.
 We define the arena of our arbitration games simply as binary trees.
@@ -208,11 +256,11 @@ And thus, the agent cannot lie.
 
 </aside>
 </section>
-<section id="slide-org9561551">
-<h3 id="org9561551">Games : Arbitration Game</h3>
+<section id="slide-orgb3e830f">
+<h3 id="orgb3e830f">Games : Arbitration Game</h3>
 <div class="org-src-container">
 
-<pre><code class="lean4" >inductive ChooserMoves where | Now | ContLeft | ContRight
+<pre><code class="lean4" data-line-numbers="1|5,6|8|10,11|12">inductive ChooserMoves where | Now | ContLeft | ContRight
 
 def treeCompArbGame
     -- Game Mechanics
@@ -244,24 +292,22 @@ information or which path in the computation tree to take.
 
 </aside>
 </section>
-<section id="slide-org7aa5c48">
-<h3 id="org7aa5c48">Games : Membership Game</h3>
+<section id="slide-org5e227d8">
+<h3 id="org5e227d8">Games : Membership Game</h3>
 <div class="org-src-container">
 
-<pre><code class="lean4" >inductive SkElem : Type where | Left | Right
-abbrev Skeleton := List SkElem
-
+<pre><code class="lean4" data-line-numbers="4-7|8-12">inductive Side : Type where | Left | Right
 inductive ChooserSmp : Type where| Now | Continue
 
 structure ElemInMTree (α ℍ : Type) where
   elem : α
-  path : Skeleton
+  path : List Side
   mtree : ℍ
 
 def arbElem
     (da : ElemInMTree α ℍ)
-    (proposer : Skeleton -&gt; Option (ℍ × ℍ))
-    (chooser : Skeleton -&gt; (ℍ × ℍ -&gt; Option ChooserSmp))
+    (proposer : Side List -&gt; Option (ℍ × ℍ))
+    (chooser : Side List -&gt; (ℍ × ℍ -&gt; Option ChooserSmp))
     : Winner
 </code></pre>
 </div>
@@ -272,11 +318,11 @@ def arbElem
 <ul>
 <li>Variants
 <ul>
-<li>Linear path check (bottom-up &amp; top-down)</li>
+<li>Linear path game (bottom-up &amp; top-down)</li>
 <li>Logarithmic (bisection) game (defined using <code>treeCompArbGame</code>)</li>
 
 </ul></li>
-<li>Different games are equivalent (honest players win them all.)</li>
+<li>Different variants are equivalent</li>
 
 </ul>
 
@@ -309,21 +355,23 @@ mistake is and can choose the correct path to catch the laying agent.</li>
 
 </aside>
 </section>
-<section id="slide-orgc628470">
-<h3 id="orgc628470">Winning Conditions</h3>
-<p>
-Our expressions are define as folds/traversals, so to win a game, players must
-win it in all possible states.
-In our case, at the leaf level and node level.
-</p>
-</section>
 </section>
 <section>
-<section id="slide-org9d9aa37">
-<h2 id="org9d9aa37">Formal Statements Decomposition</h2>
+<section id="slide-org3c0354d">
+<h2 id="org3c0354d">Decomposing L2 Schemes</h2>
+<ul>
+<li>Instead of arbitrating over traces of programs, we can decompose the execution
+into properties.</li>
+
+<li>Domain Specific L2 frameworks.</li>
+
+<li>Optimistic Rollups = Distributed Sequencer + Data Availability Committee +
+State Transition Function.</li>
+
+</ul>
 </section>
-<section id="slide-org140abfb">
-<h3 id="org140abfb">Valid Block Definition</h3>
+<section id="slide-org2388612">
+<h3 id="org2388612">Valid Batch Definition</h3>
 <p>
 Instead of executing transactions, we have a function telling us when a
 transaction is valid and we have the following definition.
@@ -340,7 +388,7 @@ legal batch tag previously posted by the arranger.</dd>
 
 </section>
 <section>
-<h3>Valid Block Definition</h3>
+<h3>Valid Batch Definition</h3>
 
 <p>
 Instead of executing transactions, we have a function telling us when a
@@ -357,8 +405,8 @@ transaction request added by a client.</dd>
 
 </dl>
 </section>
-<section id="slide-org47d271f">
-<h3 id="org47d271f">Valid Block Definition</h3>
+<section id="slide-orgbdef881">
+<h3 id="orgbdef881">Valid Batch Definition</h3>
 <p>
 Instead of executing transactions, we have a function telling us when a
 transaction is valid and we have the following definition.
@@ -366,7 +414,7 @@ transaction is valid and we have the following definition.
 
 <div class="org-src-container">
 
-<pre><code class="lean4" >def local_valid {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
+<pre><code class="lean4" >def local_valid {α ℍ : Type}
   (da : BTree α × ℍ)(val_fun : α -&gt; Bool) : Prop
  -- Merkle Tree is correct
  := da.fst.hash_BTree = da.snd
@@ -377,16 +425,28 @@ transaction is valid and we have the following definition.
 </code></pre>
 </div>
 </section>
-<section id="slide-orga12e152">
-<h3 id="orga12e152">Player Actions</h3>
+<section id="slide-orge1d29e3">
+<h3 id="orge1d29e3">Player Actions</h3>
 <ul>
-<li>Player 1
-Proposes DAs (Valid or not)</li>
+<li>Player 1 :
+Proposes DAs (Valid or not) : Data x Hash</li>
 
-<li>Player 2
-Challenge those claims or not.</li>
+<li>Player 2 :
+Challenge those claims or not:
+<ul>
+<li>Data does not match hash.</li>
+<li>There is an invalid element</li>
+<li>There are duplicated elements</li>
+<li>Valid batch</li>
+
+</ul></li>
 
 </ul>
+
+<aside class="notes">
+<p>
+
+</p>
 
 <div class="org-src-container">
 
@@ -408,13 +468,15 @@ Challenge those claims or not.</li>
 <p>
 We define (and verify) an honest player 2
 </p>
+
+</aside>
 </section>
-<section id="slide-org831c2f7">
-<h3 id="org831c2f7">One honest chooser prevents invalid blocks</h3>
+<section id="slide-orgec24820">
+<h3 id="orgec24820">One honest chooser prevents invalid blocks</h3>
 <div class="org-src-container">
 
 <pre><code class="lean4" >theorem honest_chooser_valid
-   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   [Hash α ℍ][HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
    (val_fun : α -&gt; Bool) (p1 : P1_Actions α ℍ)
    : linear_l2_protocol val_fun p1 (honest_chooser val_fun)
    ↔ local_valid p1.da val_fun
@@ -423,8 +485,8 @@ We define (and verify) an honest player 2
 </section>
 </section>
 <section>
-<section id="slide-orgdc2059e">
-<h2 id="orgdc2059e">Conclusions</h2>
+<section id="slide-org8f93488">
+<h2 id="org8f93488">Conclusions</h2>
 <p>
 In 5k lines of Lean, we
 </p>
@@ -433,18 +495,19 @@ In 5k lines of Lean, we
 <li>Definitions of DA, Player, honest players</li>
 <li>Membership games (bottom-up and top-down) and Logarithmic.</li>
 <li>Formalized a simpler version of Optimistic Rollups.</li>
+<li>TODO Executable</li>
 
 </ul>
 </section>
 </section>
 <section>
-<section id="slide-orgc37776b">
-<h2 id="orgc37776b">Future Work</h2>
+<section id="slide-orge6c2d76">
+<h2 id="orge6c2d76">Future Work</h2>
 <dl>
-<dt>Generalization</dt><dd>Can we build a systems handling as much as boiler-plate possible?
+<dt>Generalization</dt><dd>Can we build a systems handling as much boiler-plate as possible?
 What are the basic constructs we need to design arbitration games?</dd>
 <dt>Problem decomposition</dt><dd>Can we find other games to decompose them in a clever way?</dd>
-<dt>Domain Specific for Layer-2 schemes</dt><dd><p>
+<dt>Domain Specific Layer-2 Framework</dt><dd><p>
 Instead of arbitrating over the execution of programs, can we designed a
 language to decompose Layer-2 protocols into simple games?
 Are our basic constructs from before enough?
@@ -452,10 +515,10 @@ Are our basic constructs from before enough?
 </section>
 <section>
 <h2>Future Work</h2></dd>
-<dt>Time</dt><dd>Time is a big attack vector here, and we left it outside of the model.
-Delay attacks</dd>
-<dt>Layer-1 Limintations</dt><dd>Computations, one-shoot games, small step verification not fitting in
+<dt>Time</dt><dd>Time is an attack vector (delay attacks.)</dd>
+<dt>Layer-1 Limitation</dt><dd>Computations, one-shot games, small step verification not fitting in
 L1-transactions.</dd>
+<dt>Incentives &#x2013; Not modelled</dt><dd>Why players behave the way they do?</dd>
 
 </dl>
 </section>
@@ -467,7 +530,11 @@ L1-transactions.</dd>
 <script src="./reveal/plugin/notes/notes.js"></script>
 <script src="./reveal/plugin/zoom/zoom.js"></script>
 <script src="./reveal/plugin/math/math.js"></script>
+<script src="./reveal/plugin/drawer/drawer.js"></script>
+<script src="./reveal/plugin/loadcontent/plugin.js"></script>
+<script src="./reveal/plugin/animate/plugin.js"></script>
 <script src="lean.js"></script>
+<script src="svg.min.js"></script>
 <script>
 // Full list of configuration options available here:
 // https://github.com/hakimel/reveal.js#configuration
@@ -491,13 +558,13 @@ transition: 'none',
 transitionSpeed: 'default',
 
 // Plugins with reveal.js 4.x
-plugins: [ RevealHighlight, RevealNotes, RevealZoom, RevealMath ],
+plugins: [ RevealHighlight, RevealNotes, RevealZoom, RevealMath, RevealDrawer, RevealLoadContent, RevealAnimate ],
 
 // Optional libraries used to extend reveal.js
 dependencies: [
 ]
 
-,highlight: {beforeHighlight: hljs => {hljs.registerLanguage("lean", lean);hljs.configure({languages:["lean"]})}}});
+,highlight: {beforeHighlight: hljs => {hljs.registerLanguage("lean", lean);hljs.configure({languages:["lean"]})}}, animate: { autoplay: true }});
 </script>
 </body>
 </html>
