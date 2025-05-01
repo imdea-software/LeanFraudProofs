@@ -28,7 +28,7 @@
      inkscape:deskcolor="#d1d1d1"
      showguides="false"
      inkscape:zoom="2.1876209"
-     inkscape:cx="260.55703"
+     inkscape:cx="260.78559"
      inkscape:cy="255.98585"
      inkscape:window-width="2558"
      inkscape:window-height="1421"
@@ -49,7 +49,8 @@
            data-cell-id="_BuE-n1_bocbBvAicHmo-8"
            id="g4">
           <g
-             id="g1">
+             id="g1"
+             transform="translate(-84.566755,0.91423519)">
             <circle
                cx="114"
                cy="87.5"
@@ -67,7 +68,8 @@
                id="path1" />
           </g>
           <g
-             id="g3">
+             id="g3"
+             transform="translate(-84.566755,0.91423519)">
             <g
                transform="translate(-0.5,-0.5)"
                id="g2">
@@ -102,7 +104,8 @@
         </g>
         <g
            data-cell-id="_BuE-n1_bocbBvAicHmo-9"
-           id="g8">
+           id="g8"
+           transform="translate(-84.566755,0.91423519)">
           <g
              id="g5">
             <path
@@ -150,7 +153,8 @@
       </g>
       <g
          data-cell-id="_BuE-n1_bocbBvAicHmo-18"
-         id="g30">
+         id="g30"
+         transform="translate(-83.980843,0.91423519)">
         <g
            id="g27">
           <path
@@ -603,7 +607,8 @@
       </g>
       <g
          data-cell-id="_BuE-n1_bocbBvAicHmo-37"
-         id="g60">
+         id="g60"
+         transform="translate(-83.394931,0.91423519)">
         <g
            id="g57">
           <path
