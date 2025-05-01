@@ -103,6 +103,14 @@
 #+reveal_html: -->
 #+reveal_html: </div>
 
+#+reveal: split:t
+
+#+reveal_html: <div data-animate data-load="./DAEvol.GoodProp.svg"></div>
+
+#+reveal: split:t
+
+#+reveal_html: <div data-animate data-load="./DAEvol.BadProp.svg"></div>
+
 *** Arbitration Games
 
 + Turn-based games: one player reveals, the other explores.
@@ -139,13 +147,13 @@ have (at least) one way of detecting it at L1.
 
 + Building blocks for other L2 Schemes
 
-+ Verified Oracle
++ Proved Strategies as Verified Oracles
 
 #+begin_notes
 
-+ We proved honest players win all games
-+ We progammed and verify what we think are basic building blocks to build L2 schemes on top of Merkle-trees
-+ We can execute our strategies and use them as verified oracles
++ We proved honest players win all games.
++ We progammed and verify what we think are basic building blocks to build L2 schemes on top of Merkle-trees.
++ We can execute our strategies and use them as verified oracles. Slow when using keccak from Python.
 
 #+end_notes
 
