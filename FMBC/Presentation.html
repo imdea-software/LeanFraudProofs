@@ -21,11 +21,10 @@
 <h2>Towards a Mechanization of Fraud Proof Games in Lean</h2><h3>[Martín Ceresa] and César Sánchez</h3><img width="500" src="./images/white_background.png">
 </section>
 <section>
-<section id="slide-org34b35c9">
-<h2 id="org34b35c9">Introduction</h2>
+<section id="slide-org375b245">
+<h2 id="org375b245">Introduction</h2>
 <dl>
-<dt>WHAT</dt><dd>A simple <b>Lean</b> mechanization of Fraud-Proof games.</dd>
-<dt>GOAL</dt><dd>Prove that one honest agent guarantees <b>valid computations.</b></dd>
+<dt>WHAT</dt><dd>A simple <b>Lean</b> mechanization of arbitration games.</dd>
 <dt>WHY</dt><dd>L2 Blockchains use <i>Optimistic Rollups</i> for <b>scalability.</b>
 Arbitration games ensure correctness via <i>fraud proofs</i>.</dd>
 <dt>HOW</dt><dd>Claims are defended and revoked through <b>authenticated data-stractures</b>.</dd>
@@ -35,7 +34,6 @@ Arbitration games ensure correctness via <i>fraud proofs</i>.</dd>
 <aside class="notes">
 <dl>
 <dt>WHAT</dt><dd>Lean library.</dd>
-<dt>GOAL</dt><dd>Our goal is to prove that honest players win all games.</dd>
 <dt>WHY</dt><dd>Optimistic rollups based their correctness in that a single <i>honest</i>
 player can guarantee correctness of the whole ecosystem.</dd>
 <dt>HOW</dt><dd>(Merkle trees.)</dd>
@@ -44,28 +42,63 @@ player can guarantee correctness of the whole ecosystem.</dd>
 
 </aside>
 </section>
-<section id="slide-orgd812a2d">
-<h3 id="orgd812a2d">Optimistic Rollups &#x2013; RDoC</h3>
+<section id="slide-orga633634">
+<h3 id="orga633634">Contributions</h3>
 <ul>
-<li>Instead of computing everything, results are assumed correct <i>unless</i> someone
+<li>Proved honest players always win
+<ul>
+<li>Proposers can defend their claims</li>
+<li>Challengers can debunk false claims</li>
+
+</ul></li>
+
+<li>Building blocks for other L2 Schemes</li>
+
+<li>Proved Strategies as Verified Oracles</li>
+
+</ul>
+
+<aside class="notes">
+<p>
+
+</p>
+
+<ul>
+<li>We proved honest players win all games.</li>
+<li>We programmed and verify what we think are basic building blocks to build L2 schemes on top of Merkle-trees.</li>
+<li>We can execute our strategies and use them as verified oracles. Slow when using keccak from Python.</li>
+
+</ul>
+
+</aside>
+</section>
+<section id="slide-orgb533c35">
+<h3 id="orgb533c35">Optimistic Rollups</h3>
+<ul>
+<li>Instead of computing everything, results are assumed correct <b>unless</b> someone
 challenge them.</li>
 
 <li>Challenges lead to <b>arbitration games</b> between proposers and challengers.</li>
 
-<li>Fraud proofs are deterrents, not commonly executed.</li>
+<li>Arbitration games are deterrents, <b>not commonly executed</b>.</li>
 
-<li>Disputable Assertions (DAs) are registered in the blockchain</li>
+<li>Disputable Assertions (DAs) are registered in the blockchain.</li>
 
 <li>DAs are \(\langle f(x) = y , \mathsf{hash}(f(x) = y) \rangle \)</li>
 
 </ul>
+
 <aside class="notes">
 <ul>
-<li>Optimistic model of computations and the <i>unless</i> word here is very important.
-If everything goes without troubles, nothing is computed and the L2 systems
-progresses.</li>
+<li>To alleviate the scalability issue, one solution is to come up with mechanisms
+so we can move computation and data outside the blockchain, while keeping the
+same properties of the blockchain (trusted computation.)
+Optimistic rollups is one solution, where computations are optimistically
+accepted <i>unless</i> someone challenge them.
+There is a time period where agents can challenge computations, but if noone
+says anything, the afte the period the computation is accepted.</li>
 <li>Challenges trigger arbitration games to built fraud-proofs if they can.</li>
-<li>Fraudproofs are not to be played, arbitration mechanisms are deterrent mechanisms that should
+<li>The arbitration mechanisms are deterrent mechanisms that should
 be able to catch bad guys. But they are not the default mechanism.</li>
 <li>DAs make a claim on the result of a computation, and they are compact
 reprentations of computation.</li>
@@ -74,8 +107,8 @@ reprentations of computation.</li>
 
 </aside>
 </section>
-<section id="slide-org568edff">
-<h3 id="org568edff">Arbitration Protocol</h3>
+<section id="slide-org0622680">
+<h3 id="org0622680">Arbitration Games</h3>
 <span class="fragment"></span>
 <span class="fragment"></span>
 <span class="fragment"></span>
@@ -100,24 +133,24 @@ reprentations of computation.</li>
 
 </section>
 <section>
-<h3>Arbitration Protocol</h3>
+<h3>Arbitration Games</h3>
 
 <div data-animate data-load="./DAEvol.GoodProp.svg"></div>
 
 </section>
 <section>
-<h3>Arbitration Protocol</h3>
+<h3>Arbitration Games</h3>
 
 <div data-animate data-load="./DAEvol.BadProp.svg"></div>
 </section>
-<section id="slide-orgaf30ae6">
-<h4 id="orgaf30ae6">Arbitration Games</h4>
+<section id="slide-org2dc680f">
+<h3 id="org2dc680f">Arbitration Games</h3>
 <ul>
 <li>Turn-based games: one player reveals, the other explores.</li>
 <li>Proposers defend their claim, challengers build fraud-proofs.</li>
 <li>Games are played over Merkle trees.</li>
-<li>Played until small verifiable data, done at L1.</li>
-<li>Two fraud-types:
+<li>All verification steps are done by a L1 smart contract.</li>
+<li>Two kind of frauds:
 <ul>
 <li>Incorrect hash (structure)</li>
 <li>Incorrect data (membership)</li>
@@ -160,45 +193,15 @@ matches our result from computing it.
 
 </aside>
 </section>
-<section id="slide-org3109596">
-<h3 id="org3109596">Contributions</h3>
-<ul>
-<li>Proved honest players always win
-<ul>
-<li>Proposers can defend their claims</li>
-<li>Challengers can debunk false claims</li>
-
-</ul></li>
-
-<li>Building blocks for other L2 Schemes</li>
-
-<li>Proved Strategies as Verified Oracles</li>
-
-</ul>
-
-<aside class="notes">
-<p>
-
-</p>
-
-<ul>
-<li>We proved honest players win all games.</li>
-<li>We progammed and verify what we think are basic building blocks to build L2 schemes on top of Merkle-trees.</li>
-<li>We can execute our strategies and use them as verified oracles. Slow when using keccak from Python.</li>
-
-</ul>
-
-</aside>
-</section>
 </section>
 <section>
-<section id="slide-orgf7630a7">
-<h2 id="orgf7630a7">Formalization</h2>
-<div class="outline-text-2" id="text-orgf7630a7">
+<section id="slide-org77421ae">
+<h2 id="org77421ae">Formalization</h2>
+<div class="outline-text-2" id="text-org77421ae">
 </div>
 </section>
-<section id="slide-org7765ca0">
-<h3 id="org7765ca0">Disputable Assertions</h3>
+<section id="slide-org9cb13a0">
+<h3 id="org9cb13a0">Disputable Assertions</h3>
 <p>
 DAs are partial <code>TraceTree</code> with their hashes.
 </p>
@@ -236,50 +239,18 @@ interpretation functions, we may be able to pinpoint the mistake.
 
 </aside>
 </section>
-<section id="slide-org8081ab3">
-<h3 id="org8081ab3">Tree Arena &#x2013; Merkle Trees</h3>
-<p>
-Instead of playing games exploring <i>implicit trees</i>, we made them explicit.
-We define the arena of our arbitration games simply as binary trees.
-</p>
-
-<p>
-Using Merkle trees, we can hash entire computations.
-</p>
-
+<section id="slide-org40793b6">
+<h3 id="org40793b6">Games : Arbitration Game</h3>
 <div class="org-src-container">
 
-<pre><code class="lean4" >def BTree.hash_BTree : BinaryTree α Unit -&gt; ℍ
-    := fun t =&gt; t.fold hash_value comb_hash
-</code></pre>
-</div>
-
-<aside class="notes">
-<p>
-The main basic block here is the Merkle Tree. Merkle trees are the most used
-authenticated data structure and it is the foundamental stone in Optimistic Rollups.
-They provide us with a way of verify statements and link reasoning arguments.
-When computing the next state, agents publish a hash and the resulting state (here, we call it <code>TraceTree</code>.)
-When the hashing function is collision free, the hash is a very compact way of
-uniquely describing the computation that led to that result, and when an agent
-publishes it, it commits to that computation. That is, when challenge, the agent can only provide hashes computing the root hash (already published.)
-And thus, the agent cannot lie.
-</p>
-
-</aside>
-</section>
-<section id="slide-orgc80d8d3">
-<h3 id="orgc80d8d3">Games : Arbitration Game</h3>
-<div class="org-src-container">
-
-<pre><code class="lean4" data-line-numbers="1|5,6|8|10,11|12">inductive ChooserMoves where | Now | ContLeft | ContRight
+<pre><code class="lean4" data-line-numbers="1|4,5|6-8|9-11|12">inductive ChooserMoves where | Now | ContLeft | ContRight
 
 def treeCompArbGame
+    -- Public Information
+    (da : TraceTree α β γ)
     -- Game Mechanics
     (leafCondition : α -&gt; α' -&gt; γ -&gt; Winner)
     (midCondition  : β -&gt; γ -&gt; γ -&gt; γ -&gt; Winner)
-    -- Public Information
-    (da : TraceTree α β γ)
     -- Players
     (revealer : BinaryTree (Option α') (Option (γ × γ)))
     (chooser : BinaryTree Unit ((β × γ × γ × γ) -&gt; Option ChooserMoves))
@@ -304,17 +275,18 @@ information or which path in the computation tree to take.
 
 </aside>
 </section>
-<section id="slide-orgbbc0bbb">
-<h3 id="orgbbc0bbb">Games : Membership Game</h3>
+<section id="slide-orgb20e9fa">
+<h3 id="orgb20e9fa">Games : Membership Game</h3>
 <div class="org-src-container">
 
-<pre><code class="lean4" data-line-numbers="4-7|8-12">inductive Side : Type where | Left | Right
-inductive ChooserSmp : Type where| Now | Continue
+<pre><code class="lean4" data-line-numbers="3-6|8|10-15">inductive Side : Type where | Left | Right
 
 structure ElemInMTree (α ℍ : Type) where
   elem : α
   path : List Side
   mtree : ℍ
+
+inductive ChooserSmp : Type where| Now | Continue
 
 def arbElem
     (da : ElemInMTree α ℍ)
@@ -369,32 +341,30 @@ mistake is and can choose the correct path to catch the laying agent.</li>
 </section>
 </section>
 <section>
-<section id="slide-orge30bbea">
-<h2 id="orge30bbea">Decomposing L2 Schemes</h2>
+<section id="slide-org70b251a">
+<h2 id="org70b251a">Decomposing L2 Schemes</h2>
 <ul>
-<li>Instead of arbitrating over traces of programs, we can decompose the execution
-into properties.</li>
+<li>Instead of arbitrating over traces of programs, we can
+arbitrate over properties of the resulting state.</li>
 
-<li>Domain Specific L2 frameworks.</li>
+<li>Optimistic Rollups =
+<ul>
+<li>Distributed Sequencer</li>
+<li>Data Availability Committee</li>
+<li>State Transition Function</li>
 
-<li>Optimistic Rollups = Distributed Sequencer + Data Availability Committee +
-State Transition Function.</li>
+</ul></li>
 
 </ul>
 </section>
-<section id="slide-orgea2a0e3">
-<h3 id="orgea2a0e3">Valid Batch Definition</h3>
-<p>
-Instead of executing transactions, we have a function telling us when a
-transaction is valid and we have the following definition.
-</p>
-
+<section id="slide-org06570a4">
+<h3 id="org06570a4">Valid Batch Definition</h3>
 <dl>
 <dt>Validity</dt><dd>Every transaction request in \(b\) is a valid
 transaction request added by a client.</dd>
 <dt>No Duplicates</dt><dd>No transaction request appears twice in \(b\).</dd>
-<dt>IntegrityTwo</dt><dd>No transaction request in \(b\) appears in a
-legal batch tag previously posted by the arranger.</dd>
+<dt>Integrity</dt><dd>No transaction request in \(b\) appears in a
+legal batch tag previously posted by the sequencer.</dd>
 
 </dl>
 
@@ -402,51 +372,43 @@ legal batch tag previously posted by the arranger.</dd>
 <section>
 <h3>Valid Batch Definition</h3>
 
-<p>
-Instead of executing transactions, we have a function telling us when a
-transaction is valid and we have the following definition.
-</p>
-
 <dl>
 <dt>Validity</dt><dd>Every transaction request in \(b\) is a valid
 transaction request added by a client.</dd>
 <dt>No Duplicates</dt><dd>No transaction request appears twice in \(b\).</dd>
-<dt><del>IntegrityTwo</del></dt><dd></dd>
+<dt><del>Integrity</del></dt><dd></dd>
 
 <dt>Correct DA</dt><dd>Merkle tree is correct.</dd>
 
 </dl>
+
 </section>
-<section id="slide-org0c624c7">
-<h3 id="org0c624c7">Valid Batch Definition</h3>
-<p>
-Instead of executing transactions, we have a function telling us when a
-transaction is valid and we have the following definition.
-</p>
+<section>
+<h3>Valid Batch Definition</h3>
 
 <div class="org-src-container">
 
 <pre><code class="lean4" >def local_valid {α ℍ : Type}
-  (da : BTree α × ℍ)(val_fun : α -&gt; Bool) : Prop
+  (da : BTree α × ℍ)(validity_pred : α -&gt; Bool) : Prop
  -- Merkle Tree is correct
  := da.fst.hash_BTree = da.snd
- -- All elements are |val_fun| valid
- ∧ (da.fst.fold val_fun and)
+ -- All elements are |validity_pred| valid
+ ∧ (da.fst.fold validity_pred and)
  -- There are no duplicated elements.
  ∧ List.Nodup da.fst.toList
 </code></pre>
 </div>
 </section>
-<section id="slide-orge0c30d7">
-<h3 id="orge0c30d7">Player Actions</h3>
+<section id="slide-org7296f79">
+<h3 id="org7296f79">Player Actions</h3>
 <ul>
 <li>Player 1 :
-Proposes DAs (Valid or not) : Data x Hash</li>
+Proposes DAs (Valid or not) : Data and Hash</li>
 
 <li>Player 2 :
 Challenge those claims or not:
 <ul>
-<li>Data does not match hash.</li>
+<li>Data does not match hash</li>
 <li>There is an invalid element</li>
 <li>There are duplicated elements</li>
 <li>Valid batch</li>
@@ -483,54 +445,41 @@ We define (and verify) an honest player 2
 
 </aside>
 </section>
-<section id="slide-org66a83af">
-<h3 id="org66a83af">One honest chooser prevents invalid blocks</h3>
+<section id="slide-orgce4667b">
+<h3 id="orgce4667b">One honest chooser prevents invalid blocks</h3>
 <div class="org-src-container">
 
-<pre><code class="lean4" >theorem honest_chooser_valid
+<pre><code class="lean4" data-line-numbers="*|2|4,5">theorem honest_chooser_valid
    [Hash α ℍ][HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
-   (val_fun : α -&gt; Bool) (p1 : P1_Actions α ℍ)
-   : linear_l2_protocol val_fun p1 (honest_chooser val_fun)
-   ↔ local_valid p1.da val_fun
+   (validity_pred : α -&gt; Bool) (p1 : P1_Actions α ℍ)
+   : linear_l2_protocol validity_pred p1 (honest_chooser validity_pred)
+   ↔ local_valid p1.da validity_pred
 </code></pre>
 </div>
 </section>
 </section>
 <section>
-<section id="slide-orga4a0e1a">
-<h2 id="orga4a0e1a">Conclusions</h2>
-<p>
-In 5k lines of Lean, we
-</p>
+<section id="slide-orgb7af4dd">
+<h2 id="orgb7af4dd">Conclusions</h2>
 <ul>
-<li>Formalize Arbitration games</li>
-<li>Definitions of DA, Player, honest players</li>
-<li>Membership games (bottom-up and top-down) and Logarithmic.</li>
+<li>Formalized Arbitration games</li>
+<li>Defined DA, players, honest players</li>
+<li>Membership games: linear (bottom-up and top-down) and logarithmic.</li>
 <li>Formalized a simpler version of Optimistic Rollups.</li>
-<li>TODO Executable</li>
+<li>Strategies are executable</li>
 
 </ul>
 </section>
 </section>
 <section>
-<section id="slide-org57160e2">
-<h2 id="org57160e2">Future Work</h2>
+<section id="slide-org1f87a13">
+<h2 id="org1f87a13">Future Work</h2>
 <dl>
-<dt>Generalization</dt><dd>Can we build a systems handling as much boiler-plate as possible?
-What are the basic constructs we need to design arbitration games?</dd>
-<dt>Problem decomposition</dt><dd>Can we find other games to decompose them in a clever way?</dd>
-<dt>Domain Specific Layer-2 Framework</dt><dd><p>
-Instead of arbitrating over the execution of programs, can we designed a
-language to decompose Layer-2 protocols into simple games?
-Are our basic constructs from before enough?
-</p>
-</section>
-<section>
-<h2>Future Work</h2></dd>
-<dt>Time</dt><dd>Time is an attack vector (delay attacks.)</dd>
-<dt>Layer-1 Limitation</dt><dd>Computations, one-shot games, small step verification not fitting in
-L1-transactions.</dd>
-<dt>Incentives &#x2013; Not modelled</dt><dd>Why players behave the way they do?</dd>
+<dt>Domain Specific Layer-2 Framework</dt><dd>Can we designed a language to decompose Layer-2 protocols into simple games?</dd>
+<dt>Add Time to the model</dt><dd>Time is an attack vector (delay attacks.)</dd>
+<dt>Layer-1 Limitation</dt><dd>Small step verification not fitting in L1-transactions.</dd>
+<dt>Incentives</dt><dd>Why players behave the way they do?</dd>
+<dt>Multiplayer Games</dt><dd>Agents and multiplayer games, tournaments.</dd>
 
 </dl>
 </section>
