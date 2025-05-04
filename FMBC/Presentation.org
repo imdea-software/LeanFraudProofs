@@ -42,7 +42,7 @@
   - Proposers can defend their claims
   - Challengers can debunk false claims
 
-+ Building blocks for other L2 Schemes
++ Building blocks for L2 Schemes
 
 + Proved Strategies as Verified Oracles
 
@@ -295,7 +295,7 @@ proving that an element is an element of the tree.
 # + Domain Specific L2 frameworks.
 
 + Instead of arbitrating over traces of programs, we can
-  arbitrate over properties of the resulting state.
+  arbitrate over properties of specific algorithms.
 
 + Optimistic Rollups =
   - Distributed Sequencer
@@ -322,7 +322,7 @@ proving that an element is an element of the tree.
 
 #+begin_src lean4
 def local_valid {α ℍ : Type}
-  (da : BTree α × ℍ)(validity_pred : α -> Bool) : Prop
+  (da : BinaryTree α Unit × ℍ)(validity_pred : α -> Bool) : Prop
  -- Merkle Tree is correct
  := da.fst.hash_BTree = da.snd
  -- All elements are |validity_pred| valid
