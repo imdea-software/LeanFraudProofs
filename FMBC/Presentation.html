@@ -21,8 +21,8 @@
 <h2>Towards a Mechanization of Fraud Proof Games in Lean</h2><h3>[Martín Ceresa] and César Sánchez</h3><img width="500" src="./images/white_background.png">
 </section>
 <section>
-<section id="slide-org375b245">
-<h2 id="org375b245">Introduction</h2>
+<section id="slide-org523fbb6">
+<h2 id="org523fbb6">Introduction</h2>
 <dl>
 <dt>WHAT</dt><dd>A simple <b>Lean</b> mechanization of arbitration games.</dd>
 <dt>WHY</dt><dd>L2 Blockchains use <i>Optimistic Rollups</i> for <b>scalability.</b>
@@ -42,8 +42,8 @@ player can guarantee correctness of the whole ecosystem.</dd>
 
 </aside>
 </section>
-<section id="slide-orga633634">
-<h3 id="orga633634">Contributions</h3>
+<section id="slide-org6a6bb06">
+<h3 id="org6a6bb06">Contributions</h3>
 <ul>
 <li>Proved honest players always win
 <ul>
@@ -52,7 +52,7 @@ player can guarantee correctness of the whole ecosystem.</dd>
 
 </ul></li>
 
-<li>Building blocks for other L2 Schemes</li>
+<li>Building blocks for L2 Schemes</li>
 
 <li>Proved Strategies as Verified Oracles</li>
 
@@ -72,8 +72,8 @@ player can guarantee correctness of the whole ecosystem.</dd>
 
 </aside>
 </section>
-<section id="slide-orgb533c35">
-<h3 id="orgb533c35">Optimistic Rollups</h3>
+<section id="slide-orge7208ef">
+<h3 id="orge7208ef">Optimistic Rollups</h3>
 <ul>
 <li>Instead of computing everything, results are assumed correct <b>unless</b> someone
 challenge them.</li>
@@ -107,8 +107,8 @@ reprentations of computation.</li>
 
 </aside>
 </section>
-<section id="slide-org0622680">
-<h3 id="org0622680">Arbitration Games</h3>
+<section id="slide-org01fc394">
+<h3 id="org01fc394">Arbitration Games</h3>
 <span class="fragment"></span>
 <span class="fragment"></span>
 <span class="fragment"></span>
@@ -143,8 +143,8 @@ reprentations of computation.</li>
 
 <div data-animate data-load="./DAEvol.BadProp.svg"></div>
 </section>
-<section id="slide-org2dc680f">
-<h3 id="org2dc680f">Arbitration Games</h3>
+<section id="slide-org1b99740">
+<h3 id="org1b99740">Arbitration Games</h3>
 <ul>
 <li>Turn-based games: one player reveals, the other explores.</li>
 <li>Proposers defend their claim, challengers build fraud-proofs.</li>
@@ -195,13 +195,13 @@ matches our result from computing it.
 </section>
 </section>
 <section>
-<section id="slide-org77421ae">
-<h2 id="org77421ae">Formalization</h2>
-<div class="outline-text-2" id="text-org77421ae">
+<section id="slide-org29bb8d6">
+<h2 id="org29bb8d6">Formalization</h2>
+<div class="outline-text-2" id="text-org29bb8d6">
 </div>
 </section>
-<section id="slide-org9cb13a0">
-<h3 id="org9cb13a0">Disputable Assertions</h3>
+<section id="slide-orgc8fc36e">
+<h3 id="orgc8fc36e">Disputable Assertions</h3>
 <p>
 DAs are partial <code>TraceTree</code> with their hashes.
 </p>
@@ -239,8 +239,8 @@ interpretation functions, we may be able to pinpoint the mistake.
 
 </aside>
 </section>
-<section id="slide-org40793b6">
-<h3 id="org40793b6">Games : Arbitration Game</h3>
+<section id="slide-org035338b">
+<h3 id="org035338b">Games : Arbitration Game</h3>
 <div class="org-src-container">
 
 <pre><code class="lean4" data-line-numbers="1|4,5|6-8|9-11|12">inductive ChooserMoves where | Now | ContLeft | ContRight
@@ -275,8 +275,8 @@ information or which path in the computation tree to take.
 
 </aside>
 </section>
-<section id="slide-orgb20e9fa">
-<h3 id="orgb20e9fa">Games : Membership Game</h3>
+<section id="slide-org203b595">
+<h3 id="org203b595">Games : Membership Game</h3>
 <div class="org-src-container">
 
 <pre><code class="lean4" data-line-numbers="3-6|8|10-15">inductive Side : Type where | Left | Right
@@ -341,11 +341,11 @@ mistake is and can choose the correct path to catch the laying agent.</li>
 </section>
 </section>
 <section>
-<section id="slide-org70b251a">
-<h2 id="org70b251a">Decomposing L2 Schemes</h2>
+<section id="slide-org7d76794">
+<h2 id="org7d76794">Decomposing L2 Schemes</h2>
 <ul>
 <li>Instead of arbitrating over traces of programs, we can
-arbitrate over properties of the resulting state.</li>
+arbitrate over properties of specific algorithms.</li>
 
 <li>Optimistic Rollups =
 <ul>
@@ -357,8 +357,8 @@ arbitrate over properties of the resulting state.</li>
 
 </ul>
 </section>
-<section id="slide-org06570a4">
-<h3 id="org06570a4">Valid Batch Definition</h3>
+<section id="slide-orgbd9e85f">
+<h3 id="orgbd9e85f">Valid Batch Definition</h3>
 <dl>
 <dt>Validity</dt><dd>Every transaction request in \(b\) is a valid
 transaction request added by a client.</dd>
@@ -389,7 +389,7 @@ transaction request added by a client.</dd>
 <div class="org-src-container">
 
 <pre><code class="lean4" >def local_valid {α ℍ : Type}
-  (da : BTree α × ℍ)(validity_pred : α -&gt; Bool) : Prop
+  (da : BinaryTree α Unit × ℍ)(validity_pred : α -&gt; Bool) : Prop
  -- Merkle Tree is correct
  := da.fst.hash_BTree = da.snd
  -- All elements are |validity_pred| valid
@@ -399,8 +399,8 @@ transaction request added by a client.</dd>
 </code></pre>
 </div>
 </section>
-<section id="slide-org7296f79">
-<h3 id="org7296f79">Player Actions</h3>
+<section id="slide-org5e98dba">
+<h3 id="org5e98dba">Player Actions</h3>
 <ul>
 <li>Player 1 :
 Proposes DAs (Valid or not) : Data and Hash</li>
@@ -445,8 +445,8 @@ We define (and verify) an honest player 2
 
 </aside>
 </section>
-<section id="slide-orgce4667b">
-<h3 id="orgce4667b">One honest chooser prevents invalid blocks</h3>
+<section id="slide-orgc238438">
+<h3 id="orgc238438">One honest chooser prevents invalid blocks</h3>
 <div class="org-src-container">
 
 <pre><code class="lean4" data-line-numbers="*|2|4,5">theorem honest_chooser_valid
@@ -459,8 +459,8 @@ We define (and verify) an honest player 2
 </section>
 </section>
 <section>
-<section id="slide-orgb7af4dd">
-<h2 id="orgb7af4dd">Conclusions</h2>
+<section id="slide-orgb4c3aab">
+<h2 id="orgb4c3aab">Conclusions</h2>
 <ul>
 <li>Formalized Arbitration games</li>
 <li>Defined DA, players, honest players</li>
@@ -472,8 +472,8 @@ We define (and verify) an honest player 2
 </section>
 </section>
 <section>
-<section id="slide-org1f87a13">
-<h2 id="org1f87a13">Future Work</h2>
+<section id="slide-org2051a8e">
+<h2 id="org2051a8e">Future Work</h2>
 <dl>
 <dt>Domain Specific Layer-2 Framework</dt><dd>Can we designed a language to decompose Layer-2 protocols into simple games?</dd>
 <dt>Add Time to the model</dt><dd>Time is an attack vector (delay attacks.)</dd>
