@@ -254,8 +254,16 @@ theorem history_honest_chooser_no_intersect_hist {α ℍ}
    : linear_l2_historical_protocol val_fun hist p1
         ( fun h (t, mt) => historical_honest_algorith val_fun h t mt)
    -> List.Nodup ((hist.map (BTree.toList $ ·.fst)).flatten ++ p1.local_str.da.1.toList)
-   := by sorry
-
+   := by simp [linear_l2_historical_protocol]
+         cases HC : historical_honest_algorith val_fun hist p1.local_str.1.1 p1.local_str.1.2 with
+         | DupHistory_Actions e n path_n str_n m path_m str_m =>
+           _
+         | Local ll =>
+           simp at *; intro LocalH
+           apply List.Nodup.append
+           assumption
+           sorry -- comes from local valid
+           sorry -- comes from find_first_dup_in_history = .none
 
 theorem history_honest_chooser_local_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
