@@ -5,13 +5,15 @@ import FraudProof.DataStructures.Sequence
 import FraudProof.L2
 
 ----------------------------------------
--- ## Stateful Protocol. -- WIP
+-- ## Stateful Protocol.
+--
 -- Now we have a history of all previous accepted batches.
 
 def historical_valid
   {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
-  --
+  -- History of commited blocks and their hashes.
   (Hist : List (BTree α × ℍ))
+  -- Validity Function
   (val_fun : α -> Bool)
   : Prop
   :=
@@ -29,18 +31,48 @@ lemma historical_concat
   (val_fun : α -> Bool)
   : historical_valid (hist ++ [new]) val_fun
     = (historical_valid hist val_fun
-    ∧ find_intersect id (hist.map (BTree.toList $ ·.fst)).flatten new.fst.toList = .none
+    ∧ List.Nodup ((hist.map (BTree.toList $ ·.fst)).flatten ++ new.fst.toList)
     ∧ local_valid new val_fun)
-  := sorry
+  := by simp
+        apply Iff.intro
+        · intro HHist
+          apply And.intro
+          · simp [historical_valid] at *
+            apply And.intro
+            · intros a b abIn
+              apply HHist.1
+              left; assumption
+            · have H := HHist.2
+              apply List.Nodup.of_append_left at H; assumption
+          · apply And.intro
+            · unfold historical_valid at HHist
+              have HHist := HHist.2
+              simp at HHist; assumption
+            · unfold historical_valid at HHist
+              have HHist := HHist.1
+              apply HHist
+              simp
+        · intro Hyp
+          have ⟨ old_hist, nodup , new_valid⟩ := Hyp
+          simp [historical_valid]
+          apply And.intro
+          · intros a b mem
+            cases mem with
+            | inl h => apply old_hist.1; assumption
+            | inr h => rw [h]; assumption
+          · assumption
 
+--
 inductive P2_History_Actions (α ℍ : Type) : Type where
  | Local (ll : P2_Actions α ℍ) : P2_History_Actions α ℍ
  | DupHistory_Actions
       -- Here is an element in epoch
-      (epoch : Nat) -- This is depentent on the history.
-      ( n : Nat )(path_p: ISkeleton n) (str_p : Sequence n ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
-      --
+      (epoch : Nat)
+      -- This is dependent on the history.
+      (n : Nat)(path_p: ISkeleton n)(str_p : Sequence n ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+      -- Element in current
       (m : Nat)(path_q: ISkeleton m)(str_q : Sequence m ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+      --
       : P2_History_Actions α ℍ
 
 structure P1_History_Actions (α ℍ : Type) : Type where
@@ -62,21 +94,66 @@ def find_first_dup_in_history
    := split_at_first_pred
       (fun (e : (BTree α × ℍ)) => find_intersect (·.snd) e.fst.toPaths_elems elems) hist
 
-lemma find_first_dup_in_history_law {α ℍ : Type}[DecidableEq α]
-   {t : BTree α}
-   {hist : List (BTree α × ℍ)}
-   { pre post : List (BTree α × ℍ) }
-   { oldDA : (BTree α × ℍ) }
-   { oldE currE : Skeleton × α }
-   { preOld posOld preCurr posCurr : List (Skeleton × α) }
-   (H : find_first_dup_in_history t.toPaths_elems hist = .some
-       ((pre , oldDA,post)
-       , ((preOld, oldE , posOld) , (preCurr , currE ,posCurr)))
-      )
-   : oldDA.1.access oldE.1 = .some (.inl oldE.2)
-   ∧ t.access currE.1 = .some (.inl currE.2)
-   ∧ oldE.2 = currE.2
-   := sorry
+lemma no_dups_find_first_none {α ℍ : Type}[DecidableEq α]
+   -- We have a list of elements in a tree
+   (elems : List (Skeleton × α))
+   --
+   (hist : List (BTree α × ℍ))
+   (HDis : List.Disjoint ((hist.map (BTree.toList $ ·.fst)).flatten) (elems.map (·.snd)))
+   : find_first_dup_in_history elems hist = .none
+   := by simp [find_first_dup_in_history]
+         apply splitAtFirstNone'
+         intros a aIn
+         apply find_intersect_none'
+         intro ⟨ skl , e ⟩
+         intros sklE
+         have hdis := @HDis e (by simp; exists a.1
+                                  apply And.intro
+                                  exists a.2; rw [<- toPath_elems]; simp; exists skl)
+         intros r rIn
+         intro Eq ; simp at Eq
+         apply hdis
+         simp; exists r.1; rw [Eq]; simp; assumption
+
+lemma find_first_dup_in_history_none
+   {α ℍ : Type}[DecidableEq α]
+   -- We have a list of elements in a tree
+   (elems : List (Skeleton × α))
+   --
+   (hist : List (BTree α × ℍ))
+   (HNoFind : find_first_dup_in_history elems hist = .none)
+   : List.Disjoint ((hist.map (BTree.toList $ ·.fst)).flatten) (elems.map (·.snd))
+   := by apply splitAtFirstNone at HNoFind
+         intros a aIn
+         simp at aIn
+         have ⟨ aBTree , ar , bIn ⟩ := aIn
+         have ⟨ x , inHIst ⟩ := ar
+         apply HNoFind at inHIst
+         apply find_intersect_none at inHIst
+         simp at *
+         intros Sk inElems
+         rw [<- toPath_elems] at bIn
+         apply toPaths_elems_skeletons at bIn
+         have ⟨ ska , bIn ⟩ := bIn
+         have fal := inHIst ska a bIn Sk a inElems
+         contradiction
+
+-- lemma find_first_dup_in_history_law {α ℍ : Type}[DecidableEq α]
+--    {t : BTree α}
+--    {hist : List (BTree α × ℍ)}
+--    { pre post : List (BTree α × ℍ) }
+--    { oldDA : (BTree α × ℍ) }
+--    { oldE currE : Skeleton × α }
+--    { preOld posOld preCurr posCurr : List (Skeleton × α) }
+--    (H : find_first_dup_in_history t.toPaths_elems hist = .some
+--        ( (pre , oldDA,post)
+--        , ((preOld, oldE , posOld)
+--        , (preCurr , currE ,posCurr)))
+--       )
+--    : oldDA.1.access oldE.1 = .some (.inl oldE.2)
+--    ∧ t.access currE.1 = .some (.inl currE.2)
+--    ∧ oldE.2 = currE.2
+--    := sorry
 
 def historical_honest_algorith {α ℍ : Type}
   [DecidableEq α]
@@ -100,6 +177,25 @@ def historical_honest_algorith {α ℍ : Type}
           e1.fst.length ⟨ e1.fst , rfl ⟩ naive_lin_forward
           e2.fst.length ⟨ e2.fst , rfl ⟩ naive_lin_forward
     | .none => .Local $ honest_chooser val_fun public_data da_mtree
+
+lemma Nodups_no_dups_in_history {α ℍ}
+  [DecidableEq α] [BEq ℍ][Hash α ℍ][m : HashMagma ℍ]
+  --
+  (val_fun : α -> Bool)
+  --
+  (history : List (BTree α × ℍ))
+  --
+  (public_data : BTree α)
+  (da_mtree : ℍ)
+  --
+  -- (HNodup : List.Nodup ((List.map (fun x ↦ x.1.toList) history).flatten ++ public_data.toList))
+  (HDis : List.Disjoint ((history.map (BTree.toList $ ·.fst)).flatten) public_data.toList)
+  : historical_honest_algorith val_fun history public_data da_mtree
+    = .Local (honest_chooser val_fun public_data da_mtree)
+  := by simp [historical_honest_algorith]
+        rw [no_dups_find_first_none]
+        rw [toPath_elems public_data]
+        assumption
 
 -- This is the step in our blockchain evolution.
 --
@@ -146,6 +242,42 @@ def linear_l2_historical_protocol{α ℍ : Type}
    | .Local act => inner_l2_actions val_fun playerOne.local_str act
 
 -- Historical Honest Valid
+theorem history_honest_chooser_no_intersect_hist {α ℍ}
+   [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   (val_fun : α -> Bool)
+   (p1 : P1_History_Actions α ℍ)
+   --
+   (hist : List (BTree α × ℍ))
+   (HHist : List.Nodup (hist.map (BTree.toList $ ·.fst)).flatten)
+   --
+   : linear_l2_historical_protocol val_fun hist p1
+        ( fun h (t, mt) => historical_honest_algorith val_fun h t mt)
+   -> List.Nodup ((hist.map (BTree.toList $ ·.fst)).flatten ++ p1.local_str.da.1.toList)
+   := by sorry
+
+
+theorem history_honest_chooser_local_valid {α ℍ}
+   [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   (val_fun : α -> Bool)
+   (p1 : P1_History_Actions α ℍ)
+   --
+   (hist : List (BTree α × ℍ))
+   (HNodups : List.Nodup ((List.map (fun x ↦ x.1.toList) hist).flatten ++ p1.local_str.da.1.toList))
+   --
+   : linear_l2_historical_protocol val_fun hist p1
+        ( fun h (t, mt) => historical_honest_algorith val_fun h t mt)
+   -> local_valid p1.local_str.da val_fun
+   := by simp [linear_l2_historical_protocol]
+         rw [Nodups_no_dups_in_history]
+         simp
+         rw [<- honest_chooser_valid]
+         simp; unfold linear_l2_protocol; unfold inner_l2_actions
+         simp
+         apply List.disjoint_of_nodup_append
+         assumption
+
 theorem history_honest_chooser_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
    [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
@@ -156,52 +288,16 @@ theorem history_honest_chooser_valid {α ℍ}
    (hist_valid : historical_valid hist val_fun)
    --
    : linear_l2_historical_protocol val_fun hist p1
-        ( fun h (t, mt) => historical_honest_algorith val_fun h t mt)
-     ↔ historical_valid (hist ++ [p1.local_str.da]) val_fun
+        (fun h (t, mt) => historical_honest_algorith val_fun h t mt)
+   -> historical_valid (hist ++ [p1.local_str.da]) val_fun
    := by
-   apply Iff.intro
-   · simp at *
-     intro HProtocol
-     rw [historical_concat]
-     apply And.intro
-     · assumption
-     · apply And.intro
-       · unfold linear_l2_historical_protocol at HProtocol
-         simp at HProtocol
-         split at HProtocol
-
-         case h_1 x epoc _fpLen fpSkl fpStr _spLen spSkl spStr heq =>
-          simp [historical_honest_algorith] at heq
-          cases ffind : find_first_dup_in_history p1.local_str.da.1.toPaths_elems hist with
-          | none => rw [ffind] at heq; simp at heq
-          | some ps =>
-            rw [ffind] at heq; simp at heq
-            have dup_hist_law := find_first_dup_in_history_law ffind
-            unfold find_first_dup_in_history at ffind
-            apply splitAtFirstLaw at ffind
-            have histDef := ffind.1
-            have histLength := heq.1
-            rw [<- histLength, histDef] at HProtocol
-
-            have getLemma :
-               (ps.1.1 ++ [ps.1.2.1] ++ ps.1.2.2)[ps.1.1.length]?
-               = ps.1.2.1 := by sorry
-            rw [getLemma] at HProtocol; simp at HProtocol
-            -- have pastDA := ps.1.2.1
-            -- have pastElem := ps.2.1.2.1
-            have accesed := dup_hist_law.1; rw [access_iaccess] at accesed
-            have HWinning := @elem_back_rev_honest_two α ℍ _ _ _ _ _ _ _ _
-                                                _ -- (wit.pathInfo.map (fun p => p.side))
-                                                ps.1.2.1.2 ps.2.1.2.1.2 (p1.global_str hist epoc (sequence_lift ps.2.1.2.1.1) )
-                                                ps.1.2.1.1 (by
-                                                          sorry -- this is correct we need to apply hist_valid
-                                                          ) accesed -- dup_hist_law.left
-
-            subst_eqs; simp at *
-            cases HWinning
-
-         case h_2 x act heq =>
-          _
-       · _
-
-   · _
+   simp; intro HP; have HP_NoInter := HP; apply history_honest_chooser_no_intersect_hist at HP_NoInter
+   rw [historical_concat]
+   apply And.intro
+   assumption
+   apply And.intro
+   assumption
+   apply history_honest_chooser_local_valid
+   assumption; assumption
+   have HNodup := hist_valid.2
+   assumption
