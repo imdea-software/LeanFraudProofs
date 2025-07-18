@@ -417,17 +417,69 @@ lemma honest_chooser_accepts_valid {α ℍ : Type}
    have nodups := no_dups_finds_none (·.snd) data.toPaths_elems elnodups
    rw [nodups]
 
-theorem honest_chooser_valid {α ℍ}
-   [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
+lemma inner_honest_valid_dac_wrong {α ℍ : Type}
+   [DecidableEq α]
+   [BEq ℍ][LawfulBEq ℍ]
    [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
    (val_fun : α -> Bool)
-   (p1 : P1_Actions α ℍ)
-   : linear_l2_protocol val_fun p1 ( fun (t, mt) => honest_chooser val_fun t mt)
-     ↔ local_valid p1.da val_fun
+   (da : BTree α × ℍ)
+   -- (data : BTree α)( mk : ℍ )
+   (dac_str gen_elem_str)
+   -- When data is wrong
+   (Hm : (da.2 == ABTree.fold o.mhash (fun _ ↦ m.comb) da.1) = false)
+   :
+   linear_l2_protocol val_fun ⟨ da , dac_str , gen_elem_str ⟩
+     (fun x ↦ honest_chooser val_fun x.1 x.2) =
+      false
+    -- local_valid da val_fun
    := by
-   apply Iff.intro
-   · have ⟨ da , dac_str, gen_elem_str ⟩ := p1
+       unfold linear_l2_protocol
+       simp [honest_chooser]
+       rw [Hm]
+       -- unfold local_valid
+       simp
+       have w_cho :=
+         @dac_winning_gen_chooser α ℍ _ _ _ _
+                                  (da.1.map  o.mhash )
+                                  -- Rev info
+                                  dac_str da.2
+                                  -- Chooser Info
+                                  (da.fst.hash_SubTree.map .some .some)
+                                  (ABTree.fold o.mhash (fun _ => m.comb) da.fst)
+       simp [ABTree.hash_SubTree] at w_cho
+       rw [abtree_map_compose] at w_cho
+       rw [abtree_map_compose] at w_cho
+       rw [abtree_map_compose]
+       rw [const_comp ] at w_cho
+       rw [const_comp ] at w_cho
+       rw [const_comp]
+       rw [<- gen_chooser_opt_some ]
+       simp at Hm
+       have ass :=
+            w_cho
+            (honest_chooser_wins _)
+            Hm
+       unfold ABTree.hash_SubTree
+       rw [ass]
+       -- simp
+
+lemma inner_honest_valid {α ℍ : Type}
+   [DecidableEq α]
+   [BEq ℍ][LawfulBEq ℍ]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   (val_fun : α -> Bool)
+   (da : BTree α × ℍ)
+   -- (data : BTree α)( mk : ℍ )
+   (dac_str gen_elem_str)
+   :
+   linear_l2_protocol val_fun ⟨ da , dac_str , gen_elem_str ⟩
+     (fun x ↦ honest_chooser val_fun x.1 x.2) =
+      true →
+    local_valid da val_fun
+   := by
      unfold linear_l2_protocol
+     simp
+
      simp [honest_chooser]
      unfold local_valid
      cases Hm : (da.2 == ABTree.fold o.mhash (fun x ↦ m.comb) da.1)
@@ -502,6 +554,7 @@ theorem honest_chooser_valid {α ℍ}
            rw [fres] at wit_val; simp at wit_val
          | inr HE => simp [Sequence.map] at HE; rw [HE]; simp
      case false =>
+
        simp
        have w_cho :=
          @dac_winning_gen_chooser α ℍ _ _ _ _
@@ -527,6 +580,19 @@ theorem honest_chooser_valid {α ℍ}
        unfold ABTree.hash_SubTree
        rw [ass]
        simp
+
+theorem honest_chooser_valid {α ℍ}
+   [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   (val_fun : α -> Bool)
+   (p1 : P1_Actions α ℍ)
+   : linear_l2_protocol val_fun p1 ( fun (t, mt) => honest_chooser val_fun t mt)
+     ↔ local_valid p1.da val_fun
+   := by
+   apply Iff.intro
+   · have ⟨ da , dac_str, gen_elem_str ⟩ := p1
+     simp
+     apply inner_honest_valid
    · simp
      have ⟨ da , dac_str , gen_elem_str ⟩ := p1
      simp; intro vDa

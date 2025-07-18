@@ -69,9 +69,14 @@ inductive P2_History_Actions (α ℍ : Type) : Type where
       -- Here is an element in epoch
       (epoch : Nat)
       -- This is dependent on the history.
-      (n : Nat)(path_p: ISkeleton n)(str_p : Sequence n ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+      (n : Nat)
+        (en : α)
+         (path_p: ISkeleton n)
+          (str_p : Sequence n ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
       -- Element in current
-      (m : Nat)(path_q: ISkeleton m)(str_q : Sequence m ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
+      (m : Nat)
+        (em : α)
+        (path_q: ISkeleton m)(str_q : Sequence m ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
       --
       : P2_History_Actions α ℍ
 
@@ -138,22 +143,23 @@ lemma find_first_dup_in_history_none
          have fal := inHIst ska a bIn Sk a inElems
          contradiction
 
--- lemma find_first_dup_in_history_law {α ℍ : Type}[DecidableEq α]
---    {t : BTree α}
---    {hist : List (BTree α × ℍ)}
---    { pre post : List (BTree α × ℍ) }
---    { oldDA : (BTree α × ℍ) }
---    { oldE currE : Skeleton × α }
---    { preOld posOld preCurr posCurr : List (Skeleton × α) }
---    (H : find_first_dup_in_history t.toPaths_elems hist = .some
---        ( (pre , oldDA,post)
---        , ((preOld, oldE , posOld)
---        , (preCurr , currE ,posCurr)))
---       )
---    : oldDA.1.access oldE.1 = .some (.inl oldE.2)
---    ∧ t.access currE.1 = .some (.inl currE.2)
---    ∧ oldE.2 = currE.2
---    := sorry
+lemma find_first_dup_in_history_law {α ℍ : Type}[DecidableEq α]
+   {t : BTree α}
+   {hist : List (BTree α × ℍ)}
+   { pre post : List (BTree α × ℍ) }
+   { oldDA : (BTree α × ℍ) }
+   { oldE currE : Skeleton × α }
+   { preOld posOld preCurr posCurr : List (Skeleton × α) }
+   (H : find_first_dup_in_history t.toPaths_elems hist = .some
+       ( (pre , oldDA,post)
+       , ((preOld, oldE , posOld)
+       , (preCurr , currE ,posCurr)))
+      )
+   : oldDA.1.access oldE.1 = .some (.inl oldE.2)
+   ∧ t.access currE.1 = .some (.inl currE.2)
+   ∧ oldE.2 = currE.2
+   ∧ hist[pre.length]? = .some oldDA
+   := sorry
 
 def historical_honest_algorith {α ℍ : Type}
   [DecidableEq α]
@@ -167,16 +173,23 @@ def historical_honest_algorith {α ℍ : Type}
   (da_mtree : ℍ)
   --
   : P2_History_Actions α ℍ
-  := match find_first_dup_in_history public_data.toPaths_elems history with
-    | .some ((pred, _e , _) , ( (_, e1, _) , (_ , e2 , _)) ) =>
-      .DupHistory_Actions pred.length
-          -- Same as before, we need to choose strategies before playing,
-          -- depending on which arbitration games we are playing.
-          -- Naive lin forward does not need extra info, but logarithmic
-          -- requires more.
-          e1.fst.length ⟨ e1.fst , rfl ⟩ naive_lin_forward
-          e2.fst.length ⟨ e2.fst , rfl ⟩ naive_lin_forward
-    | .none => .Local $ honest_chooser val_fun public_data da_mtree
+  :=
+  if da_mtree == public_data.hash_BTree
+  then
+    match find_first_dup_in_history public_data.toPaths_elems history with
+        | .some ((pred, _e , _) , ( (_, e1, _) , (_ , e2 , _)) ) =>
+        .DupHistory_Actions pred.length
+            -- Same as before, we need to choose strategies before playing,
+            -- depending on which arbitration games we are playing.
+            -- Naive lin forward does not need extra info, but logarithmic
+            -- requires more.
+            e1.fst.length e1.snd ⟨ e1.fst , rfl ⟩
+            naive_lin_forward
+            e2.fst.length e2.snd ⟨ e2.fst , rfl ⟩
+            naive_lin_forward
+        | .none => .Local $ honest_chooser val_fun public_data da_mtree
+   -- We skip straight to that.
+   else .Local $ .DAC ((public_data.hash_SubTree).map (fun _ => ()) gen_chooser_opt')
 
 lemma Nodups_no_dups_in_history {α ℍ}
   [DecidableEq α] [BEq ℍ][Hash α ℍ][m : HashMagma ℍ]
@@ -188,12 +201,16 @@ lemma Nodups_no_dups_in_history {α ℍ}
   (public_data : BTree α)
   (da_mtree : ℍ)
   --
-  -- (HNodup : List.Nodup ((List.map (fun x ↦ x.1.toList) history).flatten ++ public_data.toList))
   (HDis : List.Disjoint ((history.map (BTree.toList $ ·.fst)).flatten) public_data.toList)
+
   : historical_honest_algorith val_fun history public_data da_mtree
     = .Local (honest_chooser val_fun public_data da_mtree)
   := by simp [historical_honest_algorith]
         rw [no_dups_find_first_none]
+        simp; intro nodata
+        simp [honest_chooser]
+        rw [nodata]
+        simp
         rw [toPath_elems public_data]
         assumption
 
@@ -211,7 +228,7 @@ def linear_l2_historical_protocol{α ℍ : Type}
    : Bool
    := match playerTwo hist playerOne.local_str.da with
    | .DupHistory_Actions
-       epoch _fpLen fpSkl fpStr _spLen spSkl spStr
+       epoch _fpLen _ fpSkl fpStr _spLen _ spSkl spStr
        => match hist[epoch]? with
        -- Get epoch from history
        | .none => true -- Wins POne
@@ -249,21 +266,72 @@ theorem history_honest_chooser_no_intersect_hist {α ℍ}
    (p1 : P1_History_Actions α ℍ)
    --
    (hist : List (BTree α × ℍ))
+   -- Hist is correct
+   (histCorrect : ∀ e ∈ hist, e.1.hash_BTree = e.2)
+   --
    (HHist : List.Nodup (hist.map (BTree.toList $ ·.fst)).flatten)
    --
    : linear_l2_historical_protocol val_fun hist p1
         ( fun h (t, mt) => historical_honest_algorith val_fun h t mt)
    -> List.Nodup ((hist.map (BTree.toList $ ·.fst)).flatten ++ p1.local_str.da.1.toList)
    := by simp [linear_l2_historical_protocol]
-         cases HC : historical_honest_algorith val_fun hist p1.local_str.1.1 p1.local_str.1.2 with
-         | DupHistory_Actions e n path_n str_n m path_m str_m =>
-           _
-         | Local ll =>
-           simp at *; intro LocalH
-           apply List.Nodup.append
-           assumption
-           sorry -- comes from local valid
-           sorry -- comes from find_first_dup_in_history = .none
+         simp [historical_honest_algorith]
+         cases HData : (p1.local_str.da.2 == p1.local_str.da.1.hash_BTree)
+         case false =>
+           have inner := inner_honest_valid_dac_wrong val_fun p1.local_str.da p1.local_str.dac_str p1.local_str.gen_elem_str HData
+           intro a
+           simp [linear_l2_protocol] at inner
+           conv at HData =>
+            lhs; simp
+           rw [HData] at a; simp [honest_chooser] at inner; simp at a
+           rw [HData] at inner; simp at inner
+           rw [inner] at a
+           contradiction
+         case true =>
+            simp at HData
+            rw [HData]; simp; rw [<- HData] -- Trick to make it work
+            cases HFDups : find_first_dup_in_history p1.local_str.1.1.toPaths_elems hist
+            case some x =>
+                simp at *
+                have ⟨ accl , accr, sameelem, hist_access⟩ := find_first_dup_in_history_law  HFDups
+                rw [hist_access]
+                simp
+                rw [access_iaccess] at accl; simp [sequence_lift] at accl
+                rw [access_iaccess] at accr; simp [sequence_lift] at accr
+                have gamesl := elem_back_rev_honest_two (p1.global_str hist x.1.1.length ⟨ x.2.1.2.1.1 , rfl ⟩)
+                                (histCorrect x.1.2.1.1 x.1.2.1.2 (by simp; apply List.mem_of_getElem?; assumption))
+                                accl
+                have gamesr := elem_back_rev_honest_two
+                                (p1.local_str.gen_elem_str ⟨x.2.2.2.1.1, rfl⟩)
+                                (by symm; exact HData)
+                                accr
+                cases gamesl
+                case inl hl =>
+                    cases gamesr
+                    case inl hr =>
+                        rw [hl,hr]
+                        simp; intro; contradiction
+                    case inr hr =>
+                        rw [hl,hr]
+                        simp
+                case inr hl =>
+                    cases gamesr
+                    case inl hr =>
+                        rw [hl,hr]
+                        simp
+                    case inr hr =>
+                        rw [hl,hr]
+                        simp
+            case none =>
+            simp
+            have HInnert := inner_honest_valid val_fun p1.local_str.da p1.local_str.dac_str p1.local_str.gen_elem_str
+            simp [linear_l2_protocol] at HInnert
+            intro HLocal
+            apply HInnert at HLocal
+            have LocalNodup := HLocal.2.2
+            apply find_first_dup_in_history_none at HFDups
+            rw [toPath_elems] at HFDups
+            apply List.Nodup.append <;> assumption
 
 theorem history_honest_chooser_local_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
@@ -308,4 +376,8 @@ theorem history_honest_chooser_valid {α ℍ}
    apply history_honest_chooser_local_valid
    assumption; assumption
    have HNodup := hist_valid.2
-   assumption
+   intros ep epIn
+   have local_val := hist_valid.1 ep epIn
+   exact local_val.1
+   exact hist_valid.2
+   -- assumption
