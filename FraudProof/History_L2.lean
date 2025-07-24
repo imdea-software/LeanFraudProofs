@@ -159,7 +159,24 @@ lemma find_first_dup_in_history_law {α ℍ : Type}[DecidableEq α]
    ∧ t.access currE.1 = .some (.inl currE.2)
    ∧ oldE.2 = currE.2
    ∧ hist[pre.length]? = .some oldDA
-   := sorry
+   := by
+   unfold find_first_dup_in_history at H
+   unfold split_at_first_pred at H
+   have HHist := split_at_first_pred'_some H
+   have HRes := split_eq_value H
+   apply find_intersect_law at HRes
+   apply And.intro
+   · apply toPath_are_paths
+     rw [paths_elems_are_paths]
+     have H := HRes.1
+     simp; rw [H]; simp
+   apply And.intro
+   · apply toPath_are_paths
+     rw [paths_elems_are_paths]
+     simp [*]
+   apply And.intro
+   · simp [*]
+   · simp at HHist; rw [HHist]; simp
 
 def historical_honest_algorith {α ℍ : Type}
   [DecidableEq α]

@@ -818,49 +818,102 @@ def split_at_first_pred' {α β: Type}
         | .none => split_at_first_pred' pred ls (acc.concat le)
         | .some b => .some ((acc , le , ls), b)
 
+lemma split_at_first_pred'_none {α β : Type}
+     {pred : α -> Option β} {l acc : List α}
+     (H : split_at_first_pred' pred l acc = .none)
+     : ∀ a ∈ l, pred a = .none
+     := by
+     revert acc
+     induction l with
+     | nil => simp
+     | cons y ys IH =>
+      intros acc H
+      simp; simp [split_at_first_pred'] at H
+      cases Hy : pred y with
+      | none => simp [*] at *; apply IH at H; assumption
+      | some v => simp [*] at *
+
+lemma none_split_at_first_pred' {α β : Type}
+     {pred : α -> Option β} {l acc : List α}
+     (H : ∀ a ∈ l, pred a = .none)
+     : split_at_first_pred' pred l acc = .none
+     := by
+     revert acc
+     induction l with
+     | nil => simp [split_at_first_pred']
+     | cons y ys IH
+      => simp [split_at_first_pred']
+         intro acc
+         cases Hy : pred y with
+         | some b => simp at H; simp [*] at *
+         | none => simp; apply IH; simp [*] at *; assumption
+
+lemma split_eq_value {α β : Type}
+    {pred : α -> Option β}{a : α}{b : β}{l acc ls rs : List α}
+    (HSome : split_at_first_pred' pred l acc = ((ls, a, rs) , b ))
+    : pred a = .some b
+    := by
+    revert acc
+    induction l with
+    | nil => simp [split_at_first_pred']
+    | cons y ys HI =>
+      simp [split_at_first_pred']
+      intro acc
+      cases HC : pred y with
+      | none =>
+         simp at *
+         apply HI
+      | some y' =>
+         simp
+         intros h1 h2 h3 h4; subst_eqs; assumption
+
+lemma split_at_first_pred'_some{α β: Type}
+     {pred : α -> Option β}{a : α}{b : β} {l acc ls rs: List α}
+     (H : split_at_first_pred' pred l acc = .some ((ls, a , rs), b))
+     : acc ++ l = ls ++ a :: rs
+     := by
+     revert acc
+     induction l with
+     | nil => simp [split_at_first_pred']
+     | cons y ys IH =>
+      simp [split_at_first_pred']
+      cases HP : pred y with
+      | none =>
+        simp
+        intros acc; replace IH := @IH (acc ++ [y])
+        simp at IH; assumption
+      | some v =>
+        simp; intros; subst_eqs; tauto
+
 def split_at_first_pred {α β: Type}
      (pred : α -> Option β) (l : List α)
      : Option ((List α × α × List α) × β)
      := split_at_first_pred' pred l .nil
 
-lemma splitAtFirstLaw {α β : Type}
-      {pred : α -> Option β}{ls pre pos : List α}{a : α}{rs : β}
-      (H : split_at_first_pred pred ls = .some ((pre,a,pos), rs))
-      : ls = pre ++ [a] ++ pos
-      ∧ pred a = .some rs
-      := sorry
+-- lemma splitAtFirstLaw {α β : Type}
+--       {pred : α -> Option β}{ls pre pos : List α}{a : α}{rs : β}
+--       (H : split_at_first_pred pred ls = .some ((pre,a,pos), rs))
+--       : ls = pre ++ [a] ++ pos
+--       ∧ pred a = .some rs
+--       := sorry
 
 lemma splitAtFirstNone {α β : Type}
      {pred : α -> Option β}{ls : List α}
      (H : split_at_first_pred pred ls = .none)
      : ∀ a ∈ ls, pred a = .none
-     := sorry
+     := by unfold split_at_first_pred at H; apply split_at_first_pred'_none at H; assumption
 
 lemma splitAtFirstNone' {α β : Type}
      {pred : α -> Option β}{ls : List α}
      (H : ∀ a ∈ ls, pred a = .none)
      : split_at_first_pred pred ls = .none
-     := sorry
-
+     := by unfold split_at_first_pred; apply none_split_at_first_pred'; assumption
 
 def find_intersect {β α : Type}[DecidableEq α]
     (proj : β -> α)(ll rr : List β)
     : Option ((List β × β × List β) × (List β × β × List β))
     := split_at_first_pred (find_first_split_proj proj · rr) ll
 
-lemma find_intersect_id_map { β α : Type}[DecidableEq α]
-       {proj₁ : β -> α} (ll rr : List β)
-       : (find_intersect proj₁ ll rr).map
-            (fun ((lls,x,lrs),(rls,y,rrs)) =>
-              ((lls.map proj₁, proj₁ x, lrs.map proj₁) , (rls.map proj₁, proj₁ y, rrs.map proj₁)))
-       = find_intersect id (ll.map proj₁) (rr.map proj₁)
-       := sorry
-
-lemma find_intersect_id_map_none { β α : Type}[DecidableEq α]
-       {proj₁ : β -> α} (ll rr : List β)
-       :  find_intersect id (ll.map proj₁) (rr.map proj₁) = .none
-       -> find_intersect proj₁ ll rr = .none
-       := sorry
 
 lemma find_intersect_law {β α : Type}[DecidableEq α]{proj : β -> α}
       (ls prels posls rs prers posrs : List β)
@@ -869,19 +922,47 @@ lemma find_intersect_law {β α : Type}[DecidableEq α]{proj : β -> α}
       : ls = prels ++ [el] ++ posls
       ∧ rs = prers ++ [er] ++ posrs
       ∧ proj el = proj er
-      ∧ ∀ a ∈ prels, ∀ b ∈ prers, ¬ proj a = proj b
-      := sorry
+      -- ∧ ∀ a ∈ prels, ∀ b ∈ prers, ¬ proj a = proj b -- We do not need it for the proof
+      := by
+      unfold find_intersect at H; unfold split_at_first_pred at H
+      have HList := split_at_first_pred'_some H
+      have HVal := split_eq_value H
+      apply split_at_value at HVal
+      apply And.intro
+      · simp at HList; simp;assumption
+      apply And.intro
+      · simp [*]
+      · simp [*]
 
 lemma find_intersect_none {β α : Type}[DecidableEq α]{proj : β -> α}
       {ls rs : List β}
       (H : find_intersect proj ls rs = .none)
       : ∀ l ∈ ls, ∀ r ∈ rs, ¬ proj l = proj r
-      := sorry
+      := by
+      unfold find_intersect at H; unfold split_at_first_pred at H
+      have HP := split_at_first_pred'_none H
+      intros l lInls r rInrs
+      have HR := HP l lInls
+      apply split_at_none at HR
+      simp at HR
+      replace HR := HR r rInrs
+      intro F; apply HR; simp [*]
+
+
 
 lemma find_intersect_none' {β α : Type}[DecidableEq α]{proj : β -> α}
       {ls rs : List β}
       (H : ∀ l ∈ ls, ∀ r ∈ rs, ¬ proj l = proj r)
       : find_intersect proj ls rs = .none
-      := sorry
+      := by
+      unfold find_intersect; unfold split_at_first_pred
+      apply none_split_at_first_pred'
+      unfold find_first_split_proj
+      intros a aIn
+      unfold find_first_split
+      apply find_first_split_none'
+      intros r rIn
+      simp; intro F; apply H; assumption; assumption; simp [*]
+
 
 ---------------------------
