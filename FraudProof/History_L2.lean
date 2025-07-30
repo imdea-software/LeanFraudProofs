@@ -208,6 +208,62 @@ def historical_honest_algorith {α ℍ : Type}
    -- We skip straight to that.
    else .Local $ .DAC ((public_data.hash_SubTree).map (fun _ => ()) gen_chooser_opt')
 
+lemma List.Disjoin_iff_forall {α : Type} {l r : List α}[DecidableEq α]
+  :  List.Disjoint l r ↔ ∀ i ∈ l, ∀ j ∈ r, i != j
+  := sorry
+
+lemma honest_chooser_history_accepts_valid {α ℍ : Type}
+   [DecidableEq α]
+   [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
+   {val_fun : α -> Bool}
+    --
+   {history : List (BTree α × ℍ)}
+   {new : BTree α × ℍ}
+   --
+   (da_valid : historical_valid (history ++ [new]) val_fun)
+   : historical_honest_algorith val_fun history new.1 new.2 = .Local .Ok
+   := by
+   simp [historical_honest_algorith]
+   split
+   case isTrue HTreeData =>
+     simp at HTreeData
+     split
+     case h_1
+       =>
+        rename_i predElem elem posElem preE1 e1 posE1 preE2 e2 E2 heq
+        -- Get NO dup
+        have HNodup := da_valid.2
+        simp at HNodup
+        apply List.disjoint_of_nodup_append at HNodup
+        rw [List.Disjoin_iff_forall] at HNodup
+        simp at HNodup
+        apply find_first_dup_in_history_law at heq
+        replace ⟨ HNewElem, ⟨ HHistElem , ⟨ heq , ElemInHist ⟩ ⟩ ⟩ := heq
+        have elem1In : (elem.1, elem.2) ∈ history
+          := by apply List.mem_of_getElem? at ElemInHist; assumption
+        have e1Elem1In : e1.2 ∈ elem.1.toList
+          := by sorry
+        have e2EleIn : e2.2 ∈ new.1.toList := sorry
+        have HF := HNodup e1.2 elem.1 elem.2 elem1In e1Elem1In e2.2 e2EleIn
+        contradiction
+     case h_2 =>
+       replace ⟨AllValid , da_valid⟩ := da_valid
+       have newValid : local_valid new val_fun
+         := by apply AllValid; simp
+       rw [<- struct_and_iff_valid] at newValid
+       apply honest_chooser_accepts_valid at newValid
+       rw [newValid]
+       _
+   case isFalse h =>
+     -- Contradictory case
+     rw [historical_concat] at da_valid
+     replace ⟨HVal , ⟨ Nodup , da_valid⟩⟩ := da_valid
+     have ⟨ mkTree, valElems, nodups ⟩ := da_valid
+     unfold BTree.hash_BTree at mkTree; rw [<- mkTree] at h
+     simp at h
+
+
+
 lemma Nodups_no_dups_in_history {α ℍ}
   [DecidableEq α] [BEq ℍ][Hash α ℍ][m : HashMagma ℍ]
   --
@@ -398,3 +454,18 @@ theorem history_honest_chooser_valid {α ℍ}
    exact local_val.1
    exact hist_valid.2
    -- assumption
+
+theorem history_honest_chooser_valid' {α ℍ}
+   [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   (val_fun : α -> Bool)
+   (p1 : P1_History_Actions α ℍ)
+   --
+   (hist : List (BTree α × ℍ))
+   (hist_valid : historical_valid hist val_fun)
+   --
+   : historical_valid (hist ++ [p1.local_str.da]) val_fun
+   -> linear_l2_historical_protocol val_fun hist p1
+        (fun h (t, mt) => historical_honest_algorith val_fun h t mt)
+   := by
+   simp
