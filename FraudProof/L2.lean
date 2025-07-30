@@ -581,6 +581,22 @@ lemma inner_honest_valid {α ℍ : Type}
        rw [ass]
        simp
 
+lemma honest_chooser_valid_local_valid {α ℍ}
+   [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   (val_fun : α -> Bool)
+   (p1 : P1_Actions α ℍ)
+   : local_valid p1.da val_fun
+   -> linear_l2_protocol val_fun p1 ( fun (t, mt) => honest_chooser val_fun t mt)
+   := by
+     simp
+     have ⟨ da , dac_str , gen_elem_str ⟩ := p1
+     simp; intro vDa
+     simp [linear_l2_protocol]
+     have hcho := honest_chooser_accepts_valid val_fun da.1 da.2 (by rw [struct_and_iff_valid]; simpa)
+     rw [hcho]
+
+
 theorem honest_chooser_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
    [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
@@ -593,10 +609,6 @@ theorem honest_chooser_valid {α ℍ}
    · have ⟨ da , dac_str, gen_elem_str ⟩ := p1
      simp
      apply inner_honest_valid
-   · simp
-     have ⟨ da , dac_str , gen_elem_str ⟩ := p1
-     simp; intro vDa
-     simp [linear_l2_protocol]
-     have hcho := honest_chooser_accepts_valid val_fun da.1 da.2 (by rw [struct_and_iff_valid]; simpa)
-     rw [hcho]
+   · apply honest_chooser_valid_local_valid
+
 ----------------------------------------

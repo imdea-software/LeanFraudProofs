@@ -963,6 +963,4 @@ lemma find_intersect_none' {β α : Type}[DecidableEq α]{proj : β -> α}
       apply find_first_split_none'
       intros r rIn
       simp; intro F; apply H; assumption; assumption; simp [*]
-
-
 ---------------------------
