@@ -443,34 +443,37 @@ def Unique_Leaf_Condition2 {α α' γ : Type}(lc : α -> α' -> γ -> Winner)
 def top_elem {α β : Type}: ABTree α β -> α ⊕ β
   := ABTree.getI' .inl .inr
 
--- This is a generic proof. There is a specific one at ElemInTree!
-theorem winning_chooser_wins {α α' β β' γ : Type}
-    [BEq β][LawfulBEq β]
-    (splitter : γ -> β -> γ × γ)
-    -- Conditions
-    (leafCondition : α' -> α -> γ -> Winner)
-    (HLeafUnique : Unique_Leaf_Condition2 leafCondition)
-    (midCondition  : β' -> β -> γ -> Winner)
-    -- Public Information
-    (da : CompTree α' β' γ)
-    -- Reveler
-    (reveler : ABTree (Option α) (Option β))
-    -- Chooser
-    (wise_chooser : ABTree (Option α) (Option β))
-    -- Assumptions
-    (win_chooser : winning_condition_player
-                   (fun x y z => prop_winner $ leafCondition x y z)
-                   (fun x y z => prop_winner $ midCondition x y z) splitter da wise_chooser)
-    -- Link reveler with da
-    (HRev : ¬ top_elem reveler = top_elem wise_chooser)
-    -- (lossing_reveler : ¬ winning_condition_player
-    --                (fun x y z => prop_winner $ leafCondition x y z)
-    --                (fun x y z => prop_winner $ midCondition x y z) splitter da reveler)
-    : simp_tree splitter
-      leafCondition
-      midCondition
-      da reveler (gen_to_fun_chooser wise_chooser) = Player.Chooser
-    := sorry -- by
+--------------------
+-- TODO: Eventually we want to prove this.
+-- -- This is a generic proof. There is a specific one at ElemInTree!
+-- theorem winning_chooser_wins {α α' β β' γ : Type}
+--     [BEq β][LawfulBEq β]
+--     (splitter : γ -> β -> γ × γ)
+--     -- Conditions
+--     (leafCondition : α' -> α -> γ -> Winner)
+--     (HLeafUnique : Unique_Leaf_Condition2 leafCondition)
+--     (midCondition  : β' -> β -> γ -> Winner)
+--     -- Public Information
+--     (da : CompTree α' β' γ)
+--     -- Reveler
+--     (reveler : ABTree (Option α) (Option β))
+--     -- Chooser
+--     (wise_chooser : ABTree (Option α) (Option β))
+--     -- Assumptions
+--     (win_chooser : winning_condition_player
+--                    (fun x y z => prop_winner $ leafCondition x y z)
+--                    (fun x y z => prop_winner $ midCondition x y z) splitter da wise_chooser)
+--     -- Link reveler with da
+--     (HRev : ¬ top_elem reveler = top_elem wise_chooser)
+--     -- (lossing_reveler : ¬ winning_condition_player
+--     --                (fun x y z => prop_winner $ leafCondition x y z)
+--     --                (fun x y z => prop_winner $ midCondition x y z) splitter da reveler)
+--     : simp_tree splitter
+--       leafCondition
+--       midCondition
+--       da reveler (gen_to_fun_chooser wise_chooser) = Player.Chooser
+--     := sorry -- by
+--------------------
  -- revert reveler wise_chooser da; intro da
  -- have ⟨ data , res ⟩ := da
  -- revert res; clear da
@@ -766,7 +769,7 @@ theorem chooser_data_availability {α α' β γ : Type}
                     cases wch with
                     | node _ _ _ => simp [tree_comp_winning_conditions] at win_ch
                     | leaf ch_l =>
-                      simp [tree_comp_winning_conditions, prop_winner] at win_ch
+                      simp [tree_comp_winning_conditions] at win_ch
                       -- Uniqueness of Leaves - Collision free hash!!
                       unfold Unique_Leaf_Condition at unique_leaf
                       apply unique_leaf

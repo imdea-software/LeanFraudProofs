@@ -58,7 +58,7 @@ lemma nil_access {α β : Type}(t : ABTree α β)(a : α)
   : t.iaccess .nil = .some (.inl a) ↔ t = .leaf a
   := by
   apply Iff.intro
-  · intro Hip; simp [ABTree.iaccess, sequence_forget, ABTree.access ] at Hip
+  · intro Hip; simp [ABTree.iaccess, sequence_forget ] at Hip
     cases t with
     | leaf w => simp [ABTree.access] at Hip; congr
     | node _ _ _ => simp [ABTree.access] at Hip
@@ -683,7 +683,7 @@ lemma finds_no_dup {α β : Type}[DecidableEq β]
      simp
      unfold find_dups at no_dups_found
      unfold find_dups_acc at no_dups_found
-     simp [find_dups, find_dups_acc] at no_dups_found
+     simp at no_dups_found
      split at no_dups_found
      case h_1 x heq =>
        apply find_first_split_none at heq

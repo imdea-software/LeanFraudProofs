@@ -54,22 +54,31 @@ To see how we prove that honest players win games see file [[./FraudProof/Games/
 + We define the notion of winning conditions in file [[file:./FraudProof/Game/GenericTree.lean][GenericTree]] and prove that
   proposers win ~winning_proposer_wins~.
 
-* FMBC'25 Frozen Files
-
-Froze lib at tag : [[https://gitlab.software.imdea.org/martin.ceresa/leanfpgames/-/tree/FMBC?ref_type=tags][See tag]]
-
 * Compilation
-Get lean first, https://leanprover-community.github.io/get_started.html .
 
+** Lake Compilation (Lean native)
+Get lean first, https://leanprover-community.github.io/get_started.html .
 
 To build the whole project should suffice with a simple lake build command
 #+begin_src bash
+lake update
 lake build
 #+end_src
 
-** DONE Compile Documentation
-Move to 'docbuild' folder and just 'make' and 'make serve' to lunch a small http
-server (through python.)
+Follow Makefile:
+#+begin_src bash
+make help
+#+end_src
+** Nix Compilation
+
+Get Nix, follow make file.
+
+#+begin_src bash
+make help
+#+end_src
+
+** Compile Documentation
+See Makefile help.
 
 * Project Structure:
 ** Data Structures
@@ -112,9 +121,12 @@ Don't really remember here, files here may be obsolete.
 ** Proofs
 Again, not so sure.
 ** L2.Lean
-Root file implementing Arrenger games and strategies.
+Root file implementing Arranger games and strategies.
 Using everything we defined, we prove that honest players always win.
-
+** HistoryL2.Lean
+Root file implementing Arrangers with History.
+Using everything we defined, we prove that honest players always win and
+they accept honest claims.
 * FraudProof
 
 Here we aim to implement and formalize FraudProof ideas placed in L2 Setchain.
@@ -334,7 +346,7 @@ Depending on what the DA is, we may need different stuff.
 3. DA : \(\langle tree ,  _ , path , ha \rangle\) -- Tree is |tree| and hashes to \(ha\)
 ****** [ ] Elements are f-Valid
 ****** [ ] No repeated elements
-** TODO Sequences to Vectors: Move on from Fin to Finite list
+** DONE Sequences to Vectors: Move on from Fin to Finite list
 Good things, we will not need \(funext\).
 #+begin_src lean4
 def Sequence (n : Nat) (a : Type) := { ls : [ a ] // ls.length = n } -- Vector n a
@@ -452,6 +464,6 @@ Two paths leading to the same element. similar to the above but with one extra
 step, the defender should choose a path (the one that it thinks is wrong) and
 play the ElementInTree game.
 
-** [ ] Integrity Challenge 2
+** [X] Integrity Challenge 2
 Element \(e\) appears in two batches. Same as before but involving one paths in
 each batch.

@@ -169,7 +169,7 @@ theorem leftChildContaintionN {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][Hash α �
     -- simp [BTree.hash_BTree, ABTree.fold] at BtHash
     simp
     rw [ BtHash ]
-    simp [ BTree.hash_BTree, ABTree.fold ]
+    simp [ BTree.hash_BTree ]
 
 theorem rightChildContaintionN {α ℍ : Type}[BEq ℍ][LawfulBEq ℍ][Hash α ℍ][HashMagma ℍ](v : α) (h : ℍ) (btL broot : BTree α) :
     -- Node (Leaf v) tree

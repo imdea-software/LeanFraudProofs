@@ -77,7 +77,7 @@ theorem dac_winning_gen_chooser {α ℍ : Type}
         | none => simp [treeCompArbGame]
         | some rv =>
           simp [treeCompArbGame]
-          simp [winning_condition_player] at good_chooser
+          simp at good_chooser
           cases chooser with
           | node _ _ _ => simp [winning_condition_player] at good_chooser
           | leaf mcv =>

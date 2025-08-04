@@ -209,7 +209,7 @@ theorem seq_equiv_tree {ℍ : Type}[BEq ℍ][HashMagma ℍ]
               have ⟨ chols, chop ⟩ := cho
               match HCho : chols.head _ (da.mtree.2, e) with
               | none =>
-                simp [treeCompArbGame]
+                simp
                 have ⟨datals, datap ⟩ := da.data
                 cases datals.head _ with
                 | Left => simp [treeCompArbGame]; rw [HCho]; simp

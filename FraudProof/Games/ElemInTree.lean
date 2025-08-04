@@ -500,7 +500,7 @@ theorem range_chooser_wins {ℍ : Type}
       cases HP : p with
       | none => simp [spl_game, simp_tree]
       | some proposed =>
-        simp [gen_to_fun_chooser, spl_game, simp_tree]
+        simp [ spl_game, simp_tree]
         -- unfold knowing at kcho
         cases cho with
         | node _ _ _ =>
@@ -520,7 +520,7 @@ theorem range_chooser_wins {ℍ : Type}
             assumption
   | node _ game_left game_right HIndL HIndR =>
     intros in_rev in_ch out hneq rev cho kcho
-    simp [spl_game, simp_tree]
+    simp [spl_game]
     cases rev with
     | leaf _ => simp [simp_tree]
     | node may_mid rev_l rev_r =>
