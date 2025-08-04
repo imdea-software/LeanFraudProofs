@@ -243,7 +243,8 @@ lemma honest_chooser_history_accepts_valid {α ℍ : Type}
           := by apply List.mem_of_getElem? at ElemInHist; assumption
         have e1Elem1In : e1.2 ∈ elem.1.toList
           := by sorry
-        have e2EleIn : e2.2 ∈ new.1.toList := sorry
+        have e2EleIn : e2.2 ∈ new.1.toList
+          := sorry
         have HF := HNodup e1.2 elem.1 elem.2 elem1In e1Elem1In e2.2 e2EleIn
         contradiction
      case h_2 =>
@@ -253,7 +254,6 @@ lemma honest_chooser_history_accepts_valid {α ℍ : Type}
        rw [<- struct_and_iff_valid] at newValid
        apply honest_chooser_accepts_valid at newValid
        rw [newValid]
-       _
    case isFalse h =>
      -- Contradictory case
      rw [historical_concat] at da_valid
@@ -462,10 +462,37 @@ theorem history_honest_chooser_valid' {α ℍ}
    (p1 : P1_History_Actions α ℍ)
    --
    (hist : List (BTree α × ℍ))
-   (hist_valid : historical_valid hist val_fun)
    --
-   : historical_valid (hist ++ [p1.local_str.da]) val_fun
-   -> linear_l2_historical_protocol val_fun hist p1
+   (AllValid : historical_valid (hist ++ [p1.local_str.da]) val_fun)
+   :
+   linear_l2_historical_protocol val_fun hist p1
         (fun h (t, mt) => historical_honest_algorith val_fun h t mt)
    := by
-   simp
+   apply honest_chooser_history_accepts_valid at AllValid
+   simp [linear_l2_historical_protocol]
+   rw [AllValid]
+
+theorem HistoryProtocol {α ℍ}
+   [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
+   [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
+   (val_fun : α -> Bool)
+   (p1 : P1_History_Actions α ℍ)
+   --
+   (hist : List (BTree α × ℍ))
+
+   : (linear_l2_historical_protocol val_fun hist p1
+        (fun h (t, mt) => historical_honest_algorith val_fun h t mt)
+    ∧
+      historical_valid hist val_fun)
+   ↔ historical_valid (hist ++ [p1.local_str.da]) val_fun
+   := by
+   apply Iff.intro
+   · intro HAs; have ⟨HProt , HHist ⟩ := HAs
+     apply history_honest_chooser_valid
+     assumption; assumption
+   · intro HHist
+     apply And.intro
+     · apply history_honest_chooser_valid'
+       assumption
+     · rw [historical_concat] at HHist
+       exact HHist.1
