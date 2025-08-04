@@ -13,7 +13,7 @@
     in
     {
       devShells = forEachSupportedSystem ({ pkgs }:
-        let python = pkgs.python3.withPackages(ps: with ps; [leanblueprint pip]);
+        let python = pkgs.python3;
         in
         {
         default = pkgs.mkShell {
