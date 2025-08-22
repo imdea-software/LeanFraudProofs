@@ -5,7 +5,7 @@
 # @version 0.1
 
 all:
-	DOCGEN_SRC="file" lake build FraudProof:docs
+	DOCGEN_SRC="github" lake build FraudProof:docs
 
 update:
 	MATHLIB_NO_CACHE_ON_UPDATE=1 lake update doc-gen4
