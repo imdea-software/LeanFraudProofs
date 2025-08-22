@@ -1,9 +1,9 @@
 # The Docker image that will be used to build your app
 image: leanprovercommunity/lean:debian
 create-pages:
-  pages:
+  pages: true
     # The folder that contains the files to be exposed at the Page URL
-    publish: public
+    # publish: public
   rules:
     # This ensures that only pushes to the default branch will trigger
     # a pages deploy
