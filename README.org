@@ -127,6 +127,8 @@ make help
 ** Compile Documentation
 See Makefile help.
 
+** DONE Added Pages
+
 * Project Structure:
 ** Data Structures
 Here I programmed useful data structures:
