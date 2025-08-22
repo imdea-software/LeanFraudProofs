@@ -210,7 +210,16 @@ def historical_honest_algorith {α ℍ : Type}
 
 lemma List.Disjoin_iff_forall {α : Type} {l r : List α}[DecidableEq α]
   :  List.Disjoint l r ↔ ∀ i ∈ l, ∀ j ∈ r, i != j
-  := sorry
+  := by unfold List.Disjoint
+        simp
+        apply Iff.intro
+        · intros HD i iIn j jIn
+          apply HD at i; apply i at iIn
+          intro F; subst_eqs
+          contradiction
+        · intros HDist a aIn
+          apply HDist at aIn
+          intro F; apply aIn at F; simp at F
 
 lemma honest_chooser_history_accepts_valid {α ℍ : Type}
    [DecidableEq α]
@@ -242,9 +251,17 @@ lemma honest_chooser_history_accepts_valid {α ℍ : Type}
         have elem1In : (elem.1, elem.2) ∈ history
           := by apply List.mem_of_getElem? at ElemInHist; assumption
         have e1Elem1In : e1.2 ∈ elem.1.toList
-          := by sorry
+          := by rw [<- toPath_elems]
+                simp [BTree.toPaths_elems]
+                exists e1.1
+                apply toPath_are_paths'
+                assumption
         have e2EleIn : e2.2 ∈ new.1.toList
-          := sorry
+          := by rw [<- toPath_elems]
+                simp [BTree.toPaths_elems]
+                exists e2.1
+                apply toPath_are_paths'
+                assumption
         have HF := HNodup e1.2 elem.1 elem.2 elem1In e1Elem1In e2.2 e2EleIn
         contradiction
      case h_2 =>

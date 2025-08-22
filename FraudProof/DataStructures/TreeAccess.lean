@@ -159,6 +159,29 @@ lemma toPaths_append {α β : Type}
      have HRi := HR acc_p (acc_q ++ [.Right])
      rw [HLi, HRi]
 
+lemma path_toPaths_wk {α β : Type}
+   {x : SkElem}
+   {pr pathTail : Skeleton}
+   {t : ABTree α β}
+   {e : α ⊕ β}
+   (H : (pathTail, e) ∈ t.toPaths' pr)
+   : (x :: pathTail, e) ∈ t.toPaths' (x :: pr)
+   := by
+   revert pr
+   induction t with
+   | leaf v => simp at *
+   | node b bl br HL HR
+     => simp at *
+        intros pr H
+        cases H
+        case inl h => left; assumption
+        case inr h
+          => right
+             cases h
+             case inl h => left; apply HL
+                           assumption
+             case inr h => right; apply HR; assumption
+
 lemma path_toPaths' {α β : Type}
    {x : SkElem}
    {pathTail : Skeleton}
@@ -175,6 +198,38 @@ lemma path_toPaths' {α β : Type}
 -- fromPath (toPaths t) = t (not every from paths forms a tree. Leaves (diff paths) yes tho.)
 def ABTree.toPaths {α β : Type}(t : ABTree α β) : List (Skeleton × (α ⊕ β))
  := t.toPaths' .nil
+
+theorem toPath_are_paths' {α β : Type}(t : ABTree α β)
+  : forall (path : Skeleton)( e : α ⊕ β )
+  , t.access path = e -> (path, e) ∈ t.toPaths
+  := by
+  induction t with
+  | leaf v
+    => simp [ABTree.toPaths]
+       intro path
+       cases path <;> simp [ABTree.access]
+  | node b bl br HinL HinR
+    => intros path e HAcc
+       cases path with
+       | nil => simp [ABTree.access] at HAcc
+                simp [ABTree.toPaths]
+                left; rw [HAcc]
+       | cons p ps
+         => cases p with
+            | Left => simp [ABTree.access] at HAcc
+                      simp [ABTree.toPaths]
+                      left
+                      apply HinL at HAcc
+                      apply path_toPaths_wk
+                      assumption
+            | Right
+              => simp [ABTree.access] at HAcc
+                 simp [ABTree.toPaths]
+                 right
+                 apply HinR at HAcc
+                 apply path_toPaths_wk
+                 assumption
+
 
 theorem toPath_are_paths {α β : Type}(t : ABTree α β)
   : forall (path : Skeleton)( e : α ⊕ β )
