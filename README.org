@@ -470,34 +470,34 @@ Batch tags are valid iff they hold 4 props (additional to the above) over the sa
 DA: This is the next valid batch tag corresponding to batch \(b\): \(\langle id, h , \sigma \rangle\)
 
 ** DONE Data availability Challenge ::
-    Data is unknown to a part of the network. It is not challenging the validity of
-    the DA. This challenge challenges missing data? and it makes sense because of economic rules.
+Data is unknown to a part of the network. It is not challenging the validity of
+the DA. This challenge challenges missing data? and it makes sense because of economic rules.
 
-    Challenge is over a specific node, notation here is very high level.
+Challenge is over a specific node, notation here is very high level.
 
-    It is more on the lines of information retrieval than challenging results.
-    The way I was thinking about DAs was \( data_{rep} , res \) with two implicit
-    computations \( F(data) = data_{rep} \wedge C(data) = res\).
-    Here the first part is the missing one, \(F(data) = data_{rep}\).
+It is more on the lines of information retrieval than challenging results.
+The way I was thinking about DAs was \( data_{rep} , res \) with two implicit
+computations \( F(data) = data_{rep} \wedge C(data) = res\).
+Here the first part is the missing one, \(F(data) = data_{rep}\).
 
-    After posting the tag, another agent ask for data indicating a node
-    #**begin_src Lean :noeval
-    pathToN : Skeleton
-    #**end_src
+After posting the tag, another agent ask for data indicating a node
+#+begin_src Lean :noeval
+pathToN : Skeleton
+#+end_src
 
-    The original proposer then provides the information
-    #**begin_src Lean :noeval
-    data ! pathToN = info
-    #**end_src
+The original proposer then provides the information
+#+begin_src Lean :noeval
+data ! pathToN = info
+#+end_src
 
-    And then there is a challenge game to play. The DA the proposer just did is the following
-    Data hashes to \(h\) (already proposed) and such path goes to \(info\).
-    #**begin_src Lean :noeval
-    (data ! pathToN = info) \and C(data) = h
-    #**end_src
+And then there is a challenge game to play. The DA the proposer just did is the following
+Data hashes to \(h\) (already proposed) and such path goes to \(info\).
+#+begin_src Lean :noeval
+(data ! pathToN = info) \and C(data) = h
+#+end_src
 
-    If information provided by the proposer, the challenger can challenge the whole
-    subtree. In Lean, we have a game just for that.
+If information provided by the proposer, the challenger can challenge the whole
+subtree. In Lean, we have a game just for that.
 
 ** DONE Signature Challenge is just invoking a checker, one shoot game.
 
