@@ -5,10 +5,25 @@ import FraudProof.DataStructures.Sequence
 import FraudProof.L2
 
 ----------------------------------------
--- ## Stateful Protocol.
---
--- Now we have a history of all previous accepted batches.
+/-! ## Stateful Protocol.
 
+History Protocol takes into account the whole history of the L2 Protocol.
+
+The main difference is that blocks are conditional valid depending on the
+elements that were added before the current block (the History.)
+
+-/
+
+
+/-! Main Definition is that valid now checks that elements do not occurr more
+than once across the whole history.
+Here we are a bit redundant, because historic non-duplication implies local
+non-duplication.
+However, we choosed to follow a compositional approach. Eventually, we may be
+interested in adding more properties and it is worth exploring such approach.
+
+So `historical_valid` is `local_valid` plus no-duplicates accross history.
+-/
 def historical_valid
   {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
   -- History of commited blocks and their hashes.
@@ -22,7 +37,11 @@ def historical_valid
   ∧ -- Plus there are no duplicated elements. This one subsumes nodup in local_valid.
   (List.Nodup (Hist.map (BTree.toList $ ·.fst)).flatten)
 
--- Fundamental lemma to compose with `local_valid`.
+/-! Lemma `historical_concat` characterizes the evolution of the
+definition `historical_valid` everytime we add a new block.
+Since the protocol evolves linearly adding new blocks, this lemma simplifies the
+following proofs.
+-/
 lemma historical_concat
   {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
   --
@@ -62,7 +81,10 @@ lemma historical_concat
             | inr h => rw [h]; assumption
           · assumption
 
---
+/-! Player two, the player acting as challenger, on top of the previous moves
+defined in `L2.lean` file, can also challenge new blocks of duplicating elements
+across history.
+-/
 inductive P2_History_Actions (α ℍ : Type) : Type where
  | Local (ll : P2_Actions α ℍ) : P2_History_Actions α ℍ
  | DupHistory_Actions
@@ -80,10 +102,18 @@ inductive P2_History_Actions (α ℍ : Type) : Type where
       --
       : P2_History_Actions α ℍ
 
+/-!
+Player one actions are defending the elements they present.
+-/
 structure P1_History_Actions (α ℍ : Type) : Type where
  local_str : P1_Actions α ℍ
  global_str : List (BTree α × ℍ) -> Nat -> {n : Nat} -> ISkeleton n -> (Sequence n (Option (ℍ × ℍ)) × Option α)
 
+
+/-! ## Duplicates in History
+
+We define how we find elements and duplicates.
+-/
 def find_first_dup_in_history
    {α ℍ : Type}[DecidableEq α]
    -- We have a list of elements in a tree
@@ -177,6 +207,13 @@ lemma find_first_dup_in_history_law {α ℍ : Type}[DecidableEq α]
    apply And.intro
    · simp [*]
    · simp at HHist; rw [HHist]; simp
+
+
+/-! ## Honest PLayer
+
+Honest players check new blocks to see if they check the required conditions
+and if not, they build a challengin move.
+-/
 
 def historical_honest_algorith {α ℍ : Type}
   [DecidableEq α]
@@ -304,8 +341,13 @@ lemma Nodups_no_dups_in_history {α ℍ}
         rw [toPath_elems public_data]
         assumption
 
--- This is the step in our blockchain evolution.
---
+/-! ## L2 History Protocol
+
+The protocol consists on a player providing information and another player
+challenging such information.
+Since we do not have IO here, all players must build and provide all strategies
+before hand.
+-/
 def linear_l2_historical_protocol{α ℍ : Type}
   [BEq α] -- Checking dup
   [BEq ℍ][o : Hash α ℍ][HashMagma ℍ]
@@ -489,6 +531,12 @@ theorem history_honest_chooser_valid' {α ℍ}
    simp [linear_l2_historical_protocol]
    rw [AllValid]
 
+
+/-!
+Theorem `HistoryProtocol` states that the history protocol when played with an
+honest player challenging proposed blocks only accepts correct blocks (->) and
+correct blocks are accepted by the protocol (<-).
+-/
 theorem HistoryProtocol {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
    [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]

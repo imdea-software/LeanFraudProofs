@@ -19,15 +19,12 @@ The main goal is to prove that when we have an honest challenger challenging
 only /good/ blocks are accepted: See `honest_chooser_valid`
 -/
 
--- This depends on what game we are playing.
--- def generate_honest_strategies_forward {α ℍ : Type}
---     -- Tree with anotations.
---     (t : ABTree α (MkData ℍ))
---     {n : Nat}(ph : ISkeleton n)
---     : Sequence n (Option (ℍ × ℍ) × Option α)
---     := sorry
-
--- * Linear L2
+/-! ## Player One (Proposer)
+Player one, the player proposing elements, actions are
+to propose a new block `da : BTree α × ℍ`.
+Since we do not have IO, upon propsing a new block, they player also provides
+all possible strategies for all elements.
+-/
 
 structure P1_Actions (α ℍ : Type) : Type
  where
@@ -50,6 +47,10 @@ structure P1_Actions (α ℍ : Type) : Type
 --      else .none
 
 
+/-! ## Local Validity
+We define a local valid block `Local_valid` to a block that hashes to a
+given hash, holds only valid elements and has no duplicates.
+-/
 structure Local_valid {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ]
           (data : BTree α)(mk : ℍ)(val_fun : α -> Bool)
   where
@@ -57,11 +58,15 @@ structure Local_valid {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMagma ℍ
   ValidElems : data.fold val_fun and = true
   NoDup : List.Nodup data.toList
 
+/-! Helper function building a complete tree from a sequence of `2^lgn`
+elements.  -/
 def Valid_Seq {α ℍ : Type} {lgn : Nat}
   [DecidableEq α][Hash α ℍ][HashMagma ℍ]
   (data : Sequence (2^lgn) α)(merkle_tree : ℍ)(P : α -> Bool)
   := Local_valid (perfectSeqLeaves data) merkle_tree P
 
+/-! Same as `Local_valid` but instead of having a struct, we just
+have a `Prop`. -/
 def local_valid {α ℍ : Type} [DecidableEq α][Hash α ℍ][HashMagma ℍ]
   (da : BTree α × ℍ)(val_fun : α -> Bool) : Prop
  -- Merkle Tree is correct
@@ -88,6 +93,15 @@ theorem struct_and_iff_valid {α ℍ : Type}[DecidableEq α][Hash α ℍ][HashMa
          , NoDup := (valid.2).2
          }
 
+/-! ## PLayer 2 (Challenger)
+
+The second player, bsaed on what the player one (proposer) proposes,
+can perform one of the following actions:
+1. DAC challenge
+2. Element invalid challenge
+3. Duplicate elements challenge
+4. accept the block as valid
+-/
 inductive P2_Actions (α ℍ : Type)  : Type
   where
    | DAC (str : ABTree Unit ((ℍ × ℍ × ℍ) -> Option ChooserMoves))
@@ -100,9 +114,18 @@ inductive P2_Actions (α ℍ : Type)  : Type
       (str_q : Sequence m ((ℍ × ℍ × ℍ) -> Option ChooserSmp))
    | Ok
 
--- Simple linear protocol, no time. Assuming no player play to lose.
--- If chooser wins, the proposed block is discarded. This is not how the real
--- world behaves.
+/-! ## L2 Local Linear Protocol
+
+Simple linear protocol: no optimizations as logarithmic search.
+There is no time involved: we assume players have all the time in the world to
+play and there is no rush.
+We assume players play to win, and we do not reason about the incentives they
+have to beahve like that.
+If plaer two wins, the proposed block is discarded and nothing else happens. In
+the real protocol, we player one should be penalized.
+-/
+
+/-! Helper function defining actions taken after player one moved. -/
 @[simp]
 def inner_l2_actions {α ℍ : Type}
   [BEq α] -- Checking dup
@@ -173,6 +196,7 @@ def inner_l2_actions {α ℍ : Type}
             else res
 
 
+/-! Definition of L2 protocol playing linear games. -/
 def linear_l2_protocol{α ℍ : Type}
   [BEq α] -- Checking dup
   [BEq ℍ][o : Hash α ℍ][HashMagma ℍ]
@@ -184,11 +208,9 @@ def linear_l2_protocol{α ℍ : Type}
    : Bool
    := inner_l2_actions val_fun playerOne (playerTwo playerOne.da)
 
--- ** Crafting Honest Players.
--- *** Honest Player One. -- Proposer
--- *** Honest Player Two. -- Chooser
---
--- **** Witness Finding.
+/-! ## Crafting Honest Players. -/
+
+/-! ### Witness Finding. -/
 structure IH (ℍ : Type) where
   side : SkElem
   spine : ℍ
@@ -201,7 +223,7 @@ structure Witness (α ℍ : Type) : Type
    src : α
    dst : ℍ
 
--- find (if there is one) the leftest invalid value.
+/-! Find leftest invalid value -/
 def find_left_invalid_path {α ℍ: Type}
   [o : Hash α ℍ][m : HashMagma ℍ]
   (val : α -> Bool) :
@@ -313,6 +335,10 @@ def gen_chooser_opt' {ℍ : Type}
           then .Continue .Left
           else .Continue .Right
 
+/-! Honest player two.
+Check each condition and if the proposed block violates one, it generates a
+witness and challenges the validity of such block.
+-/
 def honest_chooser {α ℍ : Type}
   [DecidableEq α]
   [BEq ℍ][Hash α ℍ][m : HashMagma ℍ]
@@ -370,6 +396,8 @@ lemma fold_getI_hash { α ℍ : Type }
      unfold ABTree.hash_SubTree
      simp [ABTree.getI']; congr
 
+/-! Honest chooser finds correct witnesses, and thus, it always wins the
+challenging games (if played.) -/
 lemma honest_chooser_wins {α ℍ : Type}
    [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ] [m : HashMagma ℍ]
    (da : BTree α)
@@ -394,7 +422,7 @@ lemma honest_chooser_wins {α ℍ : Type}
               rw [<- fold_getI_hash]
               assumption
         }
-
+/-! Honest player do not challenge valid blocks -/
 lemma honest_chooser_accepts_valid {α ℍ : Type}
    [DecidableEq α]
    [BEq ℍ][LawfulBEq ℍ][o : Hash α ℍ][m : HashMagma ℍ]
@@ -416,6 +444,8 @@ lemma honest_chooser_accepts_valid {α ℍ : Type}
    rw [<- toPath_elems] at elnodups
    have nodups := no_dups_finds_none (·.snd) data.toPaths_elems elnodups
    rw [nodups]
+
+/-! ## L2 Protocol and Honest player -/
 
 lemma inner_honest_valid_dac_wrong {α ℍ : Type}
    [DecidableEq α]
@@ -463,6 +493,7 @@ lemma inner_honest_valid_dac_wrong {α ℍ : Type}
        rw [ass]
        -- simp
 
+/-! Helper lemma, if a block is accepted by `linear_l2_protocol`, then that block is valid. -/
 lemma inner_honest_valid {α ℍ : Type}
    [DecidableEq α]
    [BEq ℍ][LawfulBEq ℍ]
@@ -581,6 +612,7 @@ lemma inner_honest_valid {α ℍ : Type}
        rw [ass]
        simp
 
+/-! Valid blocks are accepted by the `linear_l2_protocol` . -/
 lemma honest_chooser_valid_local_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
    [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
@@ -597,6 +629,9 @@ lemma honest_chooser_valid_local_valid {α ℍ}
      rw [hcho]
 
 
+/-! Main theorem, the L2 Protocol `linear_l2_protocol` accepts valid blocks and
+every block accepted by the protocol is valid, when equipped with the honest
+player two.-/
 theorem honest_chooser_valid {α ℍ}
    [BEq ℍ][LawfulBEq ℍ][DecidableEq α]
    [o : Hash α ℍ][m : HashMagma ℍ][InjectiveHash α ℍ][InjectiveMagma ℍ]
