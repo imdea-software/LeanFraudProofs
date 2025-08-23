@@ -77,49 +77,49 @@ def forward_proposer_to_tree {α : Type}{ n : Nat}
        ( Sequence.map (fun p => p.2) prop) -- leaves
 
 -- We prove that in LogProofs we keep the same winning conditions.
-lemma proposer_winning_conditions {ℍ : Type} {lgn : Nat}
-       [BEq ℍ][LawfulBEq ℍ][m : HashMagma ℍ] -- Condition checking
-       {da : ElemInTreeH (2^lgn) ℍ}
-       {proposer : Sequence (2^lgn) (ℍ × ℍ)}
-       (wProp : elem_in_reveler_winning_condition_backward da proposer)
-       : reveler_winning_condition_simp_game
-          -- Splitter
-          (fun (a,b) c => ((a,c),(c,b)))
-          -- Winning Conditions
-          (fun s h rh => winning_proposer $ @leaf_condition_length_one _ _ m s h rh)
-          (fun _ _ _ => Player.Proposer)
-          -- DA Trans
-          ⟨ built_up_arena_backward da.data , da.mtree ⟩
-          ( ABTree.map .some .some (backward_proposer_to_tree da.data proposer))
-       := sorry
+-- lemma proposer_winning_conditions {ℍ : Type} {lgn : Nat}
+--        [BEq ℍ][LawfulBEq ℍ][m : HashMagma ℍ] -- Condition checking
+--        {da : ElemInTreeH (2^lgn) ℍ}
+--        {proposer : Sequence (2^lgn) (ℍ × ℍ)}
+--        (wProp : elem_in_reveler_winning_condition_backward da proposer)
+--        : reveler_winning_condition_simp_game
+--           -- Splitter
+--           (fun (a,b) c => ((a,c),(c,b)))
+--           -- Winning Conditions
+--           (fun s h rh => winning_proposer $ @leaf_condition_length_one _ _ m s h rh)
+--           (fun _ _ _ => Player.Proposer)
+--           -- DA Trans
+--           ⟨ built_up_arena_backward da.data , da.mtree ⟩
+--           ( ABTree.map .some .some (backward_proposer_to_tree da.data proposer))
+--        := sorry
 
-theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
-       [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
-       (da : ElemInTreeH (2^lgn) ℍ)
-       (proposer : Sequence (2^lgn) (ℍ × ℍ))
-       (wProp : elem_in_reveler_winning_condition_backward da proposer)
-       (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
-       : spl_game
-         ({data := built_up_arena_backward da.data , res := da.mtree})
-         ( ABTree.map .some .some $ backward_proposer_to_tree da.data proposer)
-         chooser
-         = Player.Proposer
-       := by
-       apply simp_game_reveler_wins
-       apply proposer_winning_conditions at wProp
-       assumption
+-- theorem proposer_winning_mod {ℍ : Type} {lgn : Nat}
+--        [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
+--        (da : ElemInTreeH (2^lgn) ℍ)
+--        (proposer : Sequence (2^lgn) (ℍ × ℍ))
+--        (wProp : elem_in_reveler_winning_condition_backward da proposer)
+--        (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
+--        : spl_game
+--          ({data := built_up_arena_backward da.data , res := da.mtree})
+--          ( ABTree.map .some .some $ backward_proposer_to_tree da.data proposer)
+--          chooser
+--          = Player.Proposer
+--        := by
+--        apply simp_game_reveler_wins
+--        apply proposer_winning_conditions at wProp
+--        assumption
 
-theorem proposer_winning_mod_forward {ℍ : Type} {lgn : Nat} [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
-       (da : ElemInTreeH (2^lgn) ℍ)
-       (proposer : Sequence (2^lgn) (ℍ × ℍ))
-       (wProp : elem_in_reveler_winning_condition_forward da proposer)
-       (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
-       : spl_game
-         ({data := built_up_arena da.data , res := da.mtree})
-         ( ABTree.map .some .some $ forward_proposer_to_tree proposer)
-         chooser
-         = Player.Proposer
- := sorry -- by
+-- theorem proposer_winning_mod_forward {ℍ : Type} {lgn : Nat} [BEq ℍ][LawfulBEq ℍ][HashMagma ℍ] -- Condition checking
+--        (da : ElemInTreeH (2^lgn) ℍ)
+--        (proposer : Sequence (2^lgn) (ℍ × ℍ))
+--        (wProp : elem_in_reveler_winning_condition_forward da proposer)
+--        (chooser : ABTree Unit (Range ℍ -> ℍ -> Option ChooserMoves))
+--        : spl_game
+--          ({data := built_up_arena da.data , res := da.mtree})
+--          ( ABTree.map .some .some $ forward_proposer_to_tree proposer)
+--          chooser
+--          = Player.Proposer
+--  := sorry -- by
 --     apply simp_game_reveler_wins
 --     revert lgn; intro lgn
 --     induction lgn with
