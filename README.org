@@ -1,3 +1,4 @@
+* [[https://imdea-software.github.io/LeanFraudProofs/][Clickable Documentation]]
 * CCS'25
 Main artifact proofs are in [[./FraudProof/L2.lean][L2]] .
 ** Main proof is ~honest_chooser_valid~ proving our main validity claim.
@@ -127,7 +128,8 @@ make help
 ** Compile Documentation
 See Makefile help.
 
-** DONE Added Pages
+** Added Pages
+
 
 * Project Structure:
 ** Data Structures
