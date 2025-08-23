@@ -13,4 +13,7 @@ update:
 serve:
 	cd .lake/build/doc; python3 -m http.server
 
+publish:
+	cp -r .lake/build/doc/* ../docs/
+
 # end
