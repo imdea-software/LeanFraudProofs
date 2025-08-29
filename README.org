@@ -4,7 +4,7 @@ Main artifact proofs are in [[./FraudProof/L2.lean][L2]] .
 
 Zenode badge:
 
-[[https://zenodo.org/badge/1043206342.svg]] -- [[DOI][https://doi.org/10.5281/zenodo.16993258]]
+[[https://doi.org/10.5281/zenodo.16993258][https://zenodo.org/badge/1043206342.svg]]
 
 
 ** Main proof is ~honest_chooser_valid~ proving our main validity claim.
