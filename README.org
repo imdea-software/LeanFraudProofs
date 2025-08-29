@@ -1,6 +1,12 @@
 * [[https://imdea-software.github.io/LeanFraudProofs/][Clickable Documentation]]
 * CCS'25
 Main artifact proofs are in [[./FraudProof/L2.lean][L2]] .
+
+Zenode badge:
+
+[[https://zenodo.org/badge/1043206342.svg]] -- [[DOI][https://doi.org/10.5281/zenodo.16993258]]
+
+
 ** Main proof is ~honest_chooser_valid~ proving our main validity claim.
 #+begin_src lean4
 theorem honest_chooser_valid {α ℍ}
